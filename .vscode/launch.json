@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug FastAPI",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "env": {
+        "FLASK_APP": "flaskr",
+        "FLASK_DEBUG": "1"
+      },
+      "args": ["irony.main:app", "--reload"],
+      "jinja": true,
+      "justMyCode": true
+    }
+  ]
+}
