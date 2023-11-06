@@ -3,6 +3,7 @@ from enum import Enum
 from bson import ObjectId
 from pydantic import BaseModel
 
+
 class Service(BaseModel):
     id: ObjectId
     service_location_id: ObjectId
@@ -15,10 +16,12 @@ class Service(BaseModel):
     is_active: bool
     referral_discount: float
 
+
 class CategoryEnum(str, Enum):
     LAUNDRY = "LAUNDRY"
     DRYCLEAN = "DRYCLEAN"
     STICHING = "STICHING"
+
 
 class ServiceEnum(str, Enum):
     IRON = "IRON"

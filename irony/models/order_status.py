@@ -3,13 +3,15 @@ from enum import Enum
 from bson import ObjectId
 from pydantic import BaseModel
 
+
 class OrderStatus(BaseModel):
     id: ObjectId
     order_id: ObjectId
-    status : str
-    created_on : datetime
-    updated_on : datetime
-    
+    status: str
+    created_on: datetime
+    updated_on: datetime
+
+
 class StatusEnum(str, Enum):
     PICKUP_PENDING = "PICKUP_PENDING"
     PICKUP_USER_NO_RESP = "PICKUP_USER_NO_RESP"
