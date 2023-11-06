@@ -13,7 +13,7 @@ class Message:
     }
     def __init__(self, url, method='POST', headers=None, body=None):
         if(headers is None):
-            bearer_token = config['WHATSAPP_CONFIG']['bearer_token'];
+            bearer_token = config.WHATSAPP_CONFIG['bearer_token'];
             headers={"Content-type": "application/json", "Authorization": f"Bearer {bearer_token}"}
         if method not in self._methods:
             raise Exception(f"Invalid method while creating method object. Please choose from {self._methods.keys()}")
