@@ -9,6 +9,7 @@ from irony import config
 import joblib
 
 from irony.models.contact_details import ContactDetails
+from irony.routers.util.message import Message
 
 from . import whatsapp_common
 
@@ -40,41 +41,40 @@ def handle_message(message_details, contact_details: ContactDetails):
         print("Smash, d")
         interactive_obj = start_convo(contact_details)
 
-    if not bool(interactive_obj) or not bool(message_object):
-        message_request_body = {
+    if bool(interactive_obj) or bool(message_object):
+        message_body = {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
             "to": contact_details["wa_id"],
         }
         if bool(interactive_obj):
-            message_request_body = json.dumps(
+            message_body = json.dumps(
                 {
-                    **message_request_body,
+                    **message_body,
                     "type": "interactive",
                     "interactive": interactive_obj,
                 }
             )
         elif bool(message_object):
-            message_request_body = json.dumps(
-                {**message_request_body, **message_object}
-            )
-        print(f"Smash, messages endpoint body : {message_request_body}")
-        bearer_token = config.WHATSAPP_CONFIG["bearer_token"]
-        response = requests.post(
-            "https://graph.facebook.com/v17.0/137217652804256/messages",
-            headers={
-                "Content-type": "application/json",
-                "Authorization": f"Bearer {bearer_token}",
-            },
-            data=message_request_body,
-        )
+            message_body = json.dumps({**message_body, **message_object})
+        print(f"Smash, messages endpoint body : {message_body}")
+        response = Message(message_body).send_message()
+        # bearer_token = config.WHATSAPP_CONFIG["bearer_token"]
+        # response = requests.post(
+        #     "https://graph.facebook.com/v17.0/137217652804256/messages",
+        #     headers={
+        #         "Content-type": "application/json",
+        #         "Authorization": f"Bearer {bearer_token}",
+        #     },
+        #     data=message_request_body,
+        # )
         response_data = response.json()
         print(f"Smash, messages response : {response_data}")
 
 
 def start_convo(contact_details: ContactDetails):
-    buttons = config.BUTTONS
     # Check customer type and return message object
+    buttons = config.BUTTONS
     customer_type = whatsapp_common.get_customer_type(contact_details)
     return {
         "type": "button",
@@ -85,8 +85,9 @@ def start_convo(contact_details: ContactDetails):
         "footer": {"text": "Please select an option from below"},  # optional
         "action": {
             "buttons": [
-                {"type": "reply", "reply": buttons["FETCH_BASIC_STOCKS"]},
-                {"type": "reply", "reply": buttons["GENERATE_REPORT"]},
+                {"type": "reply", "reply": buttons["CLOTHES_COUNT_10"]},
+                {"type": "reply", "reply": buttons["CLOTHES_COUNT_20"]},
+                {"type": "reply", "reply": buttons["CLOTHES_COUNT_20_PLUS"]},
             ]
         },  # end action
     }

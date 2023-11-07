@@ -8,7 +8,8 @@
       "module": "uvicorn",
       "args": ["irony.main:app", "--reload"],
       "jinja": true,
-      "justMyCode": true
+      "justMyCode": true,
+      "console": "integratedTerminal"
     }
   ]
 }
