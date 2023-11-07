@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from irony.models.service import Service
 
+
 class Referal(BaseModel):
     id: ObjectId
     service_ids: list[Service]

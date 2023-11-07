@@ -6,13 +6,10 @@
       "type": "python",
       "request": "launch",
       "module": "uvicorn",
-      "env": {
-        "FLASK_APP": "flaskr",
-        "FLASK_DEBUG": "1"
-      },
       "args": ["irony.main:app", "--reload"],
       "jinja": true,
-      "justMyCode": true
+      "justMyCode": true,
+      "console": "integratedTerminal"
     }
   ]
 }

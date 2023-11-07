@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from irony.models.order_item import OrderItem
 
+
 class Order(BaseModel):
     id: ObjectId
     user_id: ObjectId
