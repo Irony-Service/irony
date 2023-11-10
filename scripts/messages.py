@@ -1,4 +1,4 @@
-import random
+import traceback
 from irony.config import BUTTONS
 from irony.db import db
 
@@ -23,98 +23,108 @@ new_order_success_message_2 = """
 """
 
 
-async def get_users():
-    messages = [
-        {
-            "message_key": "new_user_greeting",
-            "type": "dynamic",
-            "message_options": [new_user_greeting_message],
-            "message": {
-                "messaging_product": "whatsapp",
-                "recipient_type": "individual",
-                "to": None,
-                "type": "interactive",
-                "interactive": {
-                    "type": "button",
-                    "header": {"type": "text", "text": "Irony"},
-                    "body": {"text": new_user_greeting_message},
-                    "footer": {"text": "Please select any option from below"},
-                    "action": {
-                        "buttons": [
-                            {"type": "reply", "reply": BUTTONS["MAKE_NEW_ORDER"]},
-                            {"type": "reply", "reply": BUTTONS["PRICES"]},
-                            {"type": "reply", "reply": BUTTONS["HOW_WE_WORK"]},
-                        ]
+async def add_messages():
+    try:
+        messages = [
+            {
+                "message_key": "new_user_greeting",
+                "type": "dynamic",
+                "message_options": [new_user_greeting_message],
+                "message": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": None,
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "header": {"type": "text", "text": "Irony"},
+                        "body": {"text": new_user_greeting_message},
+                        "footer": {"text": "Please select any option from below"},
+                        "action": {
+                            "buttons": [
+                                {"type": "reply", "reply": BUTTONS["MAKE_NEW_ORDER"]},
+                                {"type": "reply", "reply": BUTTONS["PRICES"]},
+                                {"type": "reply", "reply": BUTTONS["HOW_WE_WORK"]},
+                            ]
+                        },
                     },
                 },
             },
-        },
-        {
-            "message_key": "new_order_step_1",
-            "type": "dynamic",
-            "message_options": [new_order_step_1_message],
-            "message": {
-                "messaging_product": "whatsapp",
-                "recipient_type": "individual",
-                "to": None,
-                "type": "interactive",
-                "interactive": {
-                    "type": "button",
-                    "header": {"type": "text", "text": "Irony"},
-                    "body": {"text": new_order_step_1_message},
-                    "footer": {"text": "Please select any option from below"},
-                    "action": {
-                        "buttons": [
-                            {"type": "reply", "reply": BUTTONS["CLOTHES_COUNT_10"]},
-                            {"type": "reply", "reply": BUTTONS["CLOTHES_COUNT_20"]},
-                            {
-                                "type": "reply",
-                                "reply": BUTTONS["CLOTHES_COUNT_20_PLUS"],
-                            },
-                        ]
+            {
+                "message_key": "new_order_step_1",
+                "type": "dynamic",
+                "message_options": [new_order_step_1_message],
+                "message": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": None,
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "header": {"type": "text", "text": "Irony"},
+                        "body": {"text": new_order_step_1_message},
+                        "footer": {"text": "Please select any option from below"},
+                        "action": {
+                            "buttons": [
+                                {"type": "reply", "reply": BUTTONS["CLOTHES_COUNT_10"]},
+                                {"type": "reply", "reply": BUTTONS["CLOTHES_COUNT_20"]},
+                                {
+                                    "type": "reply",
+                                    "reply": BUTTONS["CLOTHES_COUNT_20_PLUS"],
+                                },
+                            ]
+                        },
                     },
                 },
             },
-        },
-        {
-            "message_key": "new_order_step_2",
-            "type": "dynamic",
-            "message_options": [new_order_step_2_message],
-            "message": {
-                "messaging_product": "whatsapp",
-                "recipient_type": "individual",
-                "to": None,
-                "type": "text",
-                "text": {
-                    "header": {"type": "text", "text": "Irony"},
-                    "body": {"text": new_order_step_2_message},
-                },
-            },
-        },
-        {
-            "message_key": "new_order_success",
-            "type": "dynamic",
-            "message_options": [
-                new_order_success_message_1,
-                new_order_success_message_2,
-            ],
-            "message": {
-                "messaging_product": "whatsapp",
-                "recipient_type": "individual",
-                "to": None,
-                "type": "interactive",
-                "interactive": {
-                    "type": "button",
-                    "header": {"type": "text", "text": "Irony"},
-                    "body": {"text": new_order_success_message_1},
-                    "footer": {"text": "Please select any option from below"},
-                    "action": {
-                        "buttons": [
-                            {"type": "reply", "reply": BUTTONS["TRACK_ORDER"]},
-                        ]
+            {
+                "message_key": "new_order_step_2",
+                "type": "dynamic",
+                "message_options": [new_order_step_2_message],
+                "message": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": None,
+                    "type": "text",
+                    "text": {
+                        "header": {"type": "text", "text": "Irony"},
+                        "body": {"text": new_order_step_2_message},
                     },
                 },
             },
-        },
-    ]
-    messages = await db.messages.insert_many()
+            {
+                "message_key": "new_order_success",
+                "type": "dynamic",
+                "message_options": [
+                    new_order_success_message_1,
+                    new_order_success_message_2,
+                ],
+                "message": {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": None,
+                    "type": "interactive",
+                    "interactive": {
+                        "type": "button",
+                        "header": {"type": "text", "text": "Irony"},
+                        "body": {"text": new_order_success_message_1},
+                        "footer": {"text": "Please select any option from below"},
+                        "action": {
+                            "buttons": [
+                                {"type": "reply", "reply": BUTTONS["TRACK_ORDER"]},
+                            ]
+                        },
+                    },
+                },
+            },
+        ]
+        messages = await db.messages.insert_many(messages)
+        print(f"Messages inserted : {messages}")
+    except Exception as e:
+        print(f"Error inserting messages {e}")
+        traceback.print_exc()
+
+
+import asyncio
+
+asyncio.run(add_messages())
