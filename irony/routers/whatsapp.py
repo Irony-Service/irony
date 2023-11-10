@@ -23,7 +23,7 @@ async def whatsapp(request: Request):
             if len(entries) > 1:
                 print("RECEIVED MORE THAN 1 ENTRY")
             else:
-                whatsapp_util.handle_entry(entries[0])
+                await whatsapp_util.handle_entry(entries[0])
     except Exception as e:
         print(f"Error occured in send whatsapp message : {e}")
         traceback.print_exc()

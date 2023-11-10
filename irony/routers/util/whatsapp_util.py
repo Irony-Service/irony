@@ -24,7 +24,7 @@ def is_ongoing_or_status_request(entry):
     return False
 
 
-def handle_entry(entry):
+async def handle_entry(entry):
     # get contact name.
     changes_obj = entry["changes"][0]
     contact_details = None
@@ -40,9 +40,10 @@ def handle_entry(entry):
                 whatsapp_text_message.handle_message(message_details, contact_details)
             elif message_details["type"] == "interactive":
                 # handle interactive message
-                whatsapp_interactive_message.handle_message(
+                await whatsapp_interactive_message.handle_message(
                     message_details, contact_details
                 )
+                print("SMASHHHH this ran")
 
 
 def get_contact_details(contact: ContactDetails):

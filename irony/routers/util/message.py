@@ -1,3 +1,4 @@
+import json
 import requests
 
 from irony import config
@@ -33,7 +34,7 @@ class Message:
         self.url = url
         self.method = method
         self.headers = headers
-        self.body = body
+        self.body = json.dumps(body)
 
     def send_message(self):
         # Implement your send_message logic here
