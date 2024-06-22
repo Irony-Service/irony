@@ -21,6 +21,7 @@ class Message:
     def __init__(
         self,
         body=None,
+        # type="interactive",
         url: str = config.WHATSAPP_CONFIG["message_url"],
         method: str = "POST",
         headers=default_headers,
@@ -34,13 +35,26 @@ class Message:
         self.url = url
         self.method = method
         self.headers = headers
-        self.body = json.dumps(body)
+        self.body = body
+        # self.message = {
+        #     "messaging_product": "whatsapp",
+        #     "recipient_type": "individual",
+        #     "to": "<WHATSAPP_USER_PHONE_NUMBER>",
+        #     "type": f"{type}",
+        #     f"{type}": self.body,
+        # }
 
-    def send_message(self):
+    def send_message(self, to=None):
         # Implement your send_message logic here
         # Use the method name to make the HTTP request dynamically
+        if to is not None:
+            self.body["to"] = to
+
+        if self.body["to"] == None:
+            raise Exception(f"Please specify receipient(to) of message.")
+
         response = self._methods[self.method](
-            self.url, headers=self.headers, data=self.body
+            self.url, headers=self.headers, data=json.dumps(self.body)
         )
 
         return response

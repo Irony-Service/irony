@@ -39,7 +39,7 @@ def handle_message(message_details, contact_details: ContactDetails):
 
     if bool(message_body):
         print(f"Smash, messages endpoint body : {message_body}")
-        response = Message(message_body).send_message()
+        response = Message(message_body).send_message(contact_details["wa_id"])
         response_data = response.json()
         print(f"Smash, messages response : {response_data}")
 
@@ -48,18 +48,27 @@ def start_convo(contact_details: ContactDetails):
     # Check customer type and return message object
     buttons = config.BUTTONS
     customer_type = whatsapp_common.get_customer_type(contact_details)
-    return {
+
+    buttons = [
+        {"type": "reply", "reply": config.BUTTONS[key]}
+        for key in config.BUTTONS.keys()
+        if config.CLOTHES_COUNT_KEY in key
+    ]
+    interactive = {
         "type": "button",
         "header": {"type": "text", "text": "Irony"},  # optional  # end header
         "body": {
             "text": f"{'Hi' if random.randint(1,2) == 1 else 'Hello'} {contact_details['name']}.\nWelcome to Irony. We are a low cost laundry services provider.\n We provide a number of services like Ironing, Washing, Wash and Iron, Dry Clean.\n"
         },
         "footer": {"text": "Please select an option from below"},  # optional
-        "action": {
-            "buttons": [
-                {"type": "reply", "reply": buttons["CLOTHES_COUNT_10"]},
-                {"type": "reply", "reply": buttons["CLOTHES_COUNT_20"]},
-                {"type": "reply", "reply": buttons["CLOTHES_COUNT_20_PLUS"]},
-            ]
-        },  # end action
+        "action": {"buttons": buttons},  # end action
     }
+
+    message = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": f"{contact_details.wa_id}",
+        "type": "interactive",
+        "interactive": interactive,
+    }
+    return message
