@@ -1,6 +1,6 @@
 import random
 
-from irony import config
+from app import config
 
 sample_interactive = {
     "messaging_product": "whatsapp",

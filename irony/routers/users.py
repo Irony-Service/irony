@@ -3,7 +3,7 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-from ..models.user import User
+from app.models.user import User
 from ..db import get_users, create_user
 
 

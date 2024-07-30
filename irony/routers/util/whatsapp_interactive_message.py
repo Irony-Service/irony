@@ -5,17 +5,17 @@ from fastapi.encoders import jsonable_encoder
 
 import requests
 
-from irony import config
-from irony.models.contact_details import ContactDetails
-from irony.models.order import Order
-from irony.models.order_status import OrderStatus, OrderStatusEnum
-from irony.models.user import User
+from app import config
+from app.models.contact_details import ContactDetails
+from app.models.order import Order
+from app.models.order_status import OrderStatus, OrderStatusEnum
+from app.models.user import User
 
 from . import whatsapp_common
 
 from .message import Message
 
-from irony.db import db
+from app.db import db
 
 
 async def handle_message(message_details, contact_details: ContactDetails):

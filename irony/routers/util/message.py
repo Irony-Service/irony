@@ -1,7 +1,7 @@
 import json
 import requests
 
-from irony import config
+from app import config
 
 
 class Message:

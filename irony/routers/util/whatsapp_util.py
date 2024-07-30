@@ -32,7 +32,7 @@ def is_ongoing_or_status_request(entry):
 async def handle_entry(entry):
     # get contact name.
     changes_obj = entry["changes"][0]
-    contact_details = None
+    contact_details: ContactDetails = None
     if "contacts" in changes_obj["value"]:
         contact_details = get_contact_details(changes_obj["value"]["contacts"][0])
 
@@ -77,5 +77,6 @@ async def handle_entry(entry):
                 # save order record.
 
 
-def get_contact_details(contact: ContactDetails):
-    return {"name": contact["profile"]["name"], "wa_id": contact["wa_id"]}
+def get_contact_details(contact) -> ContactDetails:
+    contact_details = {"name": contact["profile"]["name"], "wa_id": contact["wa_id"]}
+    return ContactDetails(**contact_details)

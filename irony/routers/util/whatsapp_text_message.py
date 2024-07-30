@@ -5,11 +5,11 @@ import random
 import re
 
 import requests
-from irony import config
+from app import config
 import joblib
 
-from irony.models.contact_details import ContactDetails
-from irony.routers.util.message import Message
+from app.models.contact_details import ContactDetails
+from app.routers.util.message import Message
 
 from . import whatsapp_common
 
