@@ -5,27 +5,28 @@ from fastapi.encoders import jsonable_encoder
 
 import requests
 
-from app import config
-from app.models.contact_details import ContactDetails
-from app.models.order import Order
-from app.models.order_status import OrderStatus, OrderStatusEnum
-from app.models.user import User
+from irony.config import config
+from irony.models.contact_details import ContactDetails
+from irony.models.order import Order
+from irony.models.order_status import OrderStatus, OrderStatusEnum
+from irony.models.user import User
+from irony.config.logger import logger
 
 from . import whatsapp_common
 
 from .message import Message
 
-from app.db import db
+from irony.db import db
 
 
 async def handle_message(message_details, contact_details: ContactDetails):
     buttons = config.BUTTONS
-    print(f"Smash message type interactive")
+    logger.info("message type interactive")
     interaction = message_details["interactive"]
     message_body = {}
     last_message_update = None
     if interaction["type"] == "button_reply":
-        print(f"Smash interaction type button_reply")
+        logger.info("interaction type button_reply")
         button_reply = interaction[interaction["type"]]
         if not button_reply.__eq__(buttons[button_reply["id"]]):
             raise Exception(
@@ -71,7 +72,7 @@ async def handle_message(message_details, contact_details: ContactDetails):
                 order_status.model_dump(exclude_defaults=True)
             )
 
-            print(order_doc, order_status_doc)
+            logger.info(order_doc, order_status_doc)
 
             message_doc = await db.messages.find_one(
                 {"message_key": "new_order_step_2"}
@@ -97,7 +98,7 @@ async def handle_message(message_details, contact_details: ContactDetails):
 
     # message_body["to"] = contact_details["wa_id"]
 
-    print(f"Smash, messages endpoint body : {message_body}")
+    logger.info("messages endpoint body : {message_body}")
     response = Message(message_body).send_message(contact_details["wa_id"])
     response_data = response.json()
 
@@ -110,4 +111,4 @@ async def handle_message(message_details, contact_details: ContactDetails):
             upsert=True,
         )
 
-    print(f"Smash, messages response : {response_data}")
+    logger.info("messages response : {response_data}")

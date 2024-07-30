@@ -1,6 +1,7 @@
 import traceback
-from irony.config import BUTTONS
+from irony.config.config import BUTTONS
 from irony.db import db
+from irony.config.logger import logger
 
 new_user_greeting_message = """
 {greeting} Welcome to Irony, your trusted clothing care partner(Dobbiwala).\nWe're thrilled you've reached out to us.\nWe provide a number of services like Ironing, Washing, Wash and Iron, Dry Clean.\nSit back, relax, and let us take care of your clothing needs with care and efficiency. 🧺✨
@@ -119,9 +120,9 @@ async def add_messages():
             },
         ]
         messages = await db.messages.insert_many(messages)
-        print(f"Messages inserted : {messages}")
+        logger.info(f"Messages inserted : {messages}")
     except Exception as e:
-        print(f"Error inserting messages {e}")
+        logger.info(f"Error inserting messages {e}")
         traceback.print_exc()
 
 

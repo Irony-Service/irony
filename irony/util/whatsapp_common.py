@@ -1,6 +1,6 @@
 import random
 
-from app import config
+from irony.config import config
 
 sample_interactive = {
     "messaging_product": "whatsapp",
@@ -9,10 +9,6 @@ sample_interactive = {
     "type": "interactive",
     "interactive": {},
 }
-
-
-def get_customer_type(contact_details):
-    return "new"
 
 
 def get_random_one_from_messages(message_doc):

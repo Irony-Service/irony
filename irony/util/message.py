@@ -1,7 +1,7 @@
 import json
 import requests
 
-from app import config
+from irony.config import config
 
 
 class Message:
@@ -61,7 +61,7 @@ class Message:
 
         # Check the response
         # if response.status_code == 200:
-        #     print('Request was successful')
-        #     print('Response:', response.json())
+        #     logger.info('Request was successful')
+        #     logger.info('Response:', response.json())
         # else:
-        #     print(f'Request failed with status code {response.status_code}')
+        #     logger.info(f'Request failed with status code {response.status_code}')

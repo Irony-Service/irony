@@ -1,9 +1,10 @@
 import traceback
 from typing import List
 from fastapi import APIRouter, Query, Request, Response
-from .. import config
+from ..config import config
+from irony.config.logger import logger
 
-from irony.routers.util import whatsapp_util
+from irony.services import whatsapp_service
 
 router = APIRouter()
 
@@ -15,18 +16,18 @@ from ..db import get_users, create_user
 async def whatsapp(request: Request):
     try:
         body = await request.json()
-        print(f"Smash, POST method(incoming messages and replies) triggered : {body}")
+        logger.info(f"POST method(incoming messages and replies) triggered : {body}")
         if body["entry"]:
             entries = body["entry"]
-            if whatsapp_util.is_ongoing_or_status_request(entries[0]):
+            if whatsapp_service.is_ongoing_or_status_request(entries[0]):
                 return Response(status_code=200)
             if len(entries) > 1:
-                print("RECEIVED MORE THAN 1 ENTRY")
+                logger.info("RECEIVED MORE THAN 1 ENTRY")
             else:
-                await whatsapp_util.handle_entry(entries[0])
+                await whatsapp_service.handle_entry(entries[0])
     except Exception as e:
-        print(f"Error occured in send whatsapp message : {e}")
-        traceback.print_exc()
+        logger.error(f"Error occured in send whatsapp message : {e}")
+        traceback.logger.info_exc()
     finally:
         if (
             entries[0]
@@ -43,7 +44,7 @@ async def whatsapp(request: Request):
 
 @router.get("/webhook", response_model=User)
 async def create_user(request: Request):
-    print(f"Smash, GET method(verify webhook) triggered : {request.query_params}")
+    logger.info(f"GET method(verify webhook) triggered : {request.query_params}")
     if (
         request.query_params["hub.mode"] == "subscribe"
         and request.query_params["hub.verify_token"] == "tysonitis"

@@ -5,29 +5,29 @@ import random
 import re
 
 import requests
-from app import config
+from irony.config import config
 import joblib
 
-from app.models.contact_details import ContactDetails
-from app.routers.util.message import Message
-
+from irony.models.contact_details import ContactDetails
+from irony.util.message import Message
+from irony.config.logger import logger
 from . import whatsapp_common
 
-from ...db import db
+from irony.db import db
 
 # make_prediction = joblib.load('message_classification_function.pkl')
 make_prediction = None
 
 
 def handle_message(message_details, contact_details: ContactDetails):
-    print(f"Smash message type text")
+    logger.info(f"message type text")
     message_body = None
     # user_message = str(message_details["text"]["body"])
     last_message = db.last_messages.find_one({"user": contact_details["wa_id"]})
-    print(f"Smash last message: {last_message}")
+    logger.info(f"last message: {last_message}")
     # pred = make_prediction([message])
-    # print("Smash prediction : ",pred)
-    # print("Smash prediction type : ", pred[0])
+    # logger.info("Smash prediction : ",pred)
+    # logger.info("Smash prediction type : ", pred[0])
     # prediction_type = pred[0]
     prediction_type = "start_convo"
 
@@ -38,10 +38,10 @@ def handle_message(message_details, contact_details: ContactDetails):
         message_body = start_convo(contact_details)
 
     if bool(message_body):
-        print(f"Smash, messages endpoint body : {message_body}")
+        logger.info(f"messages endpoint body : {message_body}")
         response = Message(message_body).send_message(contact_details["wa_id"])
         response_data = response.json()
-        print(f"Smash, messages response : {response_data}")
+        logger.info(f"messages response : {response_data}")
 
 
 def start_convo(contact_details: ContactDetails):

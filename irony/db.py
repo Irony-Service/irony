@@ -1,6 +1,6 @@
 from fastapi.encoders import jsonable_encoder
 from motor.motor_asyncio import AsyncIOMotorClient
-from . import config
+from .config import config
 
 from motor.core import AgnosticClient, AgnosticDatabase
 
