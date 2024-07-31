@@ -10,17 +10,12 @@ from irony.models.order import Order
 from irony.config.logger import logger
 
 
-def is_ongoing_or_status_request(entry):
+def is_ongoing_or_status_request(message):
     unique_id = None
     try:
-        unique_id = entry["changes"][0]["value"]["messages"][0]["id"]
+        unique_id = message["id"]
     except Exception:
-        try:
-            unique_id = entry["changes"][0]["value"]["statuses"][0]["id"]
-            if unique_id != None and len(unique_id) > 0:
-                return True
-        except:
-            raise Exception("Unable to read neither message id nor message status")
+        raise Exception("Unable to read message id from message object.")
 
     calls = config.CALLS
     if unique_id in calls and bool(calls[unique_id]):

@@ -15,10 +15,21 @@ from ..db import get_users, create_user
 @router.post("/webhook")
 async def whatsapp(request: Request):
     try:
-        body = await request.json()
-        logger.info(f"POST method(incoming messages and replies) triggered : {body}")
-        if body["entry"]:
-            entries = body["entry"]
+        payload = await request.json()
+        logger.info(f"Message Received : {payload}")
+
+        for entry in payload.get("entry", []):
+            for change in entry.get("changes", []):
+                value = change.get("value")
+                messages = value.get("messages", [])
+                for message in messages:
+                    if whatsapp_service.is_ongoing_or_status_request(message):
+                        return Response(status_code=200)
+                    else:
+                        await whatsapp_service.handle_entry(entries[0])
+
+        if payload["entry"]:
+            entries = payload["entry"]
             if whatsapp_service.is_ongoing_or_status_request(entries[0]):
                 return Response(status_code=200)
             if len(entries) > 1:
