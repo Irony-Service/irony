@@ -23,33 +23,35 @@ async def whatsapp(request: Request):
                 value = change.get("value")
                 messages = value.get("messages", [])
                 for message in messages:
-                    if whatsapp_service.is_ongoing_or_status_request(message):
-                        return Response(status_code=200)
-                    else:
-                        await whatsapp_service.handle_entry(entries[0])
+                    try:
+                        if whatsapp_service.is_ongoing_or_status_request(message):
+                            return Response(status_code=200)
+                        else:
+                            await whatsapp_service.handle_entry(entry)
+                    except Exception as e:
+                        logger.error(f"Error occured in send whatsapp message : {e}")
+                        traceback.logger.info_exc()
+                    finally:
+                        if (
+                            message
+                            .get("id", None)
+                            != None
+                        ):
+                            calls = config.CALLS
+                            calls[message.get("id")] = None
 
-        if payload["entry"]:
-            entries = payload["entry"]
-            if whatsapp_service.is_ongoing_or_status_request(entries[0]):
-                return Response(status_code=200)
-            if len(entries) > 1:
-                logger.info("RECEIVED MORE THAN 1 ENTRY")
-            else:
-                await whatsapp_service.handle_entry(entries[0])
+        # old method.
+        # if payload["entry"]:
+        #     entries = payload["entry"]
+        #     if whatsapp_service.is_ongoing_or_status_request(entries[0]):
+        #         return Response(status_code=200)
+        #     if len(entries) > 1:
+        #         logger.info("RECEIVED MORE THAN 1 ENTRY")
+        #     else:
+        #         await whatsapp_service.handle_entry(entries[0])
     except Exception as e:
         logger.error(f"Error occured in send whatsapp message : {e}")
         traceback.logger.info_exc()
-    finally:
-        if (
-            entries[0]
-            .get("changes", [{}])[0]
-            .get("value", {})
-            .get("messages", [{}])[0]
-            .get("id", None)
-            != None
-        ):
-            calls = config.CALLS
-            calls[entries[0]["changes"][0]["value"]["messages"][0]["id"]] = None
     return Response(status_code=200)
 
 
