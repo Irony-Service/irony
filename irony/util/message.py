@@ -1,6 +1,7 @@
+import json
 import requests
 
-from irony import config
+from irony.config import config
 
 
 class Message:
@@ -20,6 +21,7 @@ class Message:
     def __init__(
         self,
         body=None,
+        # type="interactive",
         url: str = config.WHATSAPP_CONFIG["message_url"],
         method: str = "POST",
         headers=default_headers,
@@ -34,19 +36,32 @@ class Message:
         self.method = method
         self.headers = headers
         self.body = body
+        # self.message = {
+        #     "messaging_product": "whatsapp",
+        #     "recipient_type": "individual",
+        #     "to": "<WHATSAPP_USER_PHONE_NUMBER>",
+        #     "type": f"{type}",
+        #     f"{type}": self.body,
+        # }
 
-    def send_message(self):
+    def send_message(self, to=None):
         # Implement your send_message logic here
         # Use the method name to make the HTTP request dynamically
+        if to is not None:
+            self.body["to"] = to
+
+        if self.body["to"] == None:
+            raise Exception(f"Please specify receipient(to) of message.")
+
         response = self._methods[self.method](
-            self.url, headers=self.headers, data=self.body
+            self.url, headers=self.headers, data=json.dumps(self.body)
         )
 
         return response
 
         # Check the response
         # if response.status_code == 200:
-        #     print('Request was successful')
-        #     print('Response:', response.json())
+        #     logger.info('Request was successful')
+        #     logger.info('Response:', response.json())
         # else:
-        #     print(f'Request failed with status code {response.status_code}')
+        #     logger.info(f'Request failed with status code {response.status_code}')

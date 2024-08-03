@@ -1,9 +1,11 @@
 from fastapi.encoders import jsonable_encoder
 from motor.motor_asyncio import AsyncIOMotorClient
-from . import config
+from .config import config
 
-client = AsyncIOMotorClient(config.DATABASE_CONNECTION)
-db = client["irony"]
+from motor.core import AgnosticClient, AgnosticDatabase
+
+client: AgnosticClient = AsyncIOMotorClient(config.DATABASE_CONNECTION)
+db: AgnosticDatabase = client["irony"]
 
 # Pydantic models
 from .models.user import User
