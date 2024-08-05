@@ -3,6 +3,7 @@ from enum import Enum
 from bson import ObjectId
 from pydantic import BaseModel
 
+
 class DeliveryAgent(BaseModel):
     id: ObjectId
     name: str
@@ -14,11 +15,13 @@ class DeliveryAgent(BaseModel):
     vehicle_number_plate: str
     rating: float
 
+
 class VehicleSubTypeEnum(int, Enum):
     TWO = 2
     THREE = 3
     FOUR = 4
-    
+
+
 class VehicleSubTypeEnum(str, Enum):
     SCOOTY = "SCOOTY"
     BIKE = "BIKE"

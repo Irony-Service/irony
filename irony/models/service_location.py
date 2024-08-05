@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from irony.models.service import Service
 
+
 class ServiceLocation(BaseModel):
     id: ObjectId
     name: str
@@ -17,6 +18,7 @@ class ServiceLocation(BaseModel):
     is_active: bool
     rating: float
 
+
 class LocationTypeEnum(str, Enum):
     OWN = "OWN"
-    OUTSOURCE = "OUTSOURCE" 
+    OUTSOURCE = "OUTSOURCE"
