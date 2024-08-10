@@ -12,6 +12,7 @@ class Location(BaseModel):
     _id: Optional[ObjectId] = None
     user: Optional[ObjectId] = None
     name: str = None
+    address: str = None
     location: list[tuple[str, str]] = None
     url: str = None
     last_used: Optional[datetime] = None

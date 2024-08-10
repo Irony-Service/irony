@@ -25,16 +25,20 @@ async def handle_message(message_details, contact_details: ContactDetails):
     interaction = message_details["interactive"]
     message_body = {}
     last_message_update = None
+    # Button reply for a quick reply message
     if interaction["type"] == "button_reply":
         logger.info("interaction type button_reply")
-        button_reply = interaction[interaction["type"]]
-        if not button_reply.__eq__(buttons[button_reply["id"]]):
+        button_reply_obj = interaction[interaction["type"]]
+
+        # raise exception if button is not present in our config.
+        if not button_reply_obj.__eq__(buttons[button_reply_obj["id"]]):
             raise Exception(
                 "Button configuration not mathcing. Dev : check config.py button linking"
             )
 
-        if button_reply["id"] == "MAKE_NEW_ORDER":
-            message_doc = await db.messages.find_one(
+        # If quick reply is make new order.
+        if button_reply_obj["id"] == "MAKE_NEW_ORDER":
+            message_doc = await db.message_config.find_one(
                 {"message_key": "new_order_step_1"}
             )
             message_body = message_doc["message"]
@@ -48,12 +52,13 @@ async def handle_message(message_details, contact_details: ContactDetails):
 
             last_message_update = {"type": "MAKE_NEW_ORDER"}
 
-        elif str(button_reply["id"]).startswith(config.CLOTHES_COUNT_KEY):
+        # if quick reply is for clothes count question
+        elif str(button_reply_obj["id"]).startswith(config.CLOTHES_COUNT_KEY):
             user: User = await db.user.find_one({"wa_id": contact_details["wa_id"]})
 
             order: Order = Order(
                 user_id=user["_id"],
-                count_range=button_reply["id"],
+                count_range=button_reply_obj["id"],
                 is_active=False,
                 created_on=datetime.now(),
             )
@@ -74,7 +79,7 @@ async def handle_message(message_details, contact_details: ContactDetails):
 
             logger.info(order_doc, order_status_doc)
 
-            message_doc = await db.messages.find_one(
+            message_doc = await db.message_config.find_one(
                 {"message_key": "new_order_step_2"}
             )
             message_body = message_doc["message"]
@@ -87,10 +92,6 @@ async def handle_message(message_details, contact_details: ContactDetails):
                 "type": config.CLOTHES_COUNT_KEY,
                 "order_id": order_doc.inserted_id,
             }
-        elif button_reply["id"] == "FETCH_FAILED_YES":
-            message_body = whatsapp_common.handle_failed_basic_stocks_reply(
-                contact_details
-            )
         else:
             raise Exception(
                 "Button configuration not mathcing. Dev : check config.py button linking"
@@ -103,6 +104,7 @@ async def handle_message(message_details, contact_details: ContactDetails):
     response_data = response.json()
 
     if last_message_update != None:
+        last_message_update["user"] = contact_details["wa_id"]
         if "messages" in response_data and "id" in response_data["messages"][0]:
             last_message_update["last_sent_msg_id"] = response_data["messages"][0]["id"]
         await db.last_message.update_one(

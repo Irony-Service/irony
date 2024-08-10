@@ -119,7 +119,7 @@ async def add_messages():
                 },
             },
         ]
-        messages = await db.messages.insert_many(messages)
+        messages = await db.message_config.insert_many(messages)
         logger.info(f"Messages inserted : {messages}")
     except Exception as e:
         logger.info(f"Error inserting messages {e}")

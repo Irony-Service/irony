@@ -47,7 +47,7 @@ def handle_message(message_details, contact_details: ContactDetails):
 def start_convo(contact_details: ContactDetails):
     # Check customer type and return message object
     buttons = config.BUTTONS
-    customer_type = whatsapp_common.get_customer_type(contact_details)
+    # customer_type = whatsapp_common.get_customer_type(contact_details)
 
     buttons = [
         {"type": "reply", "reply": config.BUTTONS[key]}

@@ -30,13 +30,9 @@ async def whatsapp(request: Request):
                             await whatsapp_service.handle_entry(entry)
                     except Exception as e:
                         logger.error(f"Error occured in send whatsapp message : {e}")
-                        traceback.logger.info_exc()
+                        traceback.print_exc()
                     finally:
-                        if (
-                            message
-                            .get("id", None)
-                            != None
-                        ):
+                        if message.get("id", None) != None:
                             calls = config.CALLS
                             calls[message.get("id")] = None
 
@@ -51,7 +47,7 @@ async def whatsapp(request: Request):
         #         await whatsapp_service.handle_entry(entries[0])
     except Exception as e:
         logger.error(f"Error occured in send whatsapp message : {e}")
-        traceback.logger.info_exc()
+        traceback.print_exc()
     return Response(status_code=200)
 
 
