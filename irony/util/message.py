@@ -2,6 +2,8 @@ import json
 import requests
 
 from irony.config import config
+from irony.config.logger import logger
+from irony.db import db
 
 
 class Message:
@@ -65,3 +67,32 @@ class Message:
         #     logger.info('Response:', response.json())
         # else:
         #     logger.info(f'Request failed with status code {response.status_code}')
+
+    async def send_message(self, to=None, last_message_update=None):
+        # Implement your send_message logic here
+        # Use the method name to make the HTTP request dynamically
+        if to is not None:
+            self.body["to"] = to
+
+        if self.body["to"] == None:
+            raise Exception(f"Please specify receipient(to) of message.")
+
+        response = self._methods[self.method](
+            self.url, headers=self.headers, data=json.dumps(self.body)
+        )
+        response_data = response.json()
+        logger.info(f"Sent message response : {response_data}")
+
+        if last_message_update != None:
+            last_message_update["user"] = to
+            if "messages" in response_data and "id" in response_data["messages"][0]:
+                last_message_update["last_sent_msg_id"] = response_data["messages"][0][
+                    "id"
+                ]
+            await db.last_message.update_one(
+                {"user": to},
+                {"$set": last_message_update},
+                upsert=True,
+            )
+
+        return response

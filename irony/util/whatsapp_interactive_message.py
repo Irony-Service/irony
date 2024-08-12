@@ -46,15 +46,12 @@ async def handle_message(message_details, contact_details: ContactDetails):
                 message_doc
             )
             message_body["interactive"]["body"]["text"] = message_text
-            # message_body["interactive"]["body"]["text"] = message_text.replace(
-            #     "{greeting}", f"Hey {contact_details['name']} 👋 "
-            # )
 
             last_message_update = {"type": "MAKE_NEW_ORDER"}
 
         # if quick reply is for clothes count question
         elif str(button_reply_obj["id"]).startswith(config.CLOTHES_COUNT_KEY):
-            user: User = await db.user.find_one({"wa_id": contact_details["wa_id"]})
+            user: User = await db.user.find_one({"wa_id": contact_details.wa_id})
 
             order: Order = Order(
                 user_id=user["_id"],
@@ -77,10 +74,10 @@ async def handle_message(message_details, contact_details: ContactDetails):
                 order_status.model_dump(exclude_defaults=True)
             )
 
-            logger.info(order_doc, order_status_doc)
+            # logger.info(order_doc, order_status_doc)
 
             message_doc = await db.message_config.find_one(
-                {"message_key": "new_order_step_2"}
+                {"message_key": "services_message"}
             )
             message_body = message_doc["message"]
             message_text: str = whatsapp_common.get_random_one_from_messages(
@@ -97,20 +94,7 @@ async def handle_message(message_details, contact_details: ContactDetails):
                 "Button configuration not mathcing. Dev : check config.py button linking"
             )
 
-    # message_body["to"] = contact_details["wa_id"]
+    # message_body["to"] = contact_details.wa_id
 
-    logger.info("messages endpoint body : {message_body}")
-    response = Message(message_body).send_message(contact_details["wa_id"])
-    response_data = response.json()
-
-    if last_message_update != None:
-        last_message_update["user"] = contact_details["wa_id"]
-        if "messages" in response_data and "id" in response_data["messages"][0]:
-            last_message_update["last_sent_msg_id"] = response_data["messages"][0]["id"]
-        await db.last_message.update_one(
-            {"user": contact_details["wa_id"]},
-            {"$set": last_message_update},
-            upsert=True,
-        )
-
-    logger.info("messages response : {response_data}")
+    logger.info(f"messages endpoint body : {message_body}")
+    await Message(message_body).send_message(contact_details.wa_id, last_message_update)

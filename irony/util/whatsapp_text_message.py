@@ -19,11 +19,11 @@ from irony.db import db
 make_prediction = None
 
 
-def handle_message(message_details, contact_details: ContactDetails):
+async def handle_message(message_details, contact_details: ContactDetails):
     logger.info(f"message type text")
     message_body = None
     # user_message = str(message_details["text"]["body"])
-    last_message = db.last_messages.find_one({"user": contact_details["wa_id"]})
+    last_message = await db.last_messages.find_one({"user": contact_details.wa_id})
     logger.info(f"last message: {last_message}")
     # pred = make_prediction([message])
     # logger.info("Smash prediction : ",pred)
@@ -39,9 +39,12 @@ def handle_message(message_details, contact_details: ContactDetails):
 
     if bool(message_body):
         logger.info(f"messages endpoint body : {message_body}")
-        response = Message(message_body).send_message(contact_details["wa_id"])
-        response_data = response.json()
-        logger.info(f"messages response : {response_data}")
+        await Message(message_body).send_message(
+            contact_details.wa_id,
+            {
+                "type": "start_convo",
+            },
+        )
 
 
 def start_convo(contact_details: ContactDetails):
@@ -58,7 +61,7 @@ def start_convo(contact_details: ContactDetails):
         "type": "button",
         "header": {"type": "text", "text": "Irony"},  # optional  # end header
         "body": {
-            "text": f"{'Hi' if random.randint(1,2) == 1 else 'Hello'} {contact_details['name']}.\nWelcome to Irony. We are a low cost laundry services provider.\n We provide a number of services like Ironing, Washing, Wash and Iron, Dry Clean.\n"
+            "text": f"{'Hi' if random.randint(1,2) == 1 else 'Hello'} {contact_details.name}.\nWelcome to Irony. We are a low cost laundry services provider.\n We provide a number of services like Ironing, Washing, Wash and Iron, Dry Clean.\n"
         },
         "footer": {"text": "Please select an option from below"},  # optional
         "action": {"buttons": buttons},  # end action

@@ -1,1 +1,2 @@
 ssh -R 80:localhost:8000 serveo.net
+c:/Users/shiva/Documents/sai/code/irony/.venv/Scripts/python.exe -m scripts.messages
