@@ -40,7 +40,7 @@ async def handle_entry(entry):
             if "type" in message_details:
                 if message_details["type"] == "text":
                     logger.info("text message received")
-                    whatsapp_text_message.handle_message(
+                    await whatsapp_text_message.handle_message(
                         message_details, contact_details
                     )
                 elif message_details["type"] == "interactive":
@@ -58,7 +58,7 @@ async def handle_entry(entry):
                     if user is None:
                         raise Exception("User not found.")
                     last_message: Any = await db.last_message.find_one(
-                        {"user": contact_details["wa_id"]}
+                        {"user": contact_details.wa_id}
                     )
                     if (
                         last_message["last_sent_msg_id"]
@@ -71,7 +71,7 @@ async def handle_entry(entry):
                         {"_id": last_message["order_id"]}
                     )
                     location: Location = Location(
-                        user=contact_details["wa_id"],
+                        user=contact_details.wa_id,
                         location=[(coords["latitude"], coords["longitude"])],
                         last_used=datetime.now(),
                     )
@@ -90,5 +90,13 @@ async def handle_entry(entry):
 
 
 def get_contact_details(contact) -> ContactDetails:
-    contact_details = {"name": contact["profile"]["name"], "wa_id": contact["wa_id"]}
+    if contact is None:
+        raise Exception("Contact object is None")
+    # raise exception if wa_id is not in contact object.
+    if "wa_id" not in contact:
+        raise Exception("wa_id not found in contact object")
+    contact_details = {
+        "name": contact.get("profile", {}).get("name"),
+        "wa_id": contact.get("wa_id"),
+    }
     return ContactDetails(**contact_details)
