@@ -4,6 +4,10 @@ from bson import ObjectId
 from pydantic import BaseModel
 
 
+class ModelConfig:
+    arbitrary_types_allowed = True
+
+
 class Service(BaseModel):
     id: ObjectId
     service_location_id: ObjectId
@@ -15,6 +19,9 @@ class Service(BaseModel):
     workforce: float
     is_active: bool
     referral_discount: float
+
+    class Config(ModelConfig):
+        pass
 
 
 class CategoryEnum(str, Enum):
