@@ -4,6 +4,7 @@ import os
 import random
 import re
 
+from fastapi import Response
 import requests
 from irony.config import config
 import joblib
@@ -32,6 +33,16 @@ async def handle_message(message_details, contact_details: ContactDetails):
     prediction_type = "start_convo"
 
     if prediction_type == "start_convo":
+        # Create new user if does not exist
+        user = await db.user.find_one({"wa_id": contact_details.wa_id})
+        if user is None:
+            await db.user.insert_one(
+                {
+                    "wa_id": contact_details.wa_id,
+                    "name": contact_details.name,
+                    "created_at": datetime.now(),
+                }
+            )
         message_body = start_convo(contact_details)
     else:
         # start convo
@@ -45,6 +56,8 @@ async def handle_message(message_details, contact_details: ContactDetails):
                 "type": "start_convo",
             },
         )
+
+    return Response(status_code=200)
 
 
 def start_convo(contact_details: ContactDetails):

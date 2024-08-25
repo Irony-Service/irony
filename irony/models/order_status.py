@@ -3,9 +3,7 @@ from enum import Enum
 from bson import ObjectId
 from pydantic import BaseModel
 
-
-class ModelConfig:
-    arbitrary_types_allowed = True
+from irony.models.common_model import ModelConfig
 
 
 class OrderStatus(BaseModel):
@@ -20,7 +18,9 @@ class OrderStatus(BaseModel):
 
 
 class OrderStatusEnum(str, Enum):
+    SERVICE_PENDING = "SERVICE_PENDING"
     LOCATION_PENDING = "LOCATION_PENDING"
+    TIME_SLOT_PENDING = "TIME_SLOT_PENDING"
     PICKUP_PENDING = "PICKUP_PENDING"
     PICKUP_USER_NO_RESP = "PICKUP_USER_NO_RESP"
     PICKUP_USER_REJECTED = "PICKUP_USER_REJECTED"

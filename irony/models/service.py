@@ -1,18 +1,27 @@
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 from bson import ObjectId
 from pydantic import BaseModel
 
-
-class ModelConfig:
-    arbitrary_types_allowed = True
+from irony.models.common_model import ModelConfig
 
 
 class Service(BaseModel):
+    _id: Optional[ObjectId]
+    service_category: str
+    service_type: str
+    service_name: str
+    call_to_action_key: str
+
+    class Config(ModelConfig):
+        pass
+
+
+class ServiceEntry(BaseModel):
     id: ObjectId
     service_location_id: ObjectId
-    category: str
-    service: str
+    service_id: ObjectId
     rate: float
     discount: float
     daily_piece_limit: float

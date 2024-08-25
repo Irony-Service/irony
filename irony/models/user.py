@@ -2,12 +2,10 @@ from datetime import datetime
 from enum import Enum
 from bson import ObjectId
 from pydantic import BaseModel, Field
+
+from irony.models.common_model import ModelConfig
 from .pyObjectId import PyObjectId
 from typing import Optional
-
-
-class ModelConfig:
-    arbitrary_types_allowed = True
 
 
 class User(BaseModel):

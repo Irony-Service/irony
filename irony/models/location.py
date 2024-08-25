@@ -3,9 +3,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 
-
-class ModelConfig:
-    arbitrary_types_allowed = True
+from irony.models.common_model import ModelConfig
 
 
 class Location(BaseModel):
@@ -20,6 +18,7 @@ class UserLocation(BaseModel):
     address: str = None
     location: Location = None
     url: str = None
+    created_on: Optional[datetime] = None
     last_used: Optional[datetime] = None
 
     class Config(ModelConfig):

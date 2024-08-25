@@ -2,9 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from bson import ObjectId
 
-
-class ModelConfig:
-    arbitrary_types_allowed = True
+from irony.models.common_model import ModelConfig
 
 
 class OrderRequest(BaseModel):
