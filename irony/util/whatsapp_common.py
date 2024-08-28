@@ -1,10 +1,13 @@
+from datetime import datetime
 import random
 from typing import Dict
 
+from irony import db
 from irony.config import config
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
 from irony.models.message import MessageType
+from irony.models.order_status import OrderStatus, OrderStatusEnum
 from irony.util.message import Message
 
 sample_interactive = {
@@ -75,3 +78,35 @@ def get_contact_details(contact) -> ContactDetails:
         "wa_id": contact.get("wa_id"),
     }
     return ContactDetails(**contact_details)
+
+
+async def update_order_status(order_id, status: OrderStatusEnum):
+    order_status = OrderStatus(
+        order_id=order_id,
+        status=status.value,
+        created_on=datetime.now(),
+    )
+
+    return await db.order_status.insert_one(
+        order_status.model_dump(exclude_defaults=True)
+    )
+
+
+async def get_reply_message(message_key, call_to_action_key, message_type):
+    message_doc = await db.message_config.find_one({"message_key": message_key})
+    message_body = message_doc["message"]
+    message_text: str = get_random_one_from_messages(message_doc)
+    message_body["interactive"]["body"]["text"] = message_text
+    if message_type == "reply":
+        call_to_actions = [
+            value for key, value in config.BUTTONS.items() if call_to_action_key in key
+        ]
+        message_body["interactive"]["action"]["sections"]["rows"] = call_to_actions
+    else:
+        call_to_actions = [
+            {"type": "reply", "reply": value}
+            for key, value in config.BUTTONS.items()
+            if call_to_action_key in key
+        ]
+        message_body["interactive"]["action"]["buttons"] = call_to_actions
+    return message_body
