@@ -29,14 +29,14 @@ from irony.db import db
 async def handle_message(message, contact_details: ContactDetails):
     logger.info("message type interactive")
     interaction = message["interactive"]
-    
+
     # Button reply for a quick reply message
     if interaction["type"] == "button_reply":
         context = message.get("context", {}).get("id", None)
         await handle_button_reply(contact_details, interaction, context)
     return Response(status_code=200)
-        
-        
+
+
 # Handle button reply for quick reply message
 async def handle_button_reply(contact_details, interaction, context):
     logger.info("Interaction type : button_reply")
@@ -56,42 +56,42 @@ async def handle_button_reply(contact_details, interaction, context):
     elif str(button_reply_id).startswith(config.CLOTHES_COUNT_KEY):
         await set_new_order_clothes_count(contact_details, context, button_reply)
     elif str(button_reply_id).startswith(config.SERVICE_ID_KEY):
-        await set_new_order_service(contact_details, context, button_reply);
+        await set_new_order_service(contact_details, context, button_reply)
     elif str(button_reply_id).startswith(config.TIME_SLOT_ID_KEY):
         await set_new_order_time_slot(contact_details, context, button_reply)
         pass
     else:
-        logger.error("Button configuration not mathcing. Dev : check config.py button linking")
-        raise WhatsappException("Button configuration not mathcing. Dev : check config.py button linking", error_code=config.ERROR_CODES["INTERNAL_SERVER_ERROR"])
+        logger.error(
+            "Button configuration not mathcing. Dev : check config.py button linking"
+        )
+        raise WhatsappException(
+            "Button configuration not mathcing. Dev : check config.py button linking",
+            error_code=config.ERROR_CODES["INTERNAL_SERVER_ERROR"],
+        )
+
 
 # Set new order time slot message reply
 async def set_new_order_time_slot(contact_details, context, button_reply_obj):
     message_body = {}
     last_message_update = None
-    
-    last_message = await verify_context_id(contact_details, context)
+
+    last_message = await whatsapp_common.verify_context_id(contact_details, context)
 
     # user: User = await db.user.find_one({"wa_id": contact_details.wa_id})
-    order_doc : Order = await db.order.find_one_and_update({"_id": last_message["order_id"]}, {"$set": {"time_slot": button_reply_obj["id"]}}, return_document=True)
+    order_doc: Order = await db.order.find_one_and_update(
+        {"_id": last_message["order_id"]},
+        {"$set": {"time_slot": button_reply_obj["id"]}},
+        return_document=True,
+    )
     order = Order(**order_doc)
 
-    order_status = OrderStatus(
-                order_id=order_doc._id,
-                status=OrderStatusEnum.PICKUP_PENDING,
-                created_on=datetime.now(),
-            )
+    await whatsapp_common.update_order_status(
+        order_doc._id, OrderStatusEnum.PICKUP_PENDING
+    )
 
-    order_status_doc = await db.order_status.insert_one(
-                order_status.model_dump(exclude_defaults=True)
-            )
-
-            # logger.info(order_doc, order_status_doc)
-            
-    message_doc = await db.message_config.find_one({"message_key": "new_order_pending"})
-
-    message_body = message_doc["message"]
-    message_text: str = whatsapp_common.get_random_one_from_messages(message_doc)
-    message_body["interactive"]["body"]["text"] = message_text
+    message_body = await whatsapp_common.get_reply_message(
+        message_key="new_order_pending"
+    )
 
     last_message_update = {
         "type": config.CLOTHES_COUNT_KEY,
@@ -102,137 +102,103 @@ async def set_new_order_time_slot(contact_details, context, button_reply_obj):
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
 
     await background_process.find_ironman(order)
-    
+
+
 # Set new order service message reply
 async def set_new_order_service(contact_details, context, button_reply_obj):
     message_body = {}
     last_message_update = None
-    
-    last_message = await verify_context_id(contact_details, context)
+
+    last_message = await whatsapp_common.verify_context_id(contact_details, context)
 
     # user: User = await db.user.find_one({"wa_id": contact_details.wa_id})
-    
+
     selected_service = config.DB_CACHE["services"][button_reply_obj["id"]]
     selected_service = Service(**selected_service)
-    
-    order_doc : Order = await db.order.find_one_and_update({"_id": last_message["order_id"]}, {"$set": {"services": [selected_service]}}, return_document=True)
+
+    order_doc: Order = await db.order.find_one_and_update(
+        {"_id": last_message["order_id"]},
+        {"$set": {"services": [selected_service]}},
+        return_document=True,
+    )
     order_doc = Order(**order_doc)
 
-    order_status = OrderStatus(
-                order_id=order_doc._id,
-                status=OrderStatusEnum.LOCATION_PENDING,
-                created_on=datetime.now(),
-            )
+    await whatsapp_common.update_order_status(
+        order_doc._id, OrderStatusEnum.LOCATION_PENDING
+    )
 
-    order_status_doc = await db.order_status.insert_one(
-                order_status.model_dump(exclude_defaults=True)
-            )
-
-            # logger.info(order_doc, order_status_doc)
-
-    message_doc = await db.message_config.find_one(
-                {"message_key": "ASK_LOCATION"}
-            )
-    message_body = message_doc["message"]
-    message_text: str = whatsapp_common.get_random_one_from_messages(
-                message_doc
-            )
-    message_body["interactive"]["body"]["text"] = message_text
+    message_body = await whatsapp_common.get_reply_message(message_key="ASK_LOCATION")
 
     last_message_update = {
-                "type": config.SERVICE_ID_KEY,
-                "order_id": order_doc.inserted_id
-            }
-            
+        "type": config.SERVICE_ID_KEY,
+        "order_id": order_doc.inserted_id,
+    }
+
     logger.info(f"messages endpoint body : {message_body}")
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
-    
+
 
 # Set new order clothes count message reply
 async def set_new_order_clothes_count(contact_details, context, button_reply_obj):
     message_body = {}
     last_message_update = None
-    
-    await verify_context_id(contact_details, context)
+
+    await whatsapp_common.verify_context_id(contact_details, context)
 
     user: User = await db.user.find_one({"wa_id": contact_details.wa_id})
 
     order: Order = Order(
-                user_id=user["_id"],
-                count_range=button_reply_obj["id"],
-                is_active=False,
-                created_on=datetime.now(),
-            )
+        user_id=user["_id"],
+        count_range=button_reply_obj["id"],
+        is_active=False,
+        created_on=datetime.now(),
+    )
 
-    order_doc = await db.order.insert_one(
-                order.model_dump(exclude_defaults=True)
-            )
+    order_doc = await db.order.insert_one(order.model_dump(exclude_defaults=True))
 
-    await whatsapp_common.update_order_status(order_doc, OrderStatusEnum.SERVICE_PENDING)
+    await whatsapp_common.update_order_status(
+        order_doc, OrderStatusEnum.SERVICE_PENDING
+    )
 
-            # logger.info(order_doc, order_status_doc)
+    # logger.info(order_doc, order_status_doc)
 
-    message_body = await whatsapp_common.get_reply_message(message_key="services_message", call_to_action_key=config.SERVICE_ID_KEY, message_type="reply")
+    message_body = await whatsapp_common.get_reply_message(
+        message_key="services_message",
+        call_to_action_key=config.SERVICE_ID_KEY,
+        message_type="reply",
+    )
 
     last_message_update = {
-                "type": config.CLOTHES_COUNT_KEY,
-                "order_id": order_doc.inserted_id,
-            }
-            
+        "type": config.CLOTHES_COUNT_KEY,
+        "order_id": order_doc.inserted_id,
+    }
+
     logger.info(f"messages endpoint body : {message_body}")
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
 
+
 # Start new order message reply
 async def start_new_order(contact_details):
-    message_body = {}
     last_message_update = None
-    
-    message_doc = await db.message_config.find_one(
-                {"message_key": "new_order_step_1"}
-            )
-        
-    call_to_actions = [{"type": "reply","reply": value} for key,value in config.BUTTONS.items() if config.CLOTHES_COUNT_KEY in key]
-    
-    message_body = message_doc["message"]
-    message_text: str = whatsapp_common.get_random_one_from_messages(
-                message_doc
-            )
-    message_body["interactive"]["body"]["text"] = message_text
-    message_body["interactive"]["action"]["buttons"] = call_to_actions
+
+    message_body = await whatsapp_common.get_reply_message(
+        message_key="new_order_step_1",
+        call_to_action_key=config.CLOTHES_COUNT_KEY,
+        message_type="reply",
+    )
+
     last_message_update = {"type": "MAKE_NEW_ORDER"}
 
     logger.info(f"messages endpoint body : {message_body}")
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
 
 
-    
-
-
-async def verify_context_id(contact_details, context):
-    if context is None:
-        raise WhatsappException("Context is None.", error_code=config.ERROR_CODES["INTERNAL_SERVER_ERROR"])
-
-    last_message = await db.last_message.find_one({"user": contact_details.wa_id})
-
-    if last_message["last_sent_msg_id"] != context:
-        logger.info(
-            f"Context id is not matching with last message id. Last message : {last_message["last_sent_msg_id"]}, User reply context : {context}"
-        )
-        raise WhatsappException("Context id is not matching with last message id.", reply_message="Looks like you are replying to some old message. Please reply to the latest message or start a fresh conversation by sending 'Hi'.")
-    
-    return last_message
-
-
 async def handle_location_message(message_details, contact_details):
-    last_message = await verify_context_id(
+    last_message = await whatsapp_common.verify_context_id(
         contact_details, message_details.get("context", {}).get("id", None)
     )
     coords = message_details["location"]
-    
-    user: Optional[User] = await db.user.find_one({"wa_id": contact_details.wa_id})
-    if user is None:
-        raise WhatsappException("User not found.", error_code=config.ERROR_CODES["INTERNAL_SERVER_ERROR"])
-    
+
     # last_message: Any = await db.last_message.find_one({"user": contact_details.wa_id})
     # if last_message["last_sent_msg_id"] != message_details["context"]["id"]:
     #     # return some error kind message because the location reply he has sent might be for other order.
@@ -253,39 +219,34 @@ async def handle_location_message(message_details, contact_details):
     )
 
     order["location_id"] = location_doc.inserted_id
-    
-    order_status = OrderStatus(
-                order_id=order._id,
-                status=OrderStatusEnum.TIME_SLOT_PENDING,
-                created_on=datetime.now(),
-            )
 
-    order_status_doc = await db.order_status.insert_one(
-                order_status.model_dump(exclude_defaults=True))
+    await whatsapp_common.update_order_status(
+        order._id, OrderStatusEnum.SERVICE_PENDING
+    )
 
     updated_order = await db.order.update_one({"_id": order["_id"]}, {"$set": order})
     if updated_order.modified_count == 0:
         # TODO : send location interactive message again.
-        raise WhatsappException(message="Unable to update location for your order.", reply_message="Unable to update location for your order. Please try again.")
+        raise WhatsappException(
+            message="Unable to update location for your order.",
+            reply_message="Unable to update location for your order. Please try again.",
+        )
 
     # TODO : send time slot message to user.
-    # TODO : add time slot action options to call_to_action 
-    message_doc = await db.message_config.find_one({"message_key": "time_slot_message"})
-    
-    call_to_actions = [value for key,value in config.BUTTONS.items() if config.TIME_SLOT_ID_KEY in key]
-    
-    message_body = message_doc["message"]
-    message_text: str = whatsapp_common.get_random_one_from_messages(message_doc)
-    message_body["interactive"]["body"]["text"] = message_text
-    message_body["interactive"]["action"]["sections"]["rows"] = call_to_actions
-    
+    # TODO : add time slot action options to call_to_action
+    message_body = await whatsapp_common.get_reply_message(
+        message_key="time_slot_message",
+        call_to_action_key=config.TIME_SLOT_ID_KEY,
+        message_type="radio",
+    )
+
     last_message_update = {
         "type": "LOCATION",
         "order_id": order["_id"],
     }
-    
+
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
-    
+
     # message_doc = await db.message_config.find_one({"message_key": "new_order_pending"})
 
     # message_body = message_doc["message"]

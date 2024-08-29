@@ -92,21 +92,35 @@ async def update_order_status(order_id, status: OrderStatusEnum):
     )
 
 
-async def get_reply_message(message_key, call_to_action_key, message_type):
+async def get_reply_message(message_key, call_to_action_key=None, message_type=None):
     message_doc = await db.message_config.find_one({"message_key": message_key})
     message_body = message_doc["message"]
     message_text: str = get_random_one_from_messages(message_doc)
     message_body["interactive"]["body"]["text"] = message_text
     if message_type == "reply":
         call_to_actions = [
-            value for key, value in config.BUTTONS.items() if call_to_action_key in key
-        ]
-        message_body["interactive"]["action"]["sections"]["rows"] = call_to_actions
-    else:
-        call_to_actions = [
             {"type": "reply", "reply": value}
             for key, value in config.BUTTONS.items()
             if call_to_action_key in key
         ]
         message_body["interactive"]["action"]["buttons"] = call_to_actions
+    elif message_type == "radio":
+        call_to_actions = [
+            value for key, value in config.BUTTONS.items() if call_to_action_key in key
+        ]
+        message_body["interactive"]["action"]["sections"]["rows"] = call_to_actions
     return message_body
+
+async def verify_context_id(contact_details, context):
+    if context is None:
+        raise WhatsappException("Context is None.", error_code=config.ERROR_CODES["INTERNAL_SERVER_ERROR"])
+
+    last_message = await db.last_message.find_one({"user": contact_details.wa_id})
+
+    if last_message["last_sent_msg_id"] != context:
+        logger.info(
+            f"Context id is not matching with last message id. Last message : {last_message["last_sent_msg_id"]}, User reply context : {context}"
+        )
+        raise WhatsappException("Context id is not matching with last message id.", reply_message="Looks like you are replying to some old message. Please reply to the latest message or start a fresh conversation by sending 'Hi'.")
+    
+    return last_message
