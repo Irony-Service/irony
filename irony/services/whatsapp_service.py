@@ -41,7 +41,7 @@ async def handle_entry(message, contact_details):
             await whatsapp_interactive_message.handle_message(message, contact_details)
         elif message_type == "location":
             logger.info("location message received")
-            await whatsapp_interactive_message.handle_location_message(
+            await whatsapp_interactive_message.set_new_order_location(
                 message, contact_details
             )
     except WhatsappException as e:

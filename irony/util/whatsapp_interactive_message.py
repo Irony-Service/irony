@@ -70,69 +70,17 @@ async def handle_button_reply(contact_details, interaction, context):
         )
 
 
-# Set new order time slot message reply
-async def set_new_order_time_slot(contact_details, context, button_reply_obj):
-    message_body = {}
+# Start new order message reply
+async def start_new_order(contact_details):
     last_message_update = None
-
-    last_message = await whatsapp_common.verify_context_id(contact_details, context)
-
-    # user: User = await db.user.find_one({"wa_id": contact_details.wa_id})
-    order_doc: Order = await db.order.find_one_and_update(
-        {"_id": last_message["order_id"]},
-        {"$set": {"time_slot": button_reply_obj["id"]}},
-        return_document=True,
-    )
-    order = Order(**order_doc)
-
-    await whatsapp_common.update_order_status(
-        order_doc._id, OrderStatusEnum.PICKUP_PENDING
-    )
 
     message_body = await whatsapp_common.get_reply_message(
-        message_key="new_order_pending"
+        message_key="new_order_step_1",
+        call_to_action_key=config.CLOTHES_COUNT_KEY,
+        message_type="reply",
     )
 
-    last_message_update = {
-        "type": config.CLOTHES_COUNT_KEY,
-        "order_id": order._id,
-    }
-
-    logger.info(f"messages endpoint body : {message_body}")
-    await Message(message_body).send_message(contact_details.wa_id, last_message_update)
-
-    await background_process.find_ironman(order)
-
-
-# Set new order service message reply
-async def set_new_order_service(contact_details, context, button_reply_obj):
-    message_body = {}
-    last_message_update = None
-
-    last_message = await whatsapp_common.verify_context_id(contact_details, context)
-
-    # user: User = await db.user.find_one({"wa_id": contact_details.wa_id})
-
-    selected_service = config.DB_CACHE["services"][button_reply_obj["id"]]
-    selected_service = Service(**selected_service)
-
-    order_doc: Order = await db.order.find_one_and_update(
-        {"_id": last_message["order_id"]},
-        {"$set": {"services": [selected_service]}},
-        return_document=True,
-    )
-    order_doc = Order(**order_doc)
-
-    await whatsapp_common.update_order_status(
-        order_doc._id, OrderStatusEnum.LOCATION_PENDING
-    )
-
-    message_body = await whatsapp_common.get_reply_message(message_key="ASK_LOCATION")
-
-    last_message_update = {
-        "type": config.SERVICE_ID_KEY,
-        "order_id": order_doc.inserted_id,
-    }
+    last_message_update = {"type": "MAKE_NEW_ORDER"}
 
     logger.info(f"messages endpoint body : {message_body}")
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
@@ -177,23 +125,41 @@ async def set_new_order_clothes_count(contact_details, context, button_reply_obj
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
 
 
-# Start new order message reply
-async def start_new_order(contact_details):
+# Set new order service message reply
+async def set_new_order_service(contact_details, context, button_reply_obj):
+    message_body = {}
     last_message_update = None
 
-    message_body = await whatsapp_common.get_reply_message(
-        message_key="new_order_step_1",
-        call_to_action_key=config.CLOTHES_COUNT_KEY,
-        message_type="reply",
+    last_message = await whatsapp_common.verify_context_id(contact_details, context)
+
+    # user: User = await db.user.find_one({"wa_id": contact_details.wa_id})
+
+    selected_service = config.DB_CACHE["services"][button_reply_obj["id"]]
+    selected_service = Service(**selected_service)
+
+    order_doc: Order = await db.order.find_one_and_update(
+        {"_id": last_message["order_id"]},
+        {"$set": {"services": [selected_service]}},
+        return_document=True,
+    )
+    order_doc = Order(**order_doc)
+
+    await whatsapp_common.update_order_status(
+        order_doc._id, OrderStatusEnum.LOCATION_PENDING
     )
 
-    last_message_update = {"type": "MAKE_NEW_ORDER"}
+    message_body = await whatsapp_common.get_reply_message(message_key="ASK_LOCATION")
+
+    last_message_update = {
+        "type": config.SERVICE_ID_KEY,
+        "order_id": order_doc.inserted_id,
+    }
 
     logger.info(f"messages endpoint body : {message_body}")
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
 
 
-async def handle_location_message(message_details, contact_details):
+async def set_new_order_location(message_details, contact_details):
     last_message = await whatsapp_common.verify_context_id(
         contact_details, message_details.get("context", {}).get("id", None)
     )
@@ -270,3 +236,37 @@ async def handle_location_message(message_details, contact_details):
     # Think about what type of application you'll be using. Whether you will use whatsapp messaging only or seperate app for ironman.
 
     # ironman can specify the location point from where he wants to pickup the order. like a point where 1km around it he wants to accept instead of just from his shop.
+
+
+# Set new order time slot message reply
+async def set_new_order_time_slot(contact_details, context, button_reply_obj):
+    message_body = {}
+    last_message_update = None
+
+    last_message = await whatsapp_common.verify_context_id(contact_details, context)
+
+    # user: User = await db.user.find_one({"wa_id": contact_details.wa_id})
+    order_doc: Order = await db.order.find_one_and_update(
+        {"_id": last_message["order_id"]},
+        {"$set": {"time_slot": button_reply_obj["id"]}},
+        return_document=True,
+    )
+    order = Order(**order_doc)
+
+    await whatsapp_common.update_order_status(
+        order_doc._id, OrderStatusEnum.PICKUP_PENDING
+    )
+
+    message_body = await whatsapp_common.get_reply_message(
+        message_key="new_order_pending"
+    )
+
+    last_message_update = {
+        "type": config.CLOTHES_COUNT_KEY,
+        "order_id": order._id,
+    }
+
+    logger.info(f"messages endpoint body : {message_body}")
+    await Message(message_body).send_message(contact_details.wa_id, last_message_update)
+
+    await background_process.find_ironman(order)
