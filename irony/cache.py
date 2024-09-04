@@ -2,6 +2,7 @@ from typing import Dict, List
 from irony.config import config
 from irony.db import db
 from irony.models.call_to_action import CallToAction
+from irony.models.message import MessageConfig
 from irony.models.service import Service
 
 
@@ -24,6 +25,18 @@ async def fetch_data_from_db(db_cache: dict):
 
     db_cache["service"] = {
         service.call_to_action_key: service for service in service_list
+    }
+
+    # additional data fetching as needed
+    message_configs = await db.get_collection("message_config").find().to_list()
+
+    message_config_list: List[MessageConfig] = [
+        MessageConfig(**doc) for doc in message_configs
+    ]
+
+    db_cache["mesage_config"] = {
+        message_config.message_key: message_config
+        for message_config in message_config_list
     }
 
     return db_cache

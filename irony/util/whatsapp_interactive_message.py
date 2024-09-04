@@ -43,11 +43,6 @@ async def handle_button_reply(contact_details, interaction, context):
     # buttons = config.BUTTONS
     button_reply = interaction["button_reply"]
 
-    # # raise exception if button is not present in our config.
-    # if not button_reply.__eq__(buttons[button_reply["id"]]):
-    #     logger.error("Button configuration not mathcing. Dev : check config.py button linking")
-    #     raise WhatsappException("Button configuration not mathcing. Dev : check config.py button linking", error_code=config.ERROR_CODES["INTERNAL_SERVER_ERROR"])
-
     # If quick reply is make new order.
     button_reply_id = button_reply.get("id", None)
     if button_reply_id == config.MAKE_NEW_ORDER:
@@ -77,7 +72,7 @@ async def start_new_order(contact_details):
     message_body = await whatsapp_common.get_reply_message(
         message_key="new_order_step_1",
         call_to_action_key=config.CLOTHES_COUNT_KEY,
-        message_type="reply",
+        message_sub_type="reply",
     )
 
     last_message_update = {"type": "MAKE_NEW_ORDER"}
@@ -95,25 +90,26 @@ async def set_new_order_clothes_count(contact_details, context, button_reply_obj
 
     user: User = await db.user.find_one({"wa_id": contact_details.wa_id})
 
+    order_status = OrderStatus(
+        status=OrderStatusEnum.SERVICE_PENDING,
+        created_on=datetime.now(),
+    )
+
     order: Order = Order(
         user_id=user["_id"],
         count_range=button_reply_obj["id"],
         is_active=False,
+        order_status=[order_status],
         created_on=datetime.now(),
     )
 
     order_doc = await db.order.insert_one(order.model_dump(exclude_defaults=True))
-
-    await whatsapp_common.update_order_status(
-        order_doc, OrderStatusEnum.SERVICE_PENDING
-    )
-
     # logger.info(order_doc, order_status_doc)
 
     message_body = await whatsapp_common.get_reply_message(
         message_key="services_message",
         call_to_action_key=config.SERVICE_ID_KEY,
-        message_type="reply",
+        message_sub_type="reply",
     )
 
     last_message_update = {
@@ -137,16 +133,25 @@ async def set_new_order_service(contact_details, context, button_reply_obj):
     selected_service = config.DB_CACHE["services"][button_reply_obj["id"]]
     selected_service = Service(**selected_service)
 
+    order_status = OrderStatus(
+        status=OrderStatusEnum.LOCATION_PENDING,
+        created_on=datetime.now(),
+    )
+
     order_doc: Order = await db.order.find_one_and_update(
         {"_id": last_message["order_id"]},
-        {"$set": {"services": [selected_service]}},
+        {
+            "$set": {"services": [selected_service.model_dump(exclude_defaults=True)]},
+            "$push": {
+                "order_status": {
+                    "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
+                    "$position": 0,
+                }
+            },
+        },
         return_document=True,
     )
     order_doc = Order(**order_doc)
-
-    await whatsapp_common.update_order_status(
-        order_doc._id, OrderStatusEnum.LOCATION_PENDING
-    )
 
     message_body = await whatsapp_common.get_reply_message(message_key="ASK_LOCATION")
 
@@ -183,14 +188,18 @@ async def set_new_order_location(message_details, contact_details):
     location_doc = await db.location.insert_one(
         location.model_dump(exclude_defaults=True)
     )
+    location._id = location_doc.inserted_id
+    order.location = location
 
-    order["location_id"] = location_doc.inserted_id
-
-    await whatsapp_common.update_order_status(
-        order._id, OrderStatusEnum.SERVICE_PENDING
+    order_status = OrderStatus(
+        status=OrderStatusEnum.TIME_SLOT_PENDING, created_on=datetime.now()
     )
 
-    updated_order = await db.order.update_one({"_id": order["_id"]}, {"$set": order})
+    order.order_status.insert(0, order_status)
+
+    updated_order = await db.order.replace_one(
+        {"_id": order["_id"]}, order.model_dump(exclude_defaults=True, exclude={"_id"})
+    )
     if updated_order.modified_count == 0:
         # TODO : send location interactive message again.
         raise WhatsappException(
@@ -203,7 +212,7 @@ async def set_new_order_location(message_details, contact_details):
     message_body = await whatsapp_common.get_reply_message(
         message_key="time_slot_message",
         call_to_action_key=config.TIME_SLOT_ID_KEY,
-        message_type="radio",
+        message_sub_type="radio",
     )
 
     last_message_update = {
@@ -246,19 +255,29 @@ async def set_new_order_time_slot(contact_details, context, button_reply_obj):
     last_message = await whatsapp_common.verify_context_id(contact_details, context)
 
     # user: User = await db.user.find_one({"wa_id": contact_details.wa_id})
+
+    order_status = OrderStatus(
+        status=OrderStatusEnum.PICKUP_PENDING, created_on=datetime.now()
+    )
     order_doc: Order = await db.order.find_one_and_update(
         {"_id": last_message["order_id"]},
-        {"$set": {"time_slot": button_reply_obj["id"]}},
+        {
+            "$set": {"time_slot": button_reply_obj["id"]},
+            "$push": {
+                "order_status": {
+                    "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
+                    "$position": 0,
+                }
+            },
+        },
         return_document=True,
     )
     order = Order(**order_doc)
 
-    await whatsapp_common.update_order_status(
-        order_doc._id, OrderStatusEnum.PICKUP_PENDING
-    )
-
     message_body = await whatsapp_common.get_reply_message(
-        message_key="new_order_pending"
+        message_key="new_order_pending",
+        message_sub_type="reply",
+        call_to_action_key=config.TRACK_ORDER_KEY,
     )
 
     last_message_update = {
@@ -269,4 +288,4 @@ async def set_new_order_time_slot(contact_details, context, button_reply_obj):
     logger.info(f"messages endpoint body : {message_body}")
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
 
-    await background_process.find_ironman(order)
+    await background_process.find_ironman(order, contact_details)

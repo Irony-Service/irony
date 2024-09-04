@@ -6,17 +6,6 @@ from pydantic import BaseModel
 from irony.models.common_model import ModelConfig
 
 
-class OrderStatus(BaseModel):
-    id: ObjectId = None
-    order_id: ObjectId = None
-    status: str = None
-    created_on: datetime = None
-    updated_on: datetime = None
-
-    class Config(ModelConfig):
-        pass
-
-
 class OrderStatusEnum(str, Enum):
     SERVICE_PENDING = "SERVICE_PENDING"
     LOCATION_PENDING = "LOCATION_PENDING"
@@ -32,3 +21,14 @@ class OrderStatusEnum(str, Enum):
     DELIVERY_ATTEMPTED = "DELIVERY_ATTEMPTED"
     DELIVERED = "DELIVERED"
     CLOSED = "CLOSED"
+
+
+class OrderStatus(BaseModel):
+    _id: ObjectId = None
+    order_id: ObjectId = None
+    status: OrderStatusEnum = None
+    created_on: datetime = None
+    updated_on: datetime = None
+
+    class Config(ModelConfig):
+        pass

@@ -18,21 +18,6 @@ class Service(BaseModel):
         pass
 
 
-class ServiceEntry(BaseModel):
-    id: ObjectId
-    service_location_id: ObjectId
-    service_id: ObjectId
-    rate: float
-    discount: float
-    daily_piece_limit: float
-    workforce: float
-    is_active: bool
-    referral_discount: float
-
-    class Config(ModelConfig):
-        pass
-
-
 class CategoryEnum(str, Enum):
     LAUNDRY = "LAUNDRY"
     DRYCLEAN = "DRYCLEAN"

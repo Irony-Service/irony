@@ -4,6 +4,7 @@ from typing import Dict
 
 from irony import db
 from irony.config import config
+from irony.config.logger import logger
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
 from irony.models.message import MessageType
@@ -92,23 +93,26 @@ async def update_order_status(order_id, status: OrderStatusEnum):
     )
 
 
-async def get_reply_message(message_key, call_to_action_key=None, message_type=None):
-    message_doc = await db.message_config.find_one({"message_key": message_key})
+async def get_reply_message(message_key, call_to_action_key=None, message_type="interactive", message_sub_type=None):
+    message_doc = config.DB_CACHE["message_config"][message_key]
     message_body = message_doc["message"]
     message_text: str = get_random_one_from_messages(message_doc)
-    message_body["interactive"]["body"]["text"] = message_text
-    if message_type == "reply":
-        call_to_actions = [
-            {"type": "reply", "reply": value}
-            for key, value in config.BUTTONS.items()
-            if call_to_action_key in key
-        ]
-        message_body["interactive"]["action"]["buttons"] = call_to_actions
-    elif message_type == "radio":
-        call_to_actions = [
-            value for key, value in config.BUTTONS.items() if call_to_action_key in key
-        ]
-        message_body["interactive"]["action"]["sections"]["rows"] = call_to_actions
+    if message_type == "text":
+        message_body["text"]["body"] = message_text
+    elif message_type == "interactive":
+        message_body["interactive"]["body"]["text"] = message_text
+        if message_sub_type == "reply":
+            call_to_actions = [
+                {"type": "reply", "reply": value}
+                for key, value in config.BUTTONS.items()
+                if call_to_action_key in key
+            ]
+            message_body["interactive"]["action"]["buttons"] = call_to_actions
+        elif message_sub_type == "radio":
+            call_to_actions = [
+                value for key, value in config.BUTTONS.items() if call_to_action_key in key
+            ]
+            message_body["interactive"]["action"]["sections"]["rows"] = call_to_actions
     return message_body
 
 async def verify_context_id(contact_details, context):

@@ -5,7 +5,9 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from irony.models.common_model import ModelConfig
+from irony.models.location import UserLocation
 from irony.models.order_item import OrderItem
+from irony.models.order_status import OrderStatus
 from irony.models.service import Service
 from .pyObjectId import PyObjectId
 
@@ -13,19 +15,20 @@ from .pyObjectId import PyObjectId
 class Order(BaseModel):
     _id: Optional[ObjectId] = None
     user_id: Optional[ObjectId] = None
-    count_range: Optional[str] = None
     order_items: Optional[List[OrderItem]] = None
     service_location_id: Optional[ObjectId] = None
     services: Optional[List[Service]] = None
-    location: Optional[List[tuple[str, str]]] = None
+    count_range: Optional[str] = None
+    location: Optional[UserLocation] = None
     total_price: Optional[float] = None
     total_count: Optional[float] = None
     # TODO: wheter to use status_id of embedded object, or make it a list of embedded status objects
-    status_id: Optional[ObjectId] = None
+    order_status: Optional[List[OrderStatus]] = None
     is_active: Optional[bool] = None
     pickup_agent_id: Optional[ObjectId] = None
     drop_agent_id: Optional[ObjectId] = None
     created_on: Optional[datetime] = None
+    updated_on: Optional[datetime] = None
 
     class Config(ModelConfig):
         populate_by_name = True

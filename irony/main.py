@@ -1,27 +1,47 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 from irony import cache
 from irony.config import config
+from irony.config.logger import logger
 from irony.routers import users, whatsapp
+from irony.util import background_process
 
-# Initialize an empty dictionary to act as the cache
+# Initialize the scheduler
+scheduler = AsyncIOScheduler()
+
+# Add the job to the scheduler
+scheduler.add_job(
+    background_process.send_ironman_request, CronTrigger(minute="*/1")
+)  # Runs every 1 minute
+
+# scheduler.add_job(
+#     background_process.send_ironman_request, CronTrigger(minute="*/1")
+# )  # Runs every 1 minute
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup event equivalent
     config.DB_CACHE = await cache.fetch_data_from_db(config.DB_CACHE)
-    print("Data loaded into cache")
-
+    logger.info("Data loaded into cache")
+    scheduler.start()
+    logger.info("Scheduler started")
     # Yield control to the app
-    yield
-
+    try:
+        yield
+    finally:
+        # Shutdown the scheduler
+        scheduler.shutdown()
     # Shutdown event equivalent
-    print("Application shutdown, you can clean up resources here")
+    logger.info("Application shutdown, you can clean up resources here")
 
 
 app = FastAPI()
+
+app.router.lifespan_context = lifespan
 
 
 @app.get("/")
