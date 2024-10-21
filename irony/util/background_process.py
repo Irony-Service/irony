@@ -11,8 +11,11 @@ from irony.models.location import Location, UserLocation
 from irony.models.order import Order
 from irony.models.order_request import OrderRequest
 from irony.models.order_status import OrderStatusEnum
-from irony.models.service import ServiceEntry
-from irony.models.service_location import DeliveryTypeEnum, ServiceLocation
+from irony.models.service_location import (
+    DeliveryTypeEnum,
+    ServiceLocation,
+    ServiceEntry,
+)
 from irony.models.user import User
 from irony.util.message import Message
 import irony.util.whatsapp_common as whatsapp_common
@@ -246,7 +249,7 @@ async def send_ironman_request():
             "is_pending": True,
             "try_count": {"$lt": 3},
         }
-    ).to_list()
+    ).to_list(None)
     pending_orders = [OrderRequest(**order_request) for order_request in pending_orders]
 
     service_locations = await db.service_locations.find(
@@ -258,7 +261,7 @@ async def send_ironman_request():
                 ]
             }
         }
-    ).to_list()
+    ).to_list(None)
     service_locations = [
         ServiceLocation(**service_location) for service_location in service_locations
     ]
@@ -270,7 +273,7 @@ async def send_ironman_request():
 
     # Fetch orders corresponding to the pending order requests
     order_ids = [order_request.order_id for order_request in pending_orders]
-    orders = await db.orders.find({"_id": {"$in": order_ids}}).to_list()
+    orders = await db.orders.find({"_id": {"$in": order_ids}}).to_list(None)
     orders = [Order(**order) for order in orders]
 
     # Store orders in a dictionary with _id as key
@@ -285,7 +288,7 @@ async def send_ironman_request():
 
     order_request_updates = []
     for order_request in pending_orders:
-        order = orders_dict[order_request.order_id]
+        order = orders_dict[str(order_request.order_id)]
         if order_request.delivery_type == DeliveryTypeEnum.DELIVERY:
             if not order_request.delivery_service_locations_ids:
                 logger.info("No ironman found for order", order._id)
@@ -307,7 +310,7 @@ async def send_ironman_request():
                     "service_id": {"$in": [service._id for service in order.services]},
                     "is_active": True,
                 }
-            ).to_list()
+            ).to_list(None)
             for service_entry in service_entries:
                 service_entry = ServiceEntry(**service_entry)
                 if (

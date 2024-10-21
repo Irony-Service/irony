@@ -31,7 +31,7 @@ async def handle_message(message, contact_details: ContactDetails):
     interaction = message["interactive"]
 
     # Button reply for a quick reply message
-    if interaction["type"] == "button_reply":
+    if interaction["type"] == "button_reply" or interaction["type"] == "list_reply":
         context = message.get("context", {}).get("id", None)
         await handle_button_reply(contact_details, interaction, context)
     return Response(status_code=200)
@@ -41,19 +41,19 @@ async def handle_message(message, contact_details: ContactDetails):
 async def handle_button_reply(contact_details, interaction, context):
     logger.info("Interaction type : button_reply")
     # buttons = config.BUTTONS
-    button_reply = interaction["button_reply"]
+    reply = interaction[interaction["type"]]
 
     # If quick reply is make new order.
-    button_reply_id = button_reply.get("id", None)
+    button_reply_id = reply.get("id", None)
     if button_reply_id == config.MAKE_NEW_ORDER:
         await start_new_order(contact_details)
     # if quick reply is for clothes count question
     elif str(button_reply_id).startswith(config.CLOTHES_COUNT_KEY):
-        await set_new_order_clothes_count(contact_details, context, button_reply)
+        await set_new_order_clothes_count(contact_details, context, reply)
     elif str(button_reply_id).startswith(config.SERVICE_ID_KEY):
-        await set_new_order_service(contact_details, context, button_reply)
+        await set_new_order_service(contact_details, context, reply)
     elif str(button_reply_id).startswith(config.TIME_SLOT_ID_KEY):
-        await set_new_order_time_slot(contact_details, context, button_reply)
+        await set_new_order_time_slot(contact_details, context, reply)
         pass
     else:
         logger.error(
@@ -109,7 +109,7 @@ async def set_new_order_clothes_count(contact_details, context, button_reply_obj
     message_body = await whatsapp_common.get_reply_message(
         message_key="services_message",
         call_to_action_key=config.SERVICE_ID_KEY,
-        message_sub_type="reply",
+        message_sub_type="radio",
     )
 
     last_message_update = {
@@ -122,7 +122,7 @@ async def set_new_order_clothes_count(contact_details, context, button_reply_obj
 
 
 # Set new order service message reply
-async def set_new_order_service(contact_details, context, button_reply_obj):
+async def set_new_order_service(contact_details, context, list_reply_obj):
     message_body = {}
     last_message_update = None
 
@@ -130,8 +130,7 @@ async def set_new_order_service(contact_details, context, button_reply_obj):
 
     # user: User = await db.user.find_one({"wa_id": contact_details.wa_id})
 
-    selected_service = config.DB_CACHE["services"][button_reply_obj["id"]]
-    selected_service = Service(**selected_service)
+    selected_service = config.DB_CACHE["services"][list_reply_obj["id"]]
 
     order_status = OrderStatus(
         status=OrderStatusEnum.LOCATION_PENDING,
@@ -157,7 +156,7 @@ async def set_new_order_service(contact_details, context, button_reply_obj):
 
     last_message_update = {
         "type": config.SERVICE_ID_KEY,
-        "order_id": order_doc.inserted_id,
+        "order_id": order_doc._id,
     }
 
     logger.info(f"messages endpoint body : {message_body}")

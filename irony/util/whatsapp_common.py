@@ -2,12 +2,12 @@ from datetime import datetime
 import random
 from typing import Dict
 
-from irony import db
+from irony.db import db
 from irony.config import config
 from irony.config.logger import logger
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
-from irony.models.message import MessageType
+from irony.models.message import MessageConfig, MessageType
 from irony.models.order_status import OrderStatus, OrderStatusEnum
 from irony.util.message import Message
 
@@ -20,9 +20,9 @@ sample_interactive = {
 }
 
 
-def get_random_one_from_messages(message_doc):
-    return message_doc["message_options"][
-        random.randint(0, len(message_doc["message_options"]) - 1)
+def get_random_one_from_messages(message_doc: MessageConfig):
+    return message_doc.message_options[
+        random.randint(0, len(message_doc.message_options) - 1)
     ]
 
 
@@ -93,9 +93,14 @@ async def update_order_status(order_id, status: OrderStatusEnum):
     )
 
 
-async def get_reply_message(message_key, call_to_action_key=None, message_type="interactive", message_sub_type=None):
-    message_doc = config.DB_CACHE["message_config"][message_key]
-    message_body = message_doc["message"]
+async def get_reply_message(
+    message_key,
+    call_to_action_key=None,
+    message_type="interactive",
+    message_sub_type=None,
+):
+    message_doc: MessageConfig = config.DB_CACHE["message_config"][message_key]
+    message_body = message_doc.message
     message_text: str = get_random_one_from_messages(message_doc)
     if message_type == "text":
         message_body["text"]["body"] = message_text
@@ -110,21 +115,31 @@ async def get_reply_message(message_key, call_to_action_key=None, message_type="
             message_body["interactive"]["action"]["buttons"] = call_to_actions
         elif message_sub_type == "radio":
             call_to_actions = [
-                value for key, value in config.BUTTONS.items() if call_to_action_key in key
+                value
+                for key, value in config.BUTTONS.items()
+                if call_to_action_key in key
             ]
-            message_body["interactive"]["action"]["sections"]["rows"] = call_to_actions
+            message_body["interactive"]["action"]["sections"][0][
+                "rows"
+            ] = call_to_actions
     return message_body
+
 
 async def verify_context_id(contact_details, context):
     if context is None:
-        raise WhatsappException("Context is None.", error_code=config.ERROR_CODES["INTERNAL_SERVER_ERROR"])
+        raise WhatsappException(
+            "Context is None.", error_code=config.ERROR_CODES["INTERNAL_SERVER_ERROR"]
+        )
 
     last_message = await db.last_message.find_one({"user": contact_details.wa_id})
 
     if last_message["last_sent_msg_id"] != context:
         logger.info(
-            f"Context id is not matching with last message id. Last message : {last_message["last_sent_msg_id"]}, User reply context : {context}"
+            f"Context id is not matching with last message id. Last message : {last_message['last_sent_msg_id']}, User reply context : {context}"
         )
-        raise WhatsappException("Context id is not matching with last message id.", reply_message="Looks like you are replying to some old message. Please reply to the latest message or start a fresh conversation by sending 'Hi'.")
-    
+        raise WhatsappException(
+            "Context id is not matching with last message id.",
+            reply_message="Looks like you are replying to some old message. Please reply to the latest message or start a fresh conversation by sending 'Hi'.",
+        )
+
     return last_message

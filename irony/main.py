@@ -13,9 +13,11 @@ from irony.util import background_process
 scheduler = AsyncIOScheduler()
 
 # Add the job to the scheduler
-scheduler.add_job(
-    background_process.send_ironman_request, CronTrigger(minute="*/1")
-)  # Runs every 1 minute
+# TODO add this back when you want to send ironman_request
+# scheduler.add_job(
+#     background_process.send_ironman_request, CronTrigger(minute="*/1")
+# )
+# Runs every 1 minute
 
 # scheduler.add_job(
 #     background_process.send_ironman_request, CronTrigger(minute="*/1")

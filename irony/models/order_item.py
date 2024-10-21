@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 from bson import ObjectId
 from pydantic import BaseModel
 
@@ -7,11 +8,11 @@ from irony.models.common_model import ModelConfig
 
 
 class OrderItem(BaseModel):
-    id: ObjectId
-    order_id: ObjectId
-    service_id: ObjectId
-    count: float
-    price: float
+    id: Optional[ObjectId] = None
+    order_id: Optional[ObjectId]
+    service_id: Optional[ObjectId]
+    count: Optional[float]
+    price: Optional[float]
 
     class Config(ModelConfig):
         pass

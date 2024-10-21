@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from bson import ObjectId
 from pydantic import BaseModel
-
+from typing import Optional
 from irony.models.common_model import ModelConfig
 
 
@@ -24,11 +24,11 @@ class OrderStatusEnum(str, Enum):
 
 
 class OrderStatus(BaseModel):
-    _id: ObjectId = None
-    order_id: ObjectId = None
-    status: OrderStatusEnum = None
-    created_on: datetime = None
-    updated_on: datetime = None
+    _id: Optional[ObjectId] = None
+    order_id: Optional[ObjectId] = None
+    status: Optional[OrderStatusEnum] = None
+    created_on: Optional[datetime] = None
+    updated_on: Optional[datetime] = None
 
     class Config(ModelConfig):
         pass

@@ -15,10 +15,10 @@ class Location(BaseModel):
 class UserLocation(BaseModel):
     _id: Optional[ObjectId] = None
     user: Optional[User] = None
-    name: str = None
-    address: str = None
-    location: Location = None
-    url: str = None
+    name: Optional[str] = None
+    address: Optional[str] = None
+    location: Optional[Location] = None
+    url: Optional[str] = None
     created_on: Optional[datetime] = None
     last_used: Optional[datetime] = None
 

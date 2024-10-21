@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import List
+from typing import List, Optional
 from bson import ObjectId
 from pydantic import BaseModel
 
@@ -36,17 +36,17 @@ class ServiceEntry(BaseModel):
 
 
 class ServiceLocation(BaseModel):
-    _id: ObjectId = None
-    name: str = None
-    services: List[ServiceEntry] = None
-    coords: Location = None
-    range: float = None
-    location_type: LocationTypeEnum = None
-    delivery_type: DeliveryTypeEnum = None
-    total_workforce: float = None
-    is_active: bool = None
-    rating: float = None
-    wa_id: str = None
+    _id: Optional[ObjectId] = None
+    name: Optional[str] = None
+    services: Optional[List[ServiceEntry]] = None
+    coords: Optional[Location] = None
+    range: Optional[float] = None
+    location_type: Optional[LocationTypeEnum] = None
+    delivery_type: Optional[DeliveryTypeEnum] = None
+    total_workforce: Optional[float] = None
+    is_active: Optional[bool] = None
+    rating: Optional[float] = None
+    wa_id: Optional[str] = None
 
     class Config(ModelConfig):
         pass
