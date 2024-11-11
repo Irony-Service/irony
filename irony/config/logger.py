@@ -16,7 +16,7 @@ log_format = (
 
 # Create a file handler
 file_handler = RotatingFileHandler(
-    f"{log_dir}/irony_app.log", maxBytes=2000, backupCount=5
+    f"{log_dir}/irony_app.log", maxBytes=20000, backupCount=5
 )
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(logging.Formatter(log_format))

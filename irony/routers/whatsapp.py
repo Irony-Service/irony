@@ -68,3 +68,8 @@ async def create_user(request: Request):
         response = Response(request.query_params["hub.challenge"], status_code=200)
         response.headers["Content-Type"] = "text/plain"
         return response
+
+
+@router.post("/test")
+async def test():
+    logger.info("Running erripook")

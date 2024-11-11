@@ -8,13 +8,13 @@ from irony.models.user import User
 
 
 class Location(BaseModel):
-    type: str = "Point"
+    type: Optional[str] = "Point"
     coordinates: List[float] = Field(..., min_items=2, max_items=2)
 
 
 class UserLocation(BaseModel):
-    _id: Optional[ObjectId] = None
-    user: Optional[User] = None
+    id: Optional[ObjectId] = Field(default=None, alias="_id")
+    user: Optional[str] = None
     name: Optional[str] = None
     address: Optional[str] = None
     location: Optional[Location] = None

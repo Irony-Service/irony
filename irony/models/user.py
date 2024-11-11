@@ -15,5 +15,4 @@ class User(BaseModel):
     created_on: datetime
 
     class Config(ModelConfig):
-        populate_by_name = True
-        arbitrary_types_allowed = True
+        pass

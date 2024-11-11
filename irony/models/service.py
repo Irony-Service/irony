@@ -2,17 +2,17 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 from bson import ObjectId
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from irony.models.common_model import ModelConfig
 
 
 class Service(BaseModel):
-    _id: Optional[ObjectId]
-    service_category: str
-    service_type: str
-    service_name: str
-    call_to_action_key: str
+    id: Optional[ObjectId] = Field(default=None, alias="_id")
+    service_category: Optional[str]
+    service_type: Optional[str]
+    service_name: Optional[str]
+    call_to_action_key: Optional[str]
 
     class Config(ModelConfig):
         pass

@@ -43,48 +43,60 @@ async def handle_message(message_details, contact_details: ContactDetails):
                     "created_at": datetime.now(),
                 }
             )
-        message_body = start_convo(contact_details)
+        message_body = await start_convo(contact_details)
     else:
         # start convo
-        message_body = start_convo(contact_details)
+        message_body = await start_convo(contact_details)
 
-    if bool(message_body):
-        logger.info(f"messages endpoint body : {message_body}")
-        await Message(message_body).send_message(
-            contact_details.wa_id,
-            {
-                "type": "start_convo",
-            },
-        )
+    # if bool(message_body):
+    #     logger.info(f"Sending message to user : {message_body}")
+    #     await Message(message_body).send_message(
+    #         contact_details.wa_id,
+    #         {
+    #             "type": "start_convo",
+    #         },
+    #     )
 
     return Response(status_code=200)
 
 
-def start_convo(contact_details: ContactDetails):
-    # Check customer type and return message object
-    buttons = config.BUTTONS
-    # customer_type = whatsapp_common.get_customer_type(contact_details)
+async def start_convo(contact_details: ContactDetails):
+    last_message_update = None
 
-    buttons = [
-        {"type": "reply", "reply": config.BUTTONS[key]}
-        for key in config.BUTTONS.keys()
-        if config.CLOTHES_COUNT_KEY in key
-    ]
-    interactive = {
-        "type": "button",
-        "header": {"type": "text", "text": "Irony"},  # optional  # end header
-        "body": {
-            "text": f"{'Hi' if random.randint(1,2) == 1 else 'Hello'} {contact_details.name}.\nWelcome to Irony. We are a low cost laundry services provider.\n We provide a number of services like Ironing, Washing, Wash and Iron, Dry Clean.\n"
-        },
-        "footer": {"text": "Please select an option from below"},  # optional
-        "action": {"buttons": buttons},  # end action
-    }
+    message_body = whatsapp_common.get_reply_message(
+        message_key="new_order_step_1",
+        message_sub_type="reply",
+    )
 
-    message = {
-        "messaging_product": "whatsapp",
-        "recipient_type": "individual",
-        "to": f"{contact_details.wa_id}",
-        "type": "interactive",
-        "interactive": interactive,
-    }
-    return message
+    last_message_update = {"type": config.MAKE_NEW_ORDER}
+
+    logger.info(f"Sending message to user : {message_body}")
+    await Message(message_body).send_message(contact_details.wa_id, last_message_update)
+
+    # # Check customer type and return message object
+    # buttons = config.BUTTONS
+    # # customer_type = whatsapp_common.get_customer_type(contact_details)
+
+    # buttons = [
+    #     {"type": "reply", "reply": config.BUTTONS[key]}
+    #     for key in config.BUTTONS.keys()
+    #     if config.CLOTHES_COUNT_KEY in key
+    # ]
+    # interactive = {
+    #     "type": "button",
+    #     "header": {"type": "text", "text": "Irony"},  # optional  # end header
+    #     "body": {
+    #         "text": f"{'Hi' if random.randint(1,2) == 1 else 'Hello'} {contact_details.name}.\nWelcome to Irony. We are a low cost laundry services provider.\n We provide a number of services like Ironing, Washing, Wash and Iron, Dry Clean.\n"
+    #     },
+    #     "footer": {"text": "Please select an option from below"},  # optional
+    #     "action": {"buttons": buttons},  # end action
+    # }
+
+    # message = {
+    #     "messaging_product": "whatsapp",
+    #     "recipient_type": "individual",
+    #     "to": f"{contact_details.wa_id}",
+    #     "type": "interactive",
+    #     "interactive": interactive,
+    # }
+    # return message

@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 from bson import ObjectId
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from irony.models.common_model import ModelConfig
 from irony.models.location import Location
@@ -19,24 +19,27 @@ class DeliveryTypeEnum(str, Enum):
     SELF_PICKUP = "SELF_PICKUP"
 
 
+def get_delivery_enum_from_string(value):
+    return DeliveryTypeEnum.__members__.get(value.upper(), DeliveryTypeEnum.DELIVERY)
+
+
 class ServiceEntry(BaseModel):
-    id: ObjectId
-    service_location_id: ObjectId
-    service_id: ObjectId
-    rate: float
-    discount: float
-    daily_piece_limit: int
-    assigned_pieces_today: int = 0
-    workforce: float
-    is_active: bool
-    referral_discount: float
+    service_location_id: Optional[ObjectId] = None
+    service_id: Optional[ObjectId] = None
+    rate: Optional[float] = None
+    discount: Optional[float] = None
+    daily_piece_limit: Optional[int] = None
+    assigned_pieces_today: Optional[int] = 0
+    workforce: Optional[float] = None
+    is_active: Optional[bool] = None
+    referral_discount: Optional[float] = None
 
     class Config(ModelConfig):
         pass
 
 
 class ServiceLocation(BaseModel):
-    _id: Optional[ObjectId] = None
+    id: Optional[ObjectId] = Field(default=None, alias="_id")
     name: Optional[str] = None
     services: Optional[List[ServiceEntry]] = None
     coords: Optional[Location] = None

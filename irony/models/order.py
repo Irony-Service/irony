@@ -13,13 +13,14 @@ from .pyObjectId import PyObjectId
 
 
 class Order(BaseModel):
-    _id: Optional[ObjectId] = None
+    id: Optional[ObjectId] = Field(default=None, alias="_id")
     user_id: Optional[ObjectId] = None
     order_items: Optional[List[OrderItem]] = None
     service_location_id: Optional[ObjectId] = None
     services: Optional[List[Service]] = None
     count_range: Optional[str] = None
     location: Optional[UserLocation] = None
+    time_slot: Optional[str] = None
     total_price: Optional[float] = None
     total_count: Optional[float] = None
     # TODO: wheter to use status_id of embedded object, or make it a list of embedded status objects
