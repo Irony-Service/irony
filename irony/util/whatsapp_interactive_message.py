@@ -429,13 +429,9 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
                                 "Our Service Provider",
                             )
                         ),
-                        "{time}": str(
-                            getattr(
-                                order_request.order,
-                                "time_slot",
-                                "N/A",
-                            )
-                        ),
+                        "{time}": config.DB_CACHE["call_to_action"]
+                        .get(order_request.order.time_slot, {})
+                        .get("title", "N/A"),
                     },
                 )
             )
@@ -452,16 +448,7 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
                     ironman_order_alloted_message["text"]["body"],
                     {
                         "{time}": config.DB_CACHE["call_to_action"]
-                        .get(
-                            order_request.order.time_slot
-                            # str(
-                            #     getattr(
-                            #         order_request.order,
-                            #         "time_slot",
-                            #         "N/A",
-                            #     )
-                            # )
-                        )
+                        .get(order_request.order.time_slot, {})
                         .get("title", "N/A"),
                     },
                 )

@@ -437,7 +437,7 @@ async def send_ironman_request():
     # Send all messsages at once
     await asyncio.gather(*tasks)
 
-    if len(order_request_updates) > 0:
+    if len(orders_updates) > 0:
         await replace_documents_in_transaction("order", orders_updates)
 
     if len(service_locations_updates) > 0:
