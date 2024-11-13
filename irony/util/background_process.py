@@ -22,7 +22,7 @@ from irony.models.service_location import (
 )
 from irony.models.user import User
 from irony.util.message import Message
-import irony.util.whatsapp_common as whatsapp_common
+import irony.util.whatsapp_utils as whatsapp_utils
 import asyncio
 
 
@@ -188,7 +188,7 @@ async def find_ironman(order: Order, contact_details: ContactDetails):
         # return nearby_service_locations
         if not nearby_service_locations:
             # send message to user that no ironman found.
-            message_body = whatsapp_common.get_reply_message(
+            message_body = whatsapp_utils.get_reply_message(
                 "new_order_no_ironman", message_type="text"
             )
             await Message(message_body).send_message(contact_details.wa_id)
@@ -325,7 +325,7 @@ async def send_ironman_request():
     logger.info(f"Number of pending orders {len(pending_orders)}")
     tasks = []
 
-    ironman_request_msg = whatsapp_common.get_reply_message(
+    ironman_request_msg = whatsapp_utils.get_reply_message(
         "new_order_send_ironman_request",
         message_type="interactive",
         message_sub_type="reply",
@@ -342,7 +342,7 @@ async def send_ironman_request():
             if not order_request.delivery_service_locations_ids:
                 logger.info("No ironman found for order", order.id)
                 order_request_updates.append(ObjectId(str(order_request.id)))
-                no_ironman_message = whatsapp_common.get_reply_message(
+                no_ironman_message = whatsapp_utils.get_reply_message(
                     "new_order_no_ironman", message_type="text"
                 )
                 # send message to user
@@ -382,7 +382,7 @@ async def send_ironman_request():
                             )
                         )
 
-                        order_status = await whatsapp_common.get_new_order_status(
+                        order_status = await whatsapp_utils.get_new_order_status(
                             order.id, OrderStatusEnum.PICKUP_PENDING
                         )
                         order.service_location_id = service_entry.service_location_id

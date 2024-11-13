@@ -12,7 +12,7 @@ import joblib
 from irony.models.contact_details import ContactDetails
 from irony.util.message import Message
 from irony.config.logger import logger
-from . import whatsapp_common
+from irony.util import whatsapp_utils
 
 from irony.db import db
 
@@ -63,7 +63,7 @@ async def handle_message(message_details, contact_details: ContactDetails):
 async def start_convo(contact_details: ContactDetails):
     last_message_update = None
 
-    message_body = whatsapp_common.get_reply_message(
+    message_body = whatsapp_utils.get_reply_message(
         message_key="new_order_step_1",
         message_sub_type="reply",
     )

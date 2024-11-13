@@ -6,7 +6,7 @@ from apscheduler.triggers.cron import CronTrigger
 from irony import cache
 from irony.config import config
 from irony.config.logger import logger
-from irony.routers import users, whatsapp
+from irony.routers import users, whatsapp, ironman
 from irony.util import background_process
 
 # Initialize the scheduler
@@ -51,3 +51,4 @@ async def root():
 
 app.include_router(whatsapp.router, prefix="/whatsapp")
 app.include_router(users.router)
+app.include_router(ironman.router, prefix="/ironman")

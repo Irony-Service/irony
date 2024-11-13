@@ -4,11 +4,11 @@ from fastapi import APIRouter, Query, Request, Response
 
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
-from irony.util import whatsapp_common
+from irony.util import whatsapp_utils
 from ..config import config
 from irony.config.logger import logger
 
-from irony.services import whatsapp_service
+from irony.services.whatsapp import whatsapp_service
 
 router = APIRouter()
 
@@ -25,7 +25,7 @@ async def whatsapp(request: Request):
         for entry in payload.get("entry", []):
             for change in entry.get("changes", []):
                 value = change.get("value", {})
-                contacts_details_dict = whatsapp_common.get_contact_details_dict(value)
+                contacts_details_dict = whatsapp_utils.get_contact_details_dict(value)
                 messages = value.get("messages", [])
                 for message in messages:
                     try:
