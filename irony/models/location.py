@@ -1,19 +1,25 @@
 from bson import ObjectId
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Optional
 from datetime import datetime
 
-
-class ModelConfig:
-    arbitrary_types_allowed = True
+from irony.models.common_model import ModelConfig
+from irony.models.user import User
 
 
 class Location(BaseModel):
-    _id: Optional[ObjectId] = None
-    user: Optional[ObjectId] = None
-    name: str = None
-    location: list[tuple[str, str]] = None
-    url: str = None
+    type: Optional[str] = "Point"
+    coordinates: List[float] = Field(..., min_items=2, max_items=2)
+
+
+class UserLocation(BaseModel):
+    id: Optional[ObjectId] = Field(default=None, alias="_id")
+    user: Optional[str] = None
+    name: Optional[str] = None
+    address: Optional[str] = None
+    location: Optional[Location] = None
+    url: Optional[str] = None
+    created_on: Optional[datetime] = None
     last_used: Optional[datetime] = None
 
     class Config(ModelConfig):

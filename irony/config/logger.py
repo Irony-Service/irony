@@ -10,11 +10,13 @@ if not os.path.exists(log_dir):
     os.makedirs(log_dir)
 
 # Log format
-log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+log_format = (
+    "%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(filename)s:%(lineno)d"
+)
 
 # Create a file handler
 file_handler = RotatingFileHandler(
-    f"{log_dir}/irony_app.log", maxBytes=2000, backupCount=5
+    f"{log_dir}/irony_app.log", maxBytes=20000, backupCount=5
 )
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(logging.Formatter(log_format))

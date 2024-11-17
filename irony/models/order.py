@@ -2,31 +2,38 @@ from datetime import datetime
 from enum import Enum
 from bson import ObjectId
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Optional
 
+from irony.models.common_model import ModelConfig
+from irony.models.location import UserLocation
 from irony.models.order_item import OrderItem
+from irony.models.order_status import OrderStatus
+from irony.models.service import Service
+from irony.models.service_location import ServiceLocation
+from irony.models.user import User
 from .pyObjectId import PyObjectId
 
 
-class ModelConfig:
-    arbitrary_types_allowed = True
-
-
 class Order(BaseModel):
-    _id: Optional[ObjectId] = None
+    id: Optional[ObjectId] = Field(default=None, alias="_id")
     user_id: Optional[ObjectId] = None
-    count_range: Optional[str] = None
-    order_items: Optional[list[OrderItem]] = None
+    user: Optional[User] = None
+    order_items: Optional[List[OrderItem]] = None
     service_location_id: Optional[ObjectId] = None
-    location: Optional[list[tuple[str, str]]] = None
+    service_location: Optional[ServiceLocation] = None
+    services: Optional[List[Service]] = None
+    count_range: Optional[str] = None
+    location: Optional[UserLocation] = None
+    time_slot: Optional[str] = None
     total_price: Optional[float] = None
     total_count: Optional[float] = None
     # TODO: wheter to use status_id of embedded object, or make it a list of embedded status objects
-    status_id: Optional[ObjectId] = None
+    order_status: Optional[List[OrderStatus]] = None
     is_active: Optional[bool] = None
     pickup_agent_id: Optional[ObjectId] = None
     drop_agent_id: Optional[ObjectId] = None
     created_on: Optional[datetime] = None
+    updated_on: Optional[datetime] = None
 
     class Config(ModelConfig):
         populate_by_name = True

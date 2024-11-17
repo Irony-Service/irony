@@ -22,104 +22,147 @@ Your Irony pickup is scheduled for {date} at {time}. \n\nOur team will be there 
 new_order_success_message_2 = """
 🚀 Your Irony pickup is all set for [Date] at [Time]! \n\nGet ready for a laundry experience that's as smooth as your freshly cleaned clothes. Any last-minute changes or special instructions? Feel free to share with our delivery executive! We're here to make it easy for you. 🧺✨ #IronyLaundry #SimplifyYourLife
 """
+services_message = "We provide a list of services. Please choose one from the options."
 
 
 async def add_messages():
     try:
         messages = [
             {
-                "message_key": "new_user_greeting",
+                "message_key": "services_message",
                 "type": "dynamic",
-                "message_options": [new_user_greeting_message],
+                "message_options": [services_message],
                 "message": {
                     "messaging_product": "whatsapp",
                     "recipient_type": "individual",
                     "to": None,
                     "type": "interactive",
                     "interactive": {
-                        "type": "button",
-                        "header": {"type": "text", "text": "Irony"},
-                        "body": {"text": new_user_greeting_message},
-                        "footer": {"text": "Please select any option from below"},
+                        "type": "list",
+                        "header": {"type": "text", "text": "Choose a service"},
+                        "body": {"text": services_message},
+                        "footer": {"text": None},
                         "action": {
-                            "buttons": [
-                                {"type": "reply", "reply": BUTTONS["MAKE_NEW_ORDER"]},
-                                {"type": "reply", "reply": BUTTONS["PRICES"]},
-                                {"type": "reply", "reply": BUTTONS["HOW_WE_WORK"]},
-                            ]
-                        },
-                    },
-                },
-            },
-            {
-                "message_key": "new_order_step_1",
-                "type": "dynamic",
-                "message_options": [new_order_step_1_message],
-                "message": {
-                    "messaging_product": "whatsapp",
-                    "recipient_type": "individual",
-                    "to": None,
-                    "type": "interactive",
-                    "interactive": {
-                        "type": "button",
-                        "header": {"type": "text", "text": "Irony"},
-                        "body": {"text": new_order_step_1_message},
-                        "footer": {"text": "Please select any option from below"},
-                        "action": {
-                            "buttons": [
-                                {"type": "reply", "reply": BUTTONS["CLOTHES_COUNT_10"]},
-                                {"type": "reply", "reply": BUTTONS["CLOTHES_COUNT_20"]},
+                            "sections": [
                                 {
-                                    "type": "reply",
-                                    "reply": BUTTONS["CLOTHES_COUNT_20_PLUS"],
-                                },
-                            ]
+                                    "title": None,
+                                    "rows": [
+                                        {
+                                            "id": "SERVICE_ID_1",
+                                            "title": "Iron",
+                                            "description": None,
+                                        },
+                                        {
+                                            "id": "SERVICE_ID_2",
+                                            "title": "Wash",
+                                            "description": None,
+                                        },
+                                        {
+                                            "id": "SERVICE_ID_3",
+                                            "title": "Wash & Iron",
+                                            "description": None,
+                                        },
+                                    ],
+                                }
+                            ],
+                            "button": "Done",
                         },
                     },
                 },
-            },
-            {
-                "message_key": "new_order_step_2",
-                "type": "dynamic",
-                "message_options": [new_order_step_2_message],
-                "message": {
-                    "messaging_product": "whatsapp",
-                    "recipient_type": "individual",
-                    "to": None,
-                    "type": "text",
-                    "text": {
-                        "header": {"type": "text", "text": "Irony"},
-                        "body": {"text": new_order_step_2_message},
-                    },
-                },
-            },
-            {
-                "message_key": "new_order_success",
-                "type": "dynamic",
-                "message_options": [
-                    new_order_success_message_1,
-                    new_order_success_message_2,
-                ],
-                "message": {
-                    "messaging_product": "whatsapp",
-                    "recipient_type": "individual",
-                    "to": None,
-                    "type": "interactive",
-                    "interactive": {
-                        "type": "button",
-                        "header": {"type": "text", "text": "Irony"},
-                        "body": {"text": new_order_success_message_1},
-                        "footer": {"text": "Please select any option from below"},
-                        "action": {
-                            "buttons": [
-                                {"type": "reply", "reply": BUTTONS["TRACK_ORDER"]},
-                            ]
-                        },
-                    },
-                },
-            },
+            }
+            # {
+            #     "message_key": "new_user_greeting",
+            #     "type": "dynamic",
+            #     "message_options": [new_user_greeting_message],
+            #     "message": {
+            #         "messaging_product": "whatsapp",
+            #         "recipient_type": "individual",
+            #         "to": None,
+            #         "type": "interactive",
+            #         "interactive": {
+            #             "type": "button",
+            #             "header": {"type": "text", "text": "Irony"},
+            #             "body": {"text": new_user_greeting_message},
+            #             "footer": {"text": "Please select any option from below"},
+            #             "action": {
+            #                 "buttons": [
+            #                     {"type": "reply", "reply": BUTTONS["MAKE_NEW_ORDER"]},
+            #                     {"type": "reply", "reply": BUTTONS["PRICES"]},
+            #                     {"type": "reply", "reply": BUTTONS["HOW_WE_WORK"]},
+            #                 ]
+            #             },
+            #         },
+            #     },
+            # },
+            # {
+            #     "message_key": "new_order_step_1",
+            #     "type": "dynamic",
+            #     "message_options": [new_order_step_1_message],
+            #     "message": {
+            #         "messaging_product": "whatsapp",
+            #         "recipient_type": "individual",
+            #         "to": None,
+            #         "type": "interactive",
+            #         "interactive": {
+            #             "type": "button",
+            #             "header": {"type": "text", "text": "Irony"},
+            #             "body": {"text": new_order_step_1_message},
+            #             "footer": {"text": "Please select any option from below"},
+            #             "action": {
+            #                 "buttons": [
+            #                     {"type": "reply", "reply": BUTTONS["CLOTHES_COUNT_10"]},
+            #                     {"type": "reply", "reply": BUTTONS["CLOTHES_COUNT_20"]},
+            #                     {
+            #                         "type": "reply",
+            #                         "reply": BUTTONS["CLOTHES_COUNT_20_PLUS"],
+            #                     },
+            #                 ]
+            #             },
+            #         },
+            #     },
+            # },
+            # {
+            #     "message_key": "new_order_step_2",
+            #     "type": "dynamic",
+            #     "message_options": [new_order_step_2_message],
+            #     "message": {
+            #         "messaging_product": "whatsapp",
+            #         "recipient_type": "individual",
+            #         "to": None,
+            #         "type": "text",
+            #         "text": {
+            #             "header": {"type": "text", "text": "Irony"},
+            #             "body": {"text": new_order_step_2_message},
+            #         },
+            #     },
+            # },
+            # {
+            #     "message_key": "new_order_success",
+            #     "type": "dynamic",
+            #     "message_options": [
+            #         new_order_success_message_1,
+            #         new_order_success_message_2,
+            #     ],
+            #     "message": {
+            #         "messaging_product": "whatsapp",
+            #         "recipient_type": "individual",
+            #         "to": None,
+            #         "type": "interactive",
+            #         "interactive": {
+            #             "type": "button",
+            #             "header": {"type": "text", "text": "Irony"},
+            #             "body": {"text": new_order_success_message_1},
+            #             "footer": {"text": "Please select any option from below"},
+            #             "action": {
+            #                 "buttons": [
+            #                     {"type": "reply", "reply": BUTTONS["TRACK_ORDER"]},
+            #                 ]
+            #             },
+            #         },
+            #     },
+            # },
         ]
-        messages = await db.messages.insert_many(messages)
+        messages = await db.message_config.insert_many(messages)
         logger.info(f"Messages inserted : {messages}")
     except Exception as e:
         logger.info(f"Error inserting messages {e}")

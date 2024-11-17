@@ -1,1 +1,56 @@
+https://www.google.com/maps/search/?api=1&query=latitude,longitude
+https://www.google.com/maps/search/?api=1&query=17.440434937254132,78.46506818465528
+
 ssh -R 80:localhost:8000 serveo.net
+c:/Users/shiva/Documents/sai/code/irony/.venv/Scripts/python.exe -m scripts.messages
+
+Ideas:
+For first time user. Send an audio messages as greeting.
+
+
+find_ironman_pipeline(27th Oct 24) : 
+[
+        {
+            "$geoNear": {
+                "key": "coords",
+                "near": {
+                    "type": "Point",
+                    "coordinates": userLocation.location.coordinates,
+                },
+                "distanceField": "distance",
+                "maxDistance": 20000,
+                "spherical": True,
+            }
+        },
+        {
+            "$match": {
+                "services": {
+                    "$elemMatch": {
+                        "service_id": {
+                            "$in": [service.id for service in order.services]
+                        },
+                        "range": {"$gte": "$distance"},
+                    }
+                }
+            }
+        },
+        # {"$match": {"range": {"$gte": "$distance"}}},
+        {
+            "$project": {
+                "services_dict": {
+                    "$arrayToObject": {
+                        "$map": {
+                            "input": "$services",
+                            "as": "service",
+                            "in": {
+                                "k": "$$service.service_id",  # Key is the activity's `id`
+                                "v": "$$service",  # Value is the activity object itself
+                            },
+                        }
+                    }
+                },
+            }
+        },
+        {"$sort": {"distance": 1}},
+        {"$limit": 10},
+    ]
