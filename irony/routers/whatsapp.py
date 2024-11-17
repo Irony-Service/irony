@@ -1,10 +1,14 @@
 import traceback
-from typing import List
+from typing import Dict, List
 from fastapi import APIRouter, Query, Request, Response
+
+from irony.exception.WhatsappException import WhatsappException
+from irony.models.contact_details import ContactDetails
+from irony.util import whatsapp_utils
 from ..config import config
 from irony.config.logger import logger
 
-from irony.services import whatsapp_service
+from irony.services.whatsapp import whatsapp_service
 
 router = APIRouter()
 
@@ -14,20 +18,23 @@ from ..db import get_users, create_user
 
 @router.post("/webhook")
 async def whatsapp(request: Request):
+    payload = await request.json()
     try:
-        payload = await request.json()
         logger.info(f"Message Received : {payload}")
 
         for entry in payload.get("entry", []):
             for change in entry.get("changes", []):
-                value = change.get("value")
+                value = change.get("value", {})
+                contacts_details_dict = whatsapp_utils.get_contact_details_dict(value)
                 messages = value.get("messages", [])
                 for message in messages:
                     try:
                         if whatsapp_service.is_ongoing_or_status_request(message):
                             return Response(status_code=200)
                         else:
-                            await whatsapp_service.handle_entry(entry)
+                            return await whatsapp_service.handle_entry(
+                                message, contacts_details_dict[message["from"]]
+                            )
                     except Exception as e:
                         logger.error(f"Error occured in send whatsapp message : {e}")
                         traceback.print_exc()
@@ -61,3 +68,8 @@ async def create_user(request: Request):
         response = Response(request.query_params["hub.challenge"], status_code=200)
         response.headers["Content-Type"] = "text/plain"
         return response
+
+
+@router.post("/test")
+async def test():
+    logger.info("Running erripook")

@@ -49,6 +49,7 @@ class Message:
     def send_message(self, to=None):
         # Implement your send_message logic here
         # Use the method name to make the HTTP request dynamically
+        logger.info("Starting send_message ", to, self.body)
         if to is not None:
             self.body["to"] = to
 

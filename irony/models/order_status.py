@@ -2,25 +2,15 @@ from datetime import datetime
 from enum import Enum
 from bson import ObjectId
 from pydantic import BaseModel
-
-
-class ModelConfig:
-    arbitrary_types_allowed = True
-
-
-class OrderStatus(BaseModel):
-    id: ObjectId = None
-    order_id: ObjectId = None
-    status: str = None
-    created_on: datetime = None
-    updated_on: datetime = None
-
-    class Config(ModelConfig):
-        pass
+from typing import Optional
+from irony.models.common_model import ModelConfig
 
 
 class OrderStatusEnum(str, Enum):
+    SERVICE_PENDING = "SERVICE_PENDING"
     LOCATION_PENDING = "LOCATION_PENDING"
+    TIME_SLOT_PENDING = "TIME_SLOT_PENDING"
+    FINDING_IRONMAN = "FINDING_IRONMAN"
     PICKUP_PENDING = "PICKUP_PENDING"
     PICKUP_USER_NO_RESP = "PICKUP_USER_NO_RESP"
     PICKUP_USER_REJECTED = "PICKUP_USER_REJECTED"
@@ -32,3 +22,14 @@ class OrderStatusEnum(str, Enum):
     DELIVERY_ATTEMPTED = "DELIVERY_ATTEMPTED"
     DELIVERED = "DELIVERED"
     CLOSED = "CLOSED"
+
+
+class OrderStatus(BaseModel):
+    _id: Optional[ObjectId] = None
+    order_id: Optional[ObjectId] = None
+    status: Optional[OrderStatusEnum] = None
+    created_on: Optional[datetime] = None
+    updated_on: Optional[datetime] = None
+
+    class Config(ModelConfig):
+        pass
