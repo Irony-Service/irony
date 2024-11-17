@@ -387,6 +387,16 @@ async def send_ironman_delivery_schedule():
 
     logger.info(f"Number of pending schedules {len(pending_schedules)}")
 
+    collect_message_root = whatsapp_utils.get_reply_message(
+        "ironman_collect_order",
+        message_type="interactive",
+        message_sub_type="reply",
+    )
+
+    drop_message_root = whatsapp_utils.get_reply_message(
+        "ironman_drop_order", message_type="interactive", message_sub_type="reply"
+    )
+
     for pending_schedule in pending_schedules:
         pipeline = [
             {
@@ -431,16 +441,6 @@ async def send_ironman_delivery_schedule():
 
         service_location_orders = await db.order.aggregate(pipeline=pipeline).to_list(
             None
-        )
-
-        collect_message_root = whatsapp_utils.get_reply_message(
-            "ironman_collect_order",
-            message_type="interactive",
-            message_sub_type="reply",
-        )
-
-        drop_message_root = whatsapp_utils.get_reply_message(
-            "ironman_drop_order", message_type="interactive", message_sub_type="reply"
         )
 
         maps_link = config.DB_CACHE["google_maps_link"]
@@ -502,7 +502,7 @@ async def send_ironman_delivery_schedule():
         # update schedule status
         await db.config.update_one(
             {"_id": pending_schedule["_id"]},
-            {"$set": {"is_delivery_schedule_pending": True}},
+            {"$set": {"is_delivery_schedule_pending": False}},
         )
 
     logger.info("Completed send_ironman_schedule")
@@ -620,7 +620,9 @@ async def send_ironman_work_schedule():
                     .replace("{bag}", "LOL")
                     .replace("{count}", str(count))
                     .replace("{phone}", str(order.user.wa_id)[2:])
-                    .replace("{delivery_date}", str(getattr(order, "delivery_date", "NA")))
+                    .replace(
+                        "{delivery_date}", str(getattr(order, "delivery_date", "NA"))
+                    )
                 )
 
                 # send message to ironman
@@ -635,7 +637,7 @@ async def send_ironman_work_schedule():
         # update schedule status
         await db.config.update_one(
             {"_id": pending_schedule["_id"]},
-            {"$set": {"is_work_schedule_pending": True}},
+            {"$set": {"is_work_schedule_pending": False}},
         )
 
     logger.info("Completed send_ironman_schedule")
@@ -654,7 +656,7 @@ async def send_ironman_pending_work_schedule():
         {
             "$match": {
                 "start_time": {"$lte": trigger_time},
-                "is_delivery_schedule_pending": True,
+                "is_pending_schedule_pending": True,
             }
         }
     ]
@@ -672,10 +674,10 @@ async def send_ironman_pending_work_schedule():
 
         # Combine the date and time
         start_datetime = datetime.strptime(
-            f"{current_date} {pending_schedule["start_time"]}", "%Y-%m-%d %H:%M"
+            f"{current_date} {pending_schedule['start_time']}", "%Y-%m-%d %H:%M"
         )
         end_datetime = datetime.strptime(
-            f"{current_date} {pending_schedule["start_time"]}", "%Y-%m-%d %H:%M"
+            f"{current_date} {pending_schedule['end_time']}", "%Y-%m-%d %H:%M"
         )
 
         pipeline = [
@@ -764,7 +766,9 @@ async def send_ironman_pending_work_schedule():
                     .replace("{bag}", "LOL")
                     .replace("{count}", str(count))
                     .replace("{phone}", str(order.user.wa_id)[2:])
-                    .replace("{delivery_date}", str(getattr(order, "delivery_date", "NA")))
+                    .replace(
+                        "{delivery_date}", str(getattr(order, "delivery_date", "NA"))
+                    )
                 )
 
                 # send message to ironman
@@ -779,7 +783,7 @@ async def send_ironman_pending_work_schedule():
         # update schedule status
         await db.config.update_one(
             {"_id": pending_schedule["_id"]},
-            {"$set": {"is_delivery_schedule_pending": True}},
+            {"$set": {"is_pending_schedule_pending": False}},
         )
 
     logger.info("Completed send_ironman_schedule")
