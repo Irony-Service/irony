@@ -31,6 +31,11 @@ async def fetch_data_from_db(db_cache: dict):
         for message_config in message_configs
     }
 
+    configs = await db.get_collection("config").find().to_list(None)
+    db_cache["config"] = {config["key"]: config for config in configs}
+
+    db_cache["google_maps_link"] = "https://www.google.com/maps/search/?api=1&query="
+
     return db_cache
 
 

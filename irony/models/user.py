@@ -10,9 +10,9 @@ from typing import Optional
 
 class User(BaseModel):
     _id: Optional[ObjectId] = None
-    name: str
-    wa_id: str
-    created_on: datetime
+    name: Optional[str] = None
+    wa_id: Optional[str] = None
+    created_on: Optional[datetime] = None
 
     class Config(ModelConfig):
         pass

@@ -17,7 +17,7 @@ from irony.models.order_status import OrderStatus, OrderStatusEnum
 from irony.models.service import Service
 from irony.models.user import User
 from irony.config.logger import logger
-from irony.util import background_process
+from irony.util import background_process, utils
 
 from irony.util import whatsapp_utils
 
@@ -265,6 +265,17 @@ async def set_new_order_time_slot(
         message_sub_type="reply",
     )
 
+    utils.replace_message_keys_with_values(
+        message_body,
+        {
+            # TODO change this to actual chosen date
+            "{date}": order.created_on.strftime("%d-%m-%Y"),
+            "{time}": config.DB_CACHE["call_to_action"]
+            .get(order.time_slot, {})
+            .get("title", "N/A"),
+        },
+    )
+
     last_message_update = {
         "type": config.TIME_SLOT_ID_KEY,
         "order_id": last_message["order_id"],
@@ -273,4 +284,6 @@ async def set_new_order_time_slot(
     logger.info(f"Sending message to user : {message_body}")
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
 
-    asyncio.create_task(background_process.find_ironman(order, contact_details))
+    asyncio.create_task(
+        background_process.create_ironman_order_requests(order, contact_details)
+    )

@@ -131,6 +131,12 @@ def get_reply_message(message_key, message_type="interactive", message_sub_type=
     return message_body
 
 
+def get_free_text_message(text):
+    message_body = config.DB_CACHE["message_config"]["free_text"]
+    message_body["interactive"]["body"]["text"] = text
+    return message_body
+
+
 async def verify_context_id(contact_details, context):
     if context is None:
         raise WhatsappException(

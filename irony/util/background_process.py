@@ -26,11 +26,16 @@ import irony.util.whatsapp_utils as whatsapp_utils
 import asyncio
 
 
-async def find_ironman(order: Order, contact_details: ContactDetails):
+async def create_ironman_order_requests(order: Order, contact_details: ContactDetails):
     try:
 
         # create a 2d sphere index for a service location table
         # find all records within 2km.
+
+        services_match_list = [
+            {"$elemMatch": {"service_id": service.id} for service in order.services}
+        ]
+
         pipeline = [
             {
                 "$geoNear": {
@@ -52,13 +57,8 @@ async def find_ironman(order: Order, contact_details: ContactDetails):
                             "$distance",
                         ]  # Filter where range is greater or equal to distance
                     },
-                    "services": {
-                        "$elemMatch": {
-                            "service_id": {
-                                "$in": [service.id for service in order.services]
-                            }
-                        }
-                    },
+                    "services": {"$all": services_match_list},
+                    "time_slots": order.time_slot,
                 }
             },
             # {
@@ -122,7 +122,7 @@ async def find_ironman(order: Order, contact_details: ContactDetails):
                 DeliveryTypeEnum.SELF_PICKUP
             ]
             for index, service_location in enumerate(self_pickup_service_locations):
-                trigger_time = trigger_time + timedelta(minutes=index * 5)
+                trigger_time = trigger_time + timedelta(minutes=index * 1)
                 order_request = OrderRequest(
                     order_id=order.id,
                     delivery_type=DeliveryTypeEnum.SELF_PICKUP,
@@ -171,7 +171,7 @@ async def find_ironman(order: Order, contact_details: ContactDetails):
         pass
 
 
-async def send_ironman_request():
+async def send_pending_order_requests():
     logger.info("started send_ironman_request")
     logger.info("Finding pending orders")
     current_time = datetime.now()
@@ -198,13 +198,10 @@ async def send_ironman_request():
         {
             "$lookup": {
                 "from": "service_locations",  # the collection to join
-                "localField": "service_location_ids",  # field in orders referencing service_locations._id
+                "localField": "delivery_service_locations_ids",  # field in orders referencing service_locations._id
                 "foreignField": "_id",  # field in service_locations to match
                 "as": "delivery_service_locations",  # output array field for matched documents
             }
-        },
-        {
-            "$unwind": "$service_location"  # flatten if each order has only one service location
         },
         {
             "$lookup": {
@@ -219,6 +216,7 @@ async def send_ironman_request():
     pending_orders: List[OrderRequest] = await db.order_request.aggregate(
         pipeline=pipeline
     ).to_list(None)
+
     pending_orders = [OrderRequest(**order_request) for order_request in pending_orders]
 
     if not pending_orders:
@@ -288,7 +286,7 @@ async def send_ironman_request():
                         order_status = await whatsapp_utils.get_new_order_status(
                             order.id, OrderStatusEnum.PICKUP_PENDING
                         )
-                        order.service_location_id = service_entry.service_location_id
+                        order.service_location_id = service_location.id
                         order.order_status.insert(0, order_status)
                         order.updated_on = datetime.now()
 
@@ -331,6 +329,12 @@ async def send_ironman_request():
                     .get(getattr(order, "count_range", "NA"), {})
                     .get("title", "NA"),
                 )
+                .replace(
+                    "{time}",
+                    config.DB_CACHE["call_to_action"]
+                    .get(order_request.order.time_slot, {})
+                    .get("title", "N/A"),
+                )
                 .replace("{amount}", str(getattr(order, "total_price", "NA")))
             )
 
@@ -353,3 +357,429 @@ async def send_ironman_request():
             {"_id": {"$in": order_request_updates}},
             {"$set": {"is_pending": False}},
         )
+
+
+async def send_ironman_delivery_schedule():
+    logger.info("Started send_ironman_schedule")
+    logger.info("Finding pending pickup/drop orders")
+    n = config.DB_CACHE["config"]["delivery_schedule_time_gap"]["value"]
+    # current_time = datetime.now()
+    # start_time = f"{current_time.hour:02d}:{current_time.minute:02d}"
+    current_plus_n = datetime.now() + timedelta(minutes=n)
+    trigger_time = f"{current_plus_n.hour:02d}:{current_plus_n.minute:02d}"
+
+    # continue here
+    # print("08:59">"09:00")
+    pipeline = [
+        {
+            "$match": {
+                "start_time": {"$lte": trigger_time},
+                "group": "TIME_SLOT_ID",
+                "is_delivery_schedule_pending": True,
+            }
+        }
+    ]
+
+    pending_schedules = await db.config.aggregate(pipeline=pipeline).to_list(None)
+    if not pending_schedules:
+        logger.info("No pending schedules found")
+        return
+
+    logger.info(f"Number of pending schedules {len(pending_schedules)}")
+
+    for pending_schedule in pending_schedules:
+        pipeline = [
+            {
+                "$match": {
+                    "time_slot": pending_schedule["key"],
+                    "order_status.0.status": {
+                        "$in": [
+                            OrderStatusEnum.PICKUP_PENDING.value,
+                            OrderStatusEnum.DELIVERY_PENDING.value,
+                        ]
+                    },
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "user",  # the collection to join
+                    "localField": "user_id",  # field in orders referencing service_locations._id
+                    "foreignField": "_id",  # field in service_locations to match`
+                    "as": "user",  # output array field for matched documents
+                }
+            },
+            {"$unwind": "$user"},
+            {
+                "$lookup": {
+                    "from": "service_locations",  # the collection to join
+                    "localField": "service_location_id",  # field in orders referencing service_locations._id`
+                    "foreignField": "_id",  # field in service_locations to match
+                    "as": "service_location",  # output array field for matched documents
+                }
+            },
+            {"$unwind": "$service_location"},
+            {"$sort": {"distance": 1}},
+            {
+                "$group": {
+                    "_id": "$service_location_id",
+                    "documents": {
+                        "$push": "$$ROOT"
+                    },  # Push the entire document into the "documents" list
+                }
+            },
+        ]
+
+        service_location_orders = await db.order.aggregate(pipeline=pipeline).to_list(
+            None
+        )
+
+        collect_message_root = whatsapp_utils.get_reply_message(
+            "ironman_collect_order",
+            message_type="interactive",
+            message_sub_type="reply",
+        )
+
+        drop_message_root = whatsapp_utils.get_reply_message(
+            "ironman_drop_order", message_type="interactive", message_sub_type="reply"
+        )
+
+        maps_link = config.DB_CACHE["google_maps_link"]
+        for service_location_order in service_location_orders:
+            tasks = []
+            orders = service_location_order["documents"]
+
+            for i, order in enumerate(orders):
+                order = Order(**order)
+
+                message = None
+                count = None
+                link = f"{maps_link}{order.location.location.coordinates[0]},{order.location.location.coordinates[1]}"
+
+                if order.order_status[0].status == OrderStatusEnum.PICKUP_PENDING:
+                    message = copy.deepcopy(collect_message_root)
+                    count = (
+                        config.DB_CACHE["call_to_action"]
+                        .get(getattr(order, "count_range", "NA"), {})
+                        .get("title", "NA")
+                    )
+                else:
+                    message = copy.deepcopy(drop_message_root)
+                    count = order.total_count
+
+                message["interactive"]["action"]["buttons"] = [
+                    {
+                        **button,
+                        "reply": {
+                            **button["reply"],
+                            "id": str(button["reply"]["id"]) + "#" + str(order.id),
+                        },
+                    }
+                    for button in message["interactive"]["action"]["buttons"]
+                ]
+
+                message["interactive"]["body"]["text"] = (
+                    str(message["interactive"]["body"]["text"])
+                    .replace("{sno}", str(i + 1))
+                    .replace("{name}", order.user.name)
+                    .replace("{count}", str(count))
+                    .replace(
+                        "{link}",
+                        link,
+                    )
+                    .replace("{phone}", str(order.user.wa_id)[2:])
+                    .replace("{amount}", str(getattr(order, "total_price", "NA")))
+                )
+
+                # send message to ironman
+                tasks.append(
+                    Message(message).send_message(order.service_location.wa_id)
+                )
+            logger.info(
+                f"Sending messages to ironman for service location {service_location_order['_id']}"
+            )
+            await asyncio.gather(*tasks)
+
+        # update schedule status
+        await db.config.update_one(
+            {"_id": pending_schedule["_id"]},
+            {"$set": {"is_delivery_schedule_pending": True}},
+        )
+
+    logger.info("Completed send_ironman_schedule")
+
+
+async def send_ironman_work_schedule():
+    logger.info("Started send_ironman_schedule")
+    logger.info("Finding pending pickup/drop orders")
+    n = config.DB_CACHE["config"]["work_schedule_time_gap"]["value"]
+    current_minus_n = datetime.now() - timedelta(minutes=n)
+    trigger_time = f"{current_minus_n.hour:02d}:{current_minus_n.minute:02d}"
+
+    # continue here
+    # print("08:59">"09:00")
+    pipeline = [
+        {
+            "$match": {
+                "end_time": {"$lte": trigger_time},
+                "is_work_schedule_pending": True,
+            }
+        }
+    ]
+
+    pending_schedules = await db.config.aggregate(pipeline=pipeline).to_list(None)
+    if not pending_schedules:
+        logger.info("No pending schedules found")
+        return
+
+    logger.info(f"Number of pending schedules {len(pending_schedules)}")
+
+    for pending_schedule in pending_schedules:
+        pipeline = [
+            {
+                "$match": {
+                    "service_location_id": {"$ne": None},
+                    "time_slot": pending_schedule["key"],
+                    "order_status.0.status": {
+                        "$in": [
+                            OrderStatusEnum.PICKUP_COMPLETE.value,
+                            OrderStatusEnum.WORK_IN_PROGRESS.value,
+                        ]
+                    },
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "user",  # the collection to join
+                    "localField": "user_id",  # field in orders referencing service_locations._id
+                    "foreignField": "_id",  # field in service_locations to match`
+                    "as": "user",  # output array field for matched documents
+                }
+            },
+            {"$unwind": "$user"},
+            {
+                "$lookup": {
+                    "from": "service_locations",  # the collection to join
+                    "localField": "service_location_id",  # field in orders referencing service_locations._id`
+                    "foreignField": "_id",  # field in service_locations to match
+                    "as": "service_location",  # output array field for matched documents
+                }
+            },
+            {"$unwind": "$service_location"},
+            {"$sort": {"distance": 1}},
+            {
+                "$group": {
+                    "_id": "$service_location_id",
+                    "documents": {
+                        "$push": "$$ROOT"
+                    },  # Push the entire document into the "documents" list
+                }
+            },
+        ]
+
+        service_location_orders = await db.order.aggregate(pipeline=pipeline).to_list(
+            None
+        )
+
+        message_root = whatsapp_utils.get_reply_message(
+            "ironman_to_work_order",
+            message_type="interactive",
+            message_sub_type="reply",
+        )
+
+        for service_location_order in service_location_orders:
+            tasks = []
+            orders = service_location_order["documents"]
+
+            for i, order in enumerate(orders):
+                order = Order(**order)
+
+                message = None
+                count = None
+
+                message = copy.deepcopy(message_root)
+                count = (
+                    config.DB_CACHE["call_to_action"]
+                    .get(getattr(order, "count_range", "NA"), {})
+                    .get("title", "NA")
+                )
+
+                message["interactive"]["action"]["buttons"] = [
+                    {
+                        **button,
+                        "reply": {
+                            **button["reply"],
+                            "id": str(button["reply"]["id"]) + "#" + str(order.id),
+                        },
+                    }
+                    for button in message["interactive"]["action"]["buttons"]
+                ]
+
+                message["interactive"]["body"]["text"] = (
+                    str(message["interactive"]["body"]["text"])
+                    .replace("{sno}", str(i + 1))
+                    .replace("{bag}", "LOL")
+                    .replace("{count}", str(count))
+                    .replace("{phone}", str(order.user.wa_id)[2:])
+                    .replace("{delivery_date}", str(getattr(order, "delivery_date", "NA")))
+                )
+
+                # send message to ironman
+                tasks.append(
+                    Message(message).send_message(order.service_location.wa_id)
+                )
+            logger.info(
+                f"Sending messages to ironman for service location {service_location_order['_id']}"
+            )
+            await asyncio.gather(*tasks)
+
+        # update schedule status
+        await db.config.update_one(
+            {"_id": pending_schedule["_id"]},
+            {"$set": {"is_work_schedule_pending": True}},
+        )
+
+    logger.info("Completed send_ironman_schedule")
+
+
+async def send_ironman_pending_work_schedule():
+    logger.info("Started send_ironman_schedule")
+    logger.info("Finding pending pickup/drop orders")
+    n = config.DB_CACHE["config"]["pending_schedule_time_gap"]["value"]
+    current_minus_n = datetime.now() + timedelta(minutes=n)
+    trigger_time = f"{current_minus_n.hour:02d}:{current_minus_n.minute:02d}"
+
+    # continue here
+    # print("08:59">"09:00")
+    pipeline = [
+        {
+            "$match": {
+                "start_time": {"$lte": trigger_time},
+                "is_delivery_schedule_pending": True,
+            }
+        }
+    ]
+
+    pending_schedules = await db.config.aggregate(pipeline=pipeline).to_list(None)
+    if not pending_schedules:
+        logger.info("No pending schedules found")
+        return
+
+    logger.info(f"Number of pending schedules {len(pending_schedules)}")
+
+    for pending_schedule in pending_schedules:
+        # Get the current date
+        current_date = datetime.now().date()
+
+        # Combine the date and time
+        start_datetime = datetime.strptime(
+            f"{current_date} {pending_schedule["start_time"]}", "%Y-%m-%d %H:%M"
+        )
+        end_datetime = datetime.strptime(
+            f"{current_date} {pending_schedule["start_time"]}", "%Y-%m-%d %H:%M"
+        )
+
+        pipeline = [
+            {
+                "$match": {
+                    "time_slot": pending_schedule["key"],
+                    "order_status.0.status": {
+                        "$in": [
+                            OrderStatusEnum.PICKUP_COMPLETE.value,
+                            OrderStatusEnum.WORK_IN_PROGRESS.value,
+                        ]
+                    },
+                    "updated_on": {"$gte": start_datetime, "$lte": end_datetime},
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "user",  # the collection to join
+                    "localField": "user_id",  # field in orders referencing service_locations._id
+                    "foreignField": "_id",  # field in service_locations to match`
+                    "as": "user",  # output array field for matched documents
+                }
+            },
+            {"$unwind": "$user"},
+            {
+                "$lookup": {
+                    "from": "service_locations",  # the collection to join
+                    "localField": "service_location_id",  # field in orders referencing service_locations._id`
+                    "foreignField": "_id",  # field in service_locations to match
+                    "as": "service_location",  # output array field for matched documents
+                }
+            },
+            {"$unwind": "$service_location"},
+            {"$sort": {"distance": 1}},
+            {
+                "$group": {
+                    "_id": "$service_location_id",
+                    "documents": {
+                        "$push": "$$ROOT"
+                    },  # Push the entire document into the "documents" list
+                }
+            },
+        ]
+
+        service_location_orders = await db.order.aggregate(pipeline=pipeline).to_list(
+            None
+        )
+
+        message_root = whatsapp_utils.get_reply_message(
+            "ironman_pending_to_work_order",
+            message_type="interactive",
+            message_sub_type="reply",
+        )
+
+        for service_location_order in service_location_orders:
+            tasks = []
+            orders = service_location_order["documents"]
+
+            for i, order in enumerate(orders):
+                order = Order(**order)
+
+                message = None
+                count = None
+
+                message = copy.deepcopy(message_root)
+                count = (
+                    config.DB_CACHE["call_to_action"]
+                    .get(getattr(order, "count_range", "NA"), {})
+                    .get("title", "NA")
+                )
+
+                message["interactive"]["action"]["buttons"] = [
+                    {
+                        **button,
+                        "reply": {
+                            **button["reply"],
+                            "id": str(button["reply"]["id"]) + "#" + str(order.id),
+                        },
+                    }
+                    for button in message["interactive"]["action"]["buttons"]
+                ]
+
+                message["interactive"]["body"]["text"] = (
+                    str(message["interactive"]["body"]["text"])
+                    .replace("{sno}", str(i + 1))
+                    .replace("{bag}", "LOL")
+                    .replace("{count}", str(count))
+                    .replace("{phone}", str(order.user.wa_id)[2:])
+                    .replace("{delivery_date}", str(getattr(order, "delivery_date", "NA")))
+                )
+
+                # send message to ironman
+                tasks.append(
+                    Message(message).send_message(order.service_location.wa_id)
+                )
+            logger.info(
+                f"Sending messages to ironman for service location {service_location_order['_id']}"
+            )
+            await asyncio.gather(*tasks)
+
+        # update schedule status
+        await db.config.update_one(
+            {"_id": pending_schedule["_id"]},
+            {"$set": {"is_delivery_schedule_pending": True}},
+        )
+
+    logger.info("Completed send_ironman_schedule")

@@ -67,9 +67,24 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
     ).to_list(length=1)
     order_request: OrderRequest = OrderRequest(**order_request_list[0])
     order = order_request.order
-    if order.order_status[0].status == OrderStatusEnum.PICKUP_PENDING:
+    if order.service_location_id is not None:
         # Order already accepted by another ironman : send ironman message that order is already accepted.
         logger.info(f"Order:{order.id} already accepted by another ironman")
+        await Message(
+            whatsapp_utils.get_free_text_message(
+                "Sorry, order already accepted by another ironman"
+            )
+        ).send_message(order_request.service_location.wa_id)
+        return
+
+    if utils.is_time_slot_expired(order.time_slot):
+        # Time slot expired: send ironman message that time slot is expired.
+        logger.info(f"Order:{order.id} time slot expired")
+        await Message(
+            whatsapp_utils.get_free_text_message(
+                "Sorry, accepting time slot expired for this order"
+            )
+        ).send_message(order_request.service_location.wa_id)
         return
 
     # Implement the logic for handling ironman accept response
@@ -96,7 +111,7 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
             order_status = await whatsapp_utils.get_new_order_status(
                 order.id, OrderStatusEnum.PICKUP_PENDING
             )
-            order.service_location_id = service_entry.service_location_id
+            order.service_location_id = order_request.service_location_id
             order.order_status.insert(0, order_status)
             order.updated_on = datetime.now()
 
@@ -116,22 +131,20 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
                 message_sub_type="reply",
             )
 
-            user_ironman_alloted_msg["interactive"]["body"]["text"] = (
-                utils.replace_keys_with_values(
-                    user_ironman_alloted_msg["interactive"]["body"]["text"],
-                    {
-                        "{service_location_name}": str(
-                            getattr(
-                                order_request.service_location,
-                                "name",
-                                "Our Service Provider",
-                            )
-                        ),
-                        "{time}": config.DB_CACHE["call_to_action"]
-                        .get(order_request.order.time_slot, {})
-                        .get("title", "N/A"),
-                    },
-                )
+            utils.replace_message_keys_with_values(
+                user_ironman_alloted_msg,
+                {
+                    "{service_location_name}": str(
+                        getattr(
+                            order_request.service_location,
+                            "name",
+                            "Our Service Provider",
+                        )
+                    ),
+                    "{time}": config.DB_CACHE["call_to_action"]
+                    .get(order_request.order.time_slot, {})
+                    .get("title", "N/A"),
+                },
             )
 
             await Message(user_ironman_alloted_msg).send_message(contact_details.wa_id)

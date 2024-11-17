@@ -1,3 +1,6 @@
+https://www.google.com/maps/search/?api=1&query=latitude,longitude
+https://www.google.com/maps/search/?api=1&query=17.440434937254132,78.46506818465528
+
 ssh -R 80:localhost:8000 serveo.net
 c:/Users/shiva/Documents/sai/code/irony/.venv/Scripts/python.exe -m scripts.messages
 

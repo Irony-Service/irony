@@ -9,14 +9,18 @@ from irony.models.location import UserLocation
 from irony.models.order_item import OrderItem
 from irony.models.order_status import OrderStatus
 from irony.models.service import Service
+from irony.models.service_location import ServiceLocation
+from irony.models.user import User
 from .pyObjectId import PyObjectId
 
 
 class Order(BaseModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     user_id: Optional[ObjectId] = None
+    user: Optional[User] = None
     order_items: Optional[List[OrderItem]] = None
     service_location_id: Optional[ObjectId] = None
+    service_location: Optional[ServiceLocation] = None
     services: Optional[List[Service]] = None
     count_range: Optional[str] = None
     location: Optional[UserLocation] = None

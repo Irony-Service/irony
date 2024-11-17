@@ -14,7 +14,23 @@ scheduler = AsyncIOScheduler()
 
 # Add the job to the scheduler
 # TODO add this back when you want to send ironman_request
-scheduler.add_job(background_process.send_ironman_request, CronTrigger(minute="*/1"))
+# scheduler.add_job(
+#     background_process.send_pending_order_requests, CronTrigger(minute="*/1")
+# )
+
+scheduler.add_job(
+    background_process.send_ironman_delivery_schedule, CronTrigger(minute="*/10")
+)
+
+scheduler.add_job(
+    background_process.send_ironman_work_schedule, CronTrigger(minute="*/10")
+)
+
+scheduler.add_job(
+    background_process.send_ironman_pending_work_schedule, CronTrigger(minute="*/10")
+)
+
+
 # Runs every 1 minute
 
 # scheduler.add_job(
@@ -28,6 +44,7 @@ async def lifespan(app: FastAPI):
     config.DB_CACHE = await cache.fetch_data_from_db(config.DB_CACHE)
     logger.info("Data loaded into cache")
     scheduler.start()
+    # await background_process.send_pending_order_requests()
     logger.info("Scheduler started")
     # Yield control to the app
     try:
