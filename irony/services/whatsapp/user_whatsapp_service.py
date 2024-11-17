@@ -119,7 +119,8 @@ async def set_new_order_service(
             "$set": {
                 "services": [
                     selected_service.model_dump(exclude_defaults=True, by_alias=True)
-                ]
+                ],
+                "updated_on": datetime.now(),
             },
             "$push": {
                 "order_status": {
@@ -176,6 +177,7 @@ async def set_new_order_location(message_details, contact_details):
 
     order.order_status.insert(0, order_status)
 
+    order.updated_on = datetime.now()
     updated_order = await db.order.replace_one(
         {"_id": order.id},
         order.model_dump(exclude_defaults=True, exclude={"id"}, by_alias=True),
@@ -248,7 +250,7 @@ async def set_new_order_time_slot(
     order_doc: Order = await db.order.find_one_and_update(
         {"_id": last_message["order_id"]},
         {
-            "$set": {"time_slot": button_reply_obj["id"]},
+            "$set": {"time_slot": button_reply_obj["id"], "updated_on": datetime.now()},
             "$push": {
                 "order_status": {
                     "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
