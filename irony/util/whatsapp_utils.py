@@ -7,6 +7,7 @@ from irony.config import config
 from irony.config.logger import logger
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
+from irony.models.location import Location, UserLocation
 from irony.models.message import MessageConfig, MessageType
 from irony.models.order_status import OrderStatus, OrderStatusEnum
 from irony.util.message import Message
@@ -152,9 +153,25 @@ async def verify_context_id(contact_details, context):
         )
 
         # TODO uncomment this after before prod
-        # raise WhatsappException(
-        #     "Context id is not matching with last message id.",
-        #     reply_message="Looks like you are replying to some old message. Please reply to the latest message or start a fresh conversation by sending 'Hi'.",
-        # )
+        raise WhatsappException(
+            "Context id is not matching with last message id.",
+            reply_message="Looks like you are replying to some old message. Please reply to the latest message or start a fresh conversation by sending 'Hi'.",
+        )
 
     return last_message
+
+
+async def add_user_location(contact_details: ContactDetails, coords):
+    location: UserLocation = UserLocation(
+        user=contact_details.wa_id,
+        location=Location(
+            type="Point", coordinates=[coords["latitude"], coords["longitude"]]
+        ),
+        created_on=datetime.now(),
+        last_used=datetime.now(),
+    )
+    location_doc = await db.location.insert_one(
+        location.model_dump(exclude_defaults=True)
+    )
+    location.id = location_doc.inserted_id
+    return location

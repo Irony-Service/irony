@@ -25,6 +25,8 @@ class Order(BaseModel):
     services: Optional[List[Service]] = None
     count_range: Optional[str] = None
     location: Optional[UserLocation] = None
+    existing_location: Optional[bool] = None
+    trigger_order_request_at: Optional[datetime] = None
     time_slot: Optional[str] = None
     total_price: Optional[float] = None
     total_count: Optional[float] = None
