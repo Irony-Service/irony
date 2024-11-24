@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+import time
+from fastapi import FastAPI, Request
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -14,21 +15,23 @@ scheduler = AsyncIOScheduler()
 
 # Add the job to the scheduler
 # TODO add this back when you want to send ironman_request
-# scheduler.add_job(
-#     background_process.send_pending_order_requests, CronTrigger(minute="*/1")
-# )
-
 scheduler.add_job(
-    background_process.send_ironman_delivery_schedule, CronTrigger(minute="*/10")
+    background_process.send_pending_order_requests, CronTrigger(minute="*/1")
 )
 
 scheduler.add_job(
-    background_process.send_ironman_work_schedule, CronTrigger(minute="*/10")
+    background_process.send_ironman_delivery_schedule, CronTrigger(minute="*/1")
 )
 
 scheduler.add_job(
-    background_process.send_ironman_pending_work_schedule, CronTrigger(minute="*/10")
+    background_process.send_ironman_work_schedule, CronTrigger(minute="*/2")
 )
+
+scheduler.add_job(
+    background_process.send_ironman_pending_work_schedule, CronTrigger(minute="*/1")
+)
+
+scheduler.add_job(background_process.create_order_requests, CronTrigger(minute="*/1"))
 
 
 # Runs every 1 minute
@@ -59,6 +62,21 @@ async def lifespan(app: FastAPI):
 app = FastAPI()
 
 app.router.lifespan_context = lifespan
+
+
+@app.middleware("http")
+async def log_request_time(request: Request, call_next):
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    end_time = time.perf_counter()
+    process_time = (end_time - start_time) * 1000
+    logger.info(
+        f"Requst Time : Request: {request.method} {request.url.path} completed in {process_time:.4f} milliseconds"
+    )
+    # response.headers["X-Process-Time"] = str(
+    #     process_time
+    # )  # Optional: Add timing info to the response
+    return response
 
 
 @app.get("/")

@@ -26,7 +26,7 @@ import irony.util.whatsapp_utils as whatsapp_utils
 import asyncio
 
 
-async def create_ironman_order_requests(order: Order, contact_details: ContactDetails):
+async def create_ironman_order_requests(order: Order, wa_id: str):
     try:
 
         # create a 2d sphere index for a service location table
@@ -94,7 +94,7 @@ async def create_ironman_order_requests(order: Order, contact_details: ContactDe
             message_body = whatsapp_utils.get_reply_message(
                 "new_order_no_ironman", message_type="text"
             )
-            await Message(message_body).send_message(contact_details.wa_id)
+            await Message(message_body).send_message(wa_id)
             raise Exception("No nearby ironman found.")
 
         # Split nearby_service_locations into a dictionary based on delivery_type
@@ -387,6 +387,16 @@ async def send_ironman_delivery_schedule():
 
     logger.info(f"Number of pending schedules {len(pending_schedules)}")
 
+    collect_message_root = whatsapp_utils.get_reply_message(
+        "ironman_collect_order",
+        message_type="interactive",
+        message_sub_type="reply",
+    )
+
+    drop_message_root = whatsapp_utils.get_reply_message(
+        "ironman_drop_order", message_type="interactive", message_sub_type="reply"
+    )
+
     for pending_schedule in pending_schedules:
         pipeline = [
             {
@@ -431,16 +441,6 @@ async def send_ironman_delivery_schedule():
 
         service_location_orders = await db.order.aggregate(pipeline=pipeline).to_list(
             None
-        )
-
-        collect_message_root = whatsapp_utils.get_reply_message(
-            "ironman_collect_order",
-            message_type="interactive",
-            message_sub_type="reply",
-        )
-
-        drop_message_root = whatsapp_utils.get_reply_message(
-            "ironman_drop_order", message_type="interactive", message_sub_type="reply"
         )
 
         maps_link = config.DB_CACHE["google_maps_link"]
@@ -502,7 +502,7 @@ async def send_ironman_delivery_schedule():
         # update schedule status
         await db.config.update_one(
             {"_id": pending_schedule["_id"]},
-            {"$set": {"is_delivery_schedule_pending": True}},
+            {"$set": {"is_delivery_schedule_pending": False}},
         )
 
     logger.info("Completed send_ironman_schedule")
@@ -620,7 +620,9 @@ async def send_ironman_work_schedule():
                     .replace("{bag}", "LOL")
                     .replace("{count}", str(count))
                     .replace("{phone}", str(order.user.wa_id)[2:])
-                    .replace("{delivery_date}", str(getattr(order, "delivery_date", "NA")))
+                    .replace(
+                        "{delivery_date}", str(getattr(order, "delivery_date", "NA"))
+                    )
                 )
 
                 # send message to ironman
@@ -635,7 +637,7 @@ async def send_ironman_work_schedule():
         # update schedule status
         await db.config.update_one(
             {"_id": pending_schedule["_id"]},
-            {"$set": {"is_work_schedule_pending": True}},
+            {"$set": {"is_work_schedule_pending": False}},
         )
 
     logger.info("Completed send_ironman_schedule")
@@ -654,7 +656,7 @@ async def send_ironman_pending_work_schedule():
         {
             "$match": {
                 "start_time": {"$lte": trigger_time},
-                "is_delivery_schedule_pending": True,
+                "is_pending_schedule_pending": True,
             }
         }
     ]
@@ -672,10 +674,10 @@ async def send_ironman_pending_work_schedule():
 
         # Combine the date and time
         start_datetime = datetime.strptime(
-            f"{current_date} {pending_schedule["start_time"]}", "%Y-%m-%d %H:%M"
+            f"{current_date} {pending_schedule['start_time']}", "%Y-%m-%d %H:%M"
         )
         end_datetime = datetime.strptime(
-            f"{current_date} {pending_schedule["start_time"]}", "%Y-%m-%d %H:%M"
+            f"{current_date} {pending_schedule['end_time']}", "%Y-%m-%d %H:%M"
         )
 
         pipeline = [
@@ -764,7 +766,9 @@ async def send_ironman_pending_work_schedule():
                     .replace("{bag}", "LOL")
                     .replace("{count}", str(count))
                     .replace("{phone}", str(order.user.wa_id)[2:])
-                    .replace("{delivery_date}", str(getattr(order, "delivery_date", "NA")))
+                    .replace(
+                        "{delivery_date}", str(getattr(order, "delivery_date", "NA"))
+                    )
                 )
 
                 # send message to ironman
@@ -779,7 +783,43 @@ async def send_ironman_pending_work_schedule():
         # update schedule status
         await db.config.update_one(
             {"_id": pending_schedule["_id"]},
-            {"$set": {"is_delivery_schedule_pending": True}},
+            {"$set": {"is_pending_schedule_pending": False}},
         )
 
     logger.info("Completed send_ironman_schedule")
+
+
+async def create_order_requests():
+
+    # create_ironman_order_requests(order, contact_details)
+    current_time = datetime.now()
+    pipeline = [
+        {
+            "$match": {
+                "trigger_order_request_at": {"$lte": current_time},
+                "trigger_order_request_pending": True,
+            }
+        },
+    ]
+
+    pending_orders = await db.order.aggregate(pipeline=pipeline).to_list(None)
+    if not pending_orders:
+        logger.info("No pending orders to create order requests")
+        return
+
+    logger.info(f"Number of pending orders {len(pending_orders)}")
+    tasks = []
+    order_ids = []
+    for i in pending_orders:
+        order = Order(**i)
+        order_ids.append(order.id)
+        tasks.append(create_ironman_order_requests(order, order.user_wa_id))
+
+    await db.order.update_many(
+        {"_id": {"$in": order_ids}},
+        {"$set": {"trigger_order_request_pending": False}},
+    )
+
+    await asyncio.gather(*tasks)
+
+    logger.info("Completed create_order_requests")

@@ -17,13 +17,13 @@ def replace_keys_with_values(input_string, replacements):
 
 
 def is_time_slot_expired(time_slot):
-    n = config.DB_CACHE["config"]["time_slot_gap"]["value"]
-    current_time_plus_n = datetime.now() + timedelta(hours=n)
+    n = config.DB_CACHE["config"]["delivery_schedule_time_gap"]["value"]
+    current_time_plus_n = datetime.now() + timedelta(minutes=n)
     current_time_plus_n = (
         f"{current_time_plus_n.hour:02d}:{current_time_plus_n.minute:02d}"
     )
     if time_slot in config.DB_CACHE["config"]:
         time_slot_data = config.DB_CACHE["config"][time_slot]
-        if current_time_plus_n < time_slot_data.get("time", "00:00"):
+        if current_time_plus_n < time_slot_data.get("start_time", "00:00"):
             return False
     return True

@@ -18,12 +18,15 @@ class Order(BaseModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     user_id: Optional[ObjectId] = None
     user: Optional[User] = None
+    user_wa_id: Optional[str] = None
     order_items: Optional[List[OrderItem]] = None
     service_location_id: Optional[ObjectId] = None
     service_location: Optional[ServiceLocation] = None
     services: Optional[List[Service]] = None
     count_range: Optional[str] = None
     location: Optional[UserLocation] = None
+    existing_location: Optional[bool] = None
+    trigger_order_request_at: Optional[datetime] = None
     time_slot: Optional[str] = None
     total_price: Optional[float] = None
     total_count: Optional[float] = None

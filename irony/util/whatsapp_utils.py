@@ -7,6 +7,7 @@ from irony.config import config
 from irony.config.logger import logger
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
+from irony.models.location import Location, UserLocation
 from irony.models.message import MessageConfig, MessageType
 from irony.models.order_status import OrderStatus, OrderStatusEnum
 from irony.util.message import Message
@@ -132,8 +133,9 @@ def get_reply_message(message_key, message_type="interactive", message_sub_type=
 
 
 def get_free_text_message(text):
-    message_body = config.DB_CACHE["message_config"]["free_text"]
-    message_body["interactive"]["body"]["text"] = text
+    message_doc: MessageConfig = config.DB_CACHE["message_config"]["free_text"]
+    message_body = message_doc.message
+    message_body["text"]["body"] = text
     return message_body
 
 
@@ -145,15 +147,31 @@ async def verify_context_id(contact_details, context):
 
     last_message = await db.last_message.find_one({"user": contact_details.wa_id})
 
-    if last_message["last_sent_msg_id"] != context:
+    if last_message.get("last_sent_msg_id", "POOK") != context:
         logger.info(
             f"Context id is not matching with last message id. Last message : {last_message['last_sent_msg_id']}, User reply context : {context}"
         )
 
         # TODO uncomment this after before prod
-        # raise WhatsappException(
-        #     "Context id is not matching with last message id.",
-        #     reply_message="Looks like you are replying to some old message. Please reply to the latest message or start a fresh conversation by sending 'Hi'.",
-        # )
+        raise WhatsappException(
+            "Context id is not matching with last message id.",
+            reply_message="Looks like you are replying to some old message. Please reply to the latest message or start a fresh conversation by sending 'Hi'.",
+        )
 
     return last_message
+
+
+async def add_user_location(contact_details: ContactDetails, coords):
+    location: UserLocation = UserLocation(
+        user=contact_details.wa_id,
+        location=Location(
+            type="Point", coordinates=[coords["latitude"], coords["longitude"]]
+        ),
+        created_on=datetime.now(),
+        last_used=datetime.now(),
+    )
+    location_doc = await db.location.insert_one(
+        location.model_dump(exclude_defaults=True)
+    )
+    location.id = location_doc.inserted_id
+    return location

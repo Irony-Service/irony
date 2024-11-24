@@ -147,7 +147,9 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
                 },
             )
 
-            await Message(user_ironman_alloted_msg).send_message(contact_details.wa_id)
+            await Message(user_ironman_alloted_msg).send_message(
+                order_request.order.user_wa_id
+            )
 
             # Send message to ironman that order is assigened to him.
             ironman_order_alloted_message = whatsapp_utils.get_reply_message(
