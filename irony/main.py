@@ -14,20 +14,20 @@ scheduler = AsyncIOScheduler()
 
 # Add the job to the scheduler
 # TODO add this back when you want to send ironman_request
-# scheduler.add_job(
-#     background_process.send_pending_order_requests, CronTrigger(minute="*/1")
-# )
-
 scheduler.add_job(
-    background_process.send_ironman_delivery_schedule, CronTrigger(minute="*/10")
+    background_process.send_pending_order_requests, CronTrigger(minute="*/1")
 )
 
 scheduler.add_job(
-    background_process.send_ironman_work_schedule, CronTrigger(minute="*/10")
+    background_process.send_ironman_delivery_schedule, CronTrigger(minute="*/1")
 )
 
 scheduler.add_job(
-    background_process.send_ironman_pending_work_schedule, CronTrigger(minute="*/10")
+    background_process.send_ironman_work_schedule, CronTrigger(minute="*/2")
+)
+
+scheduler.add_job(
+    background_process.send_ironman_pending_work_schedule, CronTrigger(minute="*/1")
 )
 
 

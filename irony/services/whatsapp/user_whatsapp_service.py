@@ -71,6 +71,7 @@ async def set_new_order_clothes_count(
 
     order: Order = Order(
         user_id=user["_id"],
+        user_wa_id=contact_details.wa_id,
         count_range=button_reply_obj["id"],
         is_active=False,
         order_status=[order_status],

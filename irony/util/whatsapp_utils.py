@@ -132,8 +132,9 @@ def get_reply_message(message_key, message_type="interactive", message_sub_type=
 
 
 def get_free_text_message(text):
-    message_body = config.DB_CACHE["message_config"]["free_text"]
-    message_body["interactive"]["body"]["text"] = text
+    message_doc: MessageConfig = config.DB_CACHE["message_config"]["free_text"]
+    message_body = message_doc.message
+    message_body["text"]["body"] = text
     return message_body
 
 
@@ -145,7 +146,7 @@ async def verify_context_id(contact_details, context):
 
     last_message = await db.last_message.find_one({"user": contact_details.wa_id})
 
-    if last_message["last_sent_msg_id"] != context:
+    if last_message.get("last_sent_msg_id", "POOK") != context:
         logger.info(
             f"Context id is not matching with last message id. Last message : {last_message['last_sent_msg_id']}, User reply context : {context}"
         )
