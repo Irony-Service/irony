@@ -1,6 +1,5 @@
 import asyncio
-from datetime import datetime
-import json
+from datetime import datetime , timedelta ,time ,date
 import random
 from typing import Any, List, Optional
 from bson import ObjectId
@@ -191,10 +190,51 @@ async def set_new_order_location(message_details, contact_details):
 
     # TODO : send time slot message to user.
     # TODO : add time slot action options to call_to_action
+
     message_body = whatsapp_utils.get_reply_message(
         message_key="time_slots_message",
         message_sub_type="radio",
     )
+
+    current_time = datetime.now().time()
+
+    hours = current_time.hour
+    minutes = current_time.minute
+
+    total_min = hours* 60+minutes
+
+    call_action_config = await  db.config.find({"group": "TIME_SLOT_ID"}).to_list(None)
+
+    delivery_schedule_time_gap = config.DB_CACHE["config"]["delivery_schedule_time_gap"]["value"]
+
+    total_min += delivery_schedule_time_gap 
+    
+
+    slot_time = {}
+
+    for i in call_action_config:
+        h= int(i['start_time'][0:2])
+        m= int(i['start_time'][3:5])
+        
+        tot = h*60+m
+        slot_time[i["key"]]=tot
+
+
+    if(total_min >slot_time[message_body['interactive']['action']['sections'][0]['rows'][0]['id']]):
+        body = message_body['interactive']['action']['sections'][0]['rows']
+        filtered_today_slots = [slot for slot in body if slot_time[slot['id']]  > total_min]
+        filtered_tom_slots = body
+        filtered_tom_slots = [slot.copy() for slot in body]
+        for slot1 in filtered_tom_slots:
+            slot1['title'] = "Tomorrow " +" ".join(slot1['title'].split(" ")[1:])
+            slot1['id']= "T"+slot1['title']
+        body = filtered_today_slots +filtered_tom_slots
+
+    else:
+        pass
+
+    message_body['interactive']['action']['sections'][0]['rows'] = body
+
 
     last_message_update = {
         "type": config.LOCATION,
@@ -244,23 +284,60 @@ async def set_new_order_time_slot(
     # await background_process.find_ironman(order, contact_details)
     # return
 
+    
+
     order_status = OrderStatus(
         status=OrderStatusEnum.FINDING_IRONMAN, created_on=datetime.now()
     )
-    order_doc: Order = await db.order.find_one_and_update(
-        {"_id": last_message["order_id"]},
-        {
-            "$set": {"time_slot": button_reply_obj["id"], "updated_on": datetime.now()},
-            "$push": {
-                "order_status": {
-                    "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
-                    "$position": 0,
-                }
+    call_action_config = await  db.config.find({"group": "TIME_SLOT_ID"}).to_list(None)
+    slot_time = {}
+
+    for i in call_action_config:
+        h= int(i['start_time'][0:2])
+        m= int(i['start_time'][3:5])
+        if(len(h)>1):
+            if(len(m)>1):
+                slot_time[i["key"]]="0"+h+":"+m
+            else:
+                slot_time[i["key"]]="0"+h+":"+"0"+m
+        else:
+            if(len(m)>1):
+                slot_time[i["key"]]=h+":"+m
+            else:
+                slot_time[i["key"]]=h+":"+"0"+m
+
+    if(button_reply_obj["id"][0]!="T"):
+
+        order_doc: Order = await db.order.find_one_and_update(
+            {"_id": last_message["order_id"]},
+            {
+                "$set": {"time_slot": button_reply_obj["id"], "updated_on": datetime.now() ,"pick_up_time":{"time":slot_time[button_reply_obj["id"]] ,"Date":date.today()}},
+                "$push": {
+                    "order_status": {
+                        "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
+                        "$position": 0,
+                    }
+                },
             },
-        },
-        return_document=True,
-    )
-    order = Order(**order_doc)
+            return_document=True,
+        )
+        order = Order(**order_doc)
+    else:
+        order_doc: Order = await db.order.find_one_and_update(
+            {"_id": last_message["order_id"]},
+            {
+                "$set": {"time_slot": button_reply_obj["id"][1:], "updated_on": datetime.now() ,"pick_up_time":{"time":slot_time[button_reply_obj["id"]] ,"Date":date.today()+ timedelta(days=1)}},
+                "$push": {
+                    "order_status": {
+                        "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
+                        "$position": 0,
+                    }
+                },
+            },
+            return_document=True,
+        )
+        order = Order(**order_doc)
+
 
     message_body = whatsapp_utils.get_reply_message(
         message_key="new_order_pending",
