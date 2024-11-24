@@ -228,7 +228,7 @@ async def set_new_order_location(message_details, contact_details):
         filtered_tom_slots = [slot.copy() for slot in body]
         for slot1 in filtered_tom_slots:
             slot1['title'] = "Tomorrow " +" ".join(slot1['title'].split(" ")[1:])
-            slot1['id']= "T"+slot1['title']
+            slot1['id']= "T"+slot1['id']
         body = filtered_today_slots +filtered_tom_slots
 
     else:
@@ -296,13 +296,13 @@ async def set_new_order_time_slot(
     for i in call_action_config:
         h= int(i['start_time'][0:2])
         m= int(i['start_time'][3:5])
-        if(len(h)>1):
-            if(len(m)>1):
+        if(h>9):
+            if(m>9):
                 slot_time[i["key"]]="0"+h+":"+m
             else:
                 slot_time[i["key"]]="0"+h+":"+"0"+m
         else:
-            if(len(m)>1):
+            if(m>9):
                 slot_time[i["key"]]=h+":"+m
             else:
                 slot_time[i["key"]]=h+":"+"0"+m
