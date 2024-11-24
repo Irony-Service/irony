@@ -1,5 +1,6 @@
 import asyncio
-from datetime import datetime , timedelta ,time ,date
+from datetime import datetime, timedelta, time, date
+import json
 import random
 from typing import Any, List, Optional
 from bson import ObjectId
@@ -27,6 +28,12 @@ from irony.db import db
 
 # Start new order message reply
 async def start_new_order(contact_details: ContactDetails):
+    # Instead of below run a daily job to delete all pending orders which are not completed in 24 hours.
+    # Delete order if existing pending order exists
+    # last_message = await db.last_message.find_one({"user": contact_details.wa_id})
+    # if last_message and "order_taken" not in last_message:
+    #     await db.order.delete_one({"order_id": last_message["order_id"]})
+
     last_message_update = None
 
     message_body = whatsapp_utils.get_reply_message(
@@ -108,74 +115,196 @@ async def set_new_order_service(
 
     selected_service: Service = config.DB_CACHE["services"][list_reply_obj["id"]]
 
-    order_status = OrderStatus(
-        status=OrderStatusEnum.LOCATION_PENDING,
-        created_on=datetime.now(),
+    # check if last location exists, if yes drirectly send time slot message
+    last_location_doc = await db.location.find_one(
+        {"user": contact_details.wa_id, "nickname": {"$exists": True}},
+        sort=[("last_used", -1)],
     )
 
-    order_doc: Order = await db.order.find_one_and_update(
-        {"_id": last_message["order_id"]},
-        {
-            "$set": {
-                "services": [
-                    selected_service.model_dump(exclude_defaults=True, by_alias=True)
-                ],
-                "updated_on": datetime.now(),
+    # Last location with nickname exists. Directly send time slot message.
+    if last_location_doc:
+        order_status = OrderStatus(
+            status=OrderStatusEnum.TIME_SLOT_PENDING,
+            created_on=datetime.now(),
+        )
+        order_doc = await db.order.find_one_and_update(
+            {"_id": last_message["order_id"]},
+            {
+                "$set": {
+                    "services": [
+                        selected_service.model_dump(
+                            exclude_defaults=True, by_alias=True
+                        )
+                    ],
+                    "location": last_location_doc,
+                    "existing_location": True,
+                    "updated_on": datetime.now(),
+                },
+                "$push": {
+                    "order_status": {
+                        "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
+                        "$position": 0,
+                    }
+                },
             },
-            "$push": {
-                "order_status": {
-                    "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
-                    "$position": 0,
-                }
+            return_document=True,
+        )
+        order_doc = Order(**order_doc)
+
+        message_body = whatsapp_utils.get_reply_message(
+            message_key="time_slots_message"
+        )
+
+        last_message_update = {
+            "type": config.SERVICE_ID_KEY,
+            "order_id": order_doc.id,
+            "existing_location": True,
+        }
+
+        logger.info(f"Sending message to user : {message_body}")
+        await Message(message_body).send_message(
+            contact_details.wa_id, last_message_update
+        )
+
+    # Last location with nickname does not exists. Ask user to send location.
+    else:
+        order_status = OrderStatus(
+            status=OrderStatusEnum.LOCATION_PENDING,
+            created_on=datetime.now(),
+        )
+        # since there are no nicknames for any locaiton, makes no sense to store existing locations.
+        await db.location.delete_many({"user": contact_details.wa_id})
+        order_doc: Order = await db.order.find_one_and_update(
+            {"_id": last_message["order_id"]},
+            {
+                "$set": {
+                    "services": [
+                        selected_service.model_dump(
+                            exclude_defaults=True, by_alias=True
+                        )
+                    ],
+                    "updated_on": datetime.now(),
+                },
+                "$push": {
+                    "order_status": {
+                        "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
+                        "$position": 0,
+                    }
+                },
             },
-        },
-        return_document=True,
-    )
-    order_doc = Order(**order_doc)
+            return_document=True,
+        )
+        order_doc = Order(**order_doc)
 
-    message_body = whatsapp_utils.get_reply_message(message_key="ASK_LOCATION")
+        message_body = whatsapp_utils.get_reply_message(message_key="ASK_LOCATION")
 
-    last_message_update = {
-        "type": config.SERVICE_ID_KEY,
-        "order_id": order_doc.id,
-    }
+        last_message_update = {
+            "type": config.SERVICE_ID_KEY,
+            "order_id": order_doc.id,
+        }
 
-    logger.info(f"Sending message to user : {message_body}")
-    await Message(message_body).send_message(contact_details.wa_id, last_message_update)
+        logger.info(f"Sending message to user : {message_body}")
+        await Message(message_body).send_message(
+            contact_details.wa_id, last_message_update
+        )
 
 
-async def set_new_order_location(message_details, contact_details):
+async def set_new_order_location(message_details, contact_details: ContactDetails):
     last_message = await whatsapp_utils.verify_context_id(
         contact_details, message_details.get("context", {}).get("id", None)
     )
     coords = message_details["location"]
 
-    # last_message: Any = await db.last_message.find_one({"user": contact_details.wa_id})
-    # if last_message["last_sent_msg_id"] != message_details["context"]["id"]:
-    #     # return some error kind message because the location reply he has sent might be for other order.
-    #     logger.info("Location sent for some older message")
-
     order: Order = await db.order.find_one({"_id": last_message["order_id"]})
     order = Order(**order)
-    location: UserLocation = UserLocation(
-        user=contact_details.wa_id,
-        location=Location(
-            type="Point", coordinates=[coords["latitude"], coords["longitude"]]
-        ),
-        created_on=datetime.now(),
-        last_used=datetime.now(),
-    )
-    location_doc = await db.location.insert_one(
-        location.model_dump(exclude_defaults=True)
-    )
-    location.id = location_doc.inserted_id
-    order.location = location
 
-    order_status = OrderStatus(
-        status=OrderStatusEnum.TIME_SLOT_PENDING, created_on=datetime.now()
-    )
+    if order.existing_location:
+        order.existing_location = False
+        if order.trigger_order_request_at < datetime.now():
+            # send user that time is up for sending location.
+            message_body = whatsapp_utils.get_free_text_message(
+                "Time is up for sending location for this order."
+            )
+        else:
+            location = await whatsapp_utils.add_user_location(contact_details, coords)
+            order.location = location
+            message_body = whatsapp_utils.get_reply_message(
+                message_key="new_order_pending",
+                message_sub_type="reply",
+            )
 
-    order.order_status.insert(0, order_status)
+            utils.replace_message_keys_with_values(
+                message_body,
+                {
+                    # TODO change this to actual chosen date
+                    "{date}": order.created_on.strftime("%d-%m-%Y"),
+                    "{time}": config.DB_CACHE["call_to_action"]
+                    .get(order.time_slot, {})
+                    .get("title", "N/A"),
+                },
+            )
+    else:
+        location = await whatsapp_utils.add_user_location(contact_details, coords)
+        order.location = location
+        message_body = whatsapp_utils.get_reply_message(
+            message_key="time_slots_message",
+            message_sub_type="radio",
+        )
+        # Teja start
+        current_time = datetime.now().time()
+
+        hours = current_time.hour
+        minutes = current_time.minute
+
+        total_min = hours * 60 + minutes
+
+        call_action_config = await db.config.find({"group": "TIME_SLOT_ID"}).to_list(
+            None
+        )
+
+        delivery_schedule_time_gap = config.DB_CACHE["config"][
+            "delivery_schedule_time_gap"
+        ]["value"]
+
+        total_min += delivery_schedule_time_gap
+
+        slot_time = {}
+
+        for i in call_action_config:
+            h = int(i["start_time"][0:2])
+            m = int(i["start_time"][3:5])
+
+            tot = h * 60 + m
+            slot_time[i["key"]] = tot
+
+        if (
+            total_min
+            > slot_time[
+                message_body["interactive"]["action"]["sections"][0]["rows"][0]["id"]
+            ]
+        ):
+            body = message_body["interactive"]["action"]["sections"][0]["rows"]
+            filtered_today_slots = [
+                slot for slot in body if slot_time[slot["id"]] > total_min
+            ]
+            filtered_tom_slots = body
+            filtered_tom_slots = [slot.copy() for slot in body]
+            for slot1 in filtered_tom_slots:
+                slot1["title"] = "Tomorrow " + " ".join(slot1["title"].split(" ")[1:])
+                slot1["id"] = "T" + slot1["id"]
+            body = filtered_today_slots + filtered_tom_slots
+
+        else:
+            pass
+
+        message_body["interactive"]["action"]["sections"][0]["rows"] = body
+        # Teja end
+        order.order_status.insert(
+            0,
+            OrderStatus(
+                status=OrderStatusEnum.TIME_SLOT_PENDING, created_on=datetime.now()
+            ),
+        )
 
     order.updated_on = datetime.now()
     updated_order = await db.order.replace_one(
@@ -183,59 +312,10 @@ async def set_new_order_location(message_details, contact_details):
         order.model_dump(exclude_defaults=True, exclude={"id"}, by_alias=True),
     )
     if updated_order.modified_count == 0:
-        # TODO : send location interactive message again.
         raise WhatsappException(
             message="Unable to update location for your order.",
             reply_message="Unable to update location for your order. Please try again.",
         )
-
-    # TODO : send time slot message to user.
-    # TODO : add time slot action options to call_to_action
-
-    message_body = whatsapp_utils.get_reply_message(
-        message_key="time_slots_message",
-        message_sub_type="radio",
-    )
-
-    current_time = datetime.now().time()
-
-    hours = current_time.hour
-    minutes = current_time.minute
-
-    total_min = hours* 60+minutes
-
-    call_action_config = await  db.config.find({"group": "TIME_SLOT_ID"}).to_list(None)
-
-    delivery_schedule_time_gap = config.DB_CACHE["config"]["delivery_schedule_time_gap"]["value"]
-
-    total_min += delivery_schedule_time_gap 
-    
-
-    slot_time = {}
-
-    for i in call_action_config:
-        h= int(i['start_time'][0:2])
-        m= int(i['start_time'][3:5])
-        
-        tot = h*60+m
-        slot_time[i["key"]]=tot
-
-
-    if(total_min >slot_time[message_body['interactive']['action']['sections'][0]['rows'][0]['id']]):
-        body = message_body['interactive']['action']['sections'][0]['rows']
-        filtered_today_slots = [slot for slot in body if slot_time[slot['id']]  > total_min]
-        filtered_tom_slots = body
-        filtered_tom_slots = [slot.copy() for slot in body]
-        for slot1 in filtered_tom_slots:
-            slot1['title'] = "Tomorrow " +" ".join(slot1['title'].split(" ")[1:])
-            slot1['id']= "T"+slot1['id']
-        body = filtered_today_slots +filtered_tom_slots
-
-    else:
-        pass
-
-    message_body['interactive']['action']['sections'][0]['rows'] = body
-
 
     last_message_update = {
         "type": config.LOCATION,
@@ -244,29 +324,7 @@ async def set_new_order_location(message_details, contact_details):
 
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
 
-    # message_doc = await db.message_config.find_one({"message_key": "new_order_pending"})
-
-    # message_body = message_doc["message"]
-    # message_text: str = whatsapp_common.get_random_one_from_messages(message_doc)
-    # message_body["interactive"]["body"]["text"] = message_text
-
-    # last_message_update = {
-    #     "type": config.CLOTHES_COUNT_KEY,
-    #     "order_id": order["_id"],
-    # }
-
-    # logger.info(f"Sending message to user : {message_body}")
-    # await Message(message_body).send_message(contact_details.wa_id, last_message_update)
-
-    # await background_process.find_ironman(user, location, order)
-
     logger.info("Location message handled")
-    # TODO
-    # start background process of searching for nearest ironman to location provided.
-    # Send same order to increasing distance wise different ironmans with 10 mins gap if nearest ironman doesn't reply in 5 mins. Take the response of quickest ironman to approve. once a order is approved by an ironman delete the message if possible from other ironman's.
-    # Think about what type of application you'll be using. Whether you will use whatsapp messaging only or seperate app for ironman.
-
-    # ironman can specify the location point from where he wants to pickup the order. like a point where 1km around it he wants to accept instead of just from his shop.
 
 
 # Set new order time slot message reply
@@ -285,34 +343,20 @@ async def set_new_order_time_slot(
     # await background_process.find_ironman(order, contact_details)
     # return
 
-    
-
     order_status = OrderStatus(
         status=OrderStatusEnum.FINDING_IRONMAN, created_on=datetime.now()
     )
-    call_action_config = await  db.config.find({"group": "TIME_SLOT_ID"}).to_list(None)
-    slot_time = {}
 
-    for i in call_action_config:
-        h= int(i['start_time'][0:2])
-        m= int(i['start_time'][3:5])
-        if(h>9):
-            if(m>9):
-                slot_time[i["key"]]="0"+h+":"+m
-            else:
-                slot_time[i["key"]]="0"+h+":"+"0"+m
-        else:
-            if(m>9):
-                slot_time[i["key"]]=h+":"+m
-            else:
-                slot_time[i["key"]]=h+":"+"0"+m
-
-    if(button_reply_obj["id"][0]!="T"):
-
+    if "existing_location" in last_message:
         order_doc: Order = await db.order.find_one_and_update(
             {"_id": last_message["order_id"]},
             {
-                "$set": {"time_slot": button_reply_obj["id"], "updated_on": datetime.now() ,"pick_up_time":{"time":slot_time[button_reply_obj["id"]] ,"Date":date.today()}},
+                "$set": {
+                    "time_slot": button_reply_obj["id"],
+                    "updated_on": datetime.now(),
+                    "trigger_order_request_at": datetime.now() + timedelta(minutes=3),
+                    "trigger_order_request_pending": True,
+                },
                 "$push": {
                     "order_status": {
                         "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
@@ -322,48 +366,115 @@ async def set_new_order_time_slot(
             },
             return_document=True,
         )
+
         order = Order(**order_doc)
+
+        # send message to user that last location will be used with location reply. and if he wants to change location he can do so.
+        message_body = whatsapp_utils.get_reply_message(
+            message_key="existing_location",
+        )
+
+        utils.replace_message_keys_with_values(
+            message_body, {"{nickname}": order.location.nickname}
+        )
+
     else:
-        order_doc: Order = await db.order.find_one_and_update(
-            {"_id": last_message["order_id"]},
-            {
-                "$set": {"time_slot": button_reply_obj["id"][1:], "updated_on": datetime.now() ,"pick_up_time":{"time":slot_time[button_reply_obj["id"]] ,"Date":date.today()+ timedelta(days=1)}},
-                "$push": {
-                    "order_status": {
-                        "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
-                        "$position": 0,
-                    }
-                },
-            },
-            return_document=True,
+        call_action_config = await db.config.find({"group": "TIME_SLOT_ID"}).to_list(
+            None
         )
+        slot_time = {}
+
+        for i in call_action_config:
+            h = int(i["start_time"][0:2])
+            m = int(i["start_time"][3:5])
+            if h > 9:
+                if m > 9:
+                    slot_time[i["key"]] = "0" + h + ":" + m
+                else:
+                    slot_time[i["key"]] = "0" + h + ":" + "0" + m
+            else:
+                if m > 9:
+                    slot_time[i["key"]] = h + ":" + m
+                else:
+                    slot_time[i["key"]] = h + ":" + "0" + m
+
+        if button_reply_obj["id"][0] != "T":
+            order_doc: Order = await db.order.find_one_and_update(
+                {"_id": last_message["order_id"]},
+                {
+                    "$set": {
+                        "time_slot": button_reply_obj["id"],
+                        "updated_on": datetime.now(),
+                        "pick_up_time": {
+                            "time": slot_time[button_reply_obj["id"]],
+                            "Date": date.today(),
+                        },
+                    },
+                    "$push": {
+                        "order_status": {
+                            "$each": [
+                                order_status.model_dump(exclude={"_id", "order_id"})
+                            ],
+                            "$position": 0,
+                        }
+                    },
+                },
+                return_document=True,
+            )
+
+        else:
+            order_doc: Order = await db.order.find_one_and_update(
+                {"_id": last_message["order_id"]},
+                {
+                    "$set": {
+                        "time_slot": button_reply_obj["id"][1:],
+                        "updated_on": datetime.now(),
+                        "pick_up_time": {
+                            "time": slot_time[button_reply_obj["id"]],
+                            "Date": date.today() + timedelta(days=1),
+                        },
+                    },
+                    "$push": {
+                        "order_status": {
+                            "$each": [
+                                order_status.model_dump(exclude={"_id", "order_id"})
+                            ],
+                            "$position": 0,
+                        }
+                    },
+                },
+                return_document=True,
+            )
         order = Order(**order_doc)
 
+        message_body = whatsapp_utils.get_reply_message(
+            message_key="new_order_pending",
+            message_sub_type="reply",
+        )
 
-    message_body = whatsapp_utils.get_reply_message(
-        message_key="new_order_pending",
-        message_sub_type="reply",
-    )
-
-    utils.replace_message_keys_with_values(
-        message_body,
-        {
-            # TODO change this to actual chosen date
-            "{date}": order.created_on.strftime("%d-%m-%Y"),
-            "{time}": config.DB_CACHE["call_to_action"]
-            .get(order.time_slot, {})
-            .get("title", "N/A"),
-        },
-    )
+        utils.replace_message_keys_with_values(
+            message_body,
+            {
+                # TODO change this to actual chosen date
+                "{date}": order.created_on.strftime("%d-%m-%Y"),
+                "{time}": config.DB_CACHE["call_to_action"]
+                .get(order.time_slot, {})
+                .get("title", "N/A"),
+            },
+        )
 
     last_message_update = {
         "type": config.TIME_SLOT_ID_KEY,
         "order_id": last_message["order_id"],
+        "order_taken": True,
     }
 
     logger.info(f"Sending message to user : {message_body}")
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
 
-    asyncio.create_task(
-        background_process.create_ironman_order_requests(order, contact_details)
-    )
+    if not order.existing_location:
+        asyncio.create_task(
+            background_process.create_ironman_order_requests(
+                order, contact_details.wa_id
+            )
+        )

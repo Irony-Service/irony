@@ -15,7 +15,7 @@ class Location(BaseModel):
 class UserLocation(BaseModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     user: Optional[str] = None
-    name: Optional[str] = None
+    nickname: Optional[str] = None
     address: Optional[str] = None
     location: Optional[Location] = None
     url: Optional[str] = None
