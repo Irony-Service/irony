@@ -7,7 +7,6 @@ from bson import ObjectId
 from fastapi import Response
 from fastapi.encoders import jsonable_encoder
 
-
 from irony.config import config
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
@@ -18,11 +17,8 @@ from irony.models.service import Service
 from irony.models.user import User
 from irony.config.logger import logger
 from irony.util import background_process, utils
-
 from irony.util import whatsapp_utils
-
 from irony.util.message import Message
-
 from irony.db import db
 
 
@@ -268,30 +264,34 @@ async def set_new_order_location(message_details, contact_details: ContactDetail
 
         total_min += delivery_schedule_time_gap
 
-        slot_time = {}
-
+        slot_start = {}
+        slot_end = {}
         for i in call_action_config:
             h = int(i["start_time"][0:2])
             m = int(i["start_time"][3:5])
-
             tot = h * 60 + m
-            slot_time[i["key"]] = tot
+            slot_start[i["key"]] = tot
+            he = int(i["end_time"][0:2])
+            me = int(i["end_time"][3:5])
+            te = he * 60 + me
+            slot_end[i["key"]] = te
 
+        body = message_body["interactive"]["action"]["sections"][0]["rows"]
         if (
             total_min
-            > slot_time[
+            > slot_start[
                 message_body["interactive"]["action"]["sections"][0]["rows"][0]["id"]
             ]
         ):
-            body = message_body["interactive"]["action"]["sections"][0]["rows"]
+           
             filtered_today_slots = [
-                slot for slot in body if slot_time[slot["id"]] > total_min
+                slot for slot in body if slot_start[slot["id"]] > total_min
             ]
             filtered_tom_slots = body
             filtered_tom_slots = [slot.copy() for slot in body]
             for slot1 in filtered_tom_slots:
                 slot1["title"] = "Tomorrow " + " ".join(slot1["title"].split(" ")[1:])
-                slot1["id"] = "T" + slot1["id"]
+                slot1["id"] =  slot1["id"]+"T" 
             body = filtered_today_slots + filtered_tom_slots
 
         else:
@@ -382,33 +382,25 @@ async def set_new_order_time_slot(
         call_action_config = await db.config.find({"group": "TIME_SLOT_ID"}).to_list(
             None
         )
-        slot_time = {}
+        slot_start = getSlots(call_action_config,"start_time")
+        slot_end = getSlots(call_action_config ,"end_time")
+        
+        
+        l= len(button_reply_obj["id"])
+        if button_reply_obj["id"][l-1] != "T":
 
-        for i in call_action_config:
-            h = int(i["start_time"][0:2])
-            m = int(i["start_time"][3:5])
-            if h > 9:
-                if m > 9:
-                    slot_time[i["key"]] = "0" + h + ":" + m
-                else:
-                    slot_time[i["key"]] = "0" + h + ":" + "0" + m
-            else:
-                if m > 9:
-                    slot_time[i["key"]] = h + ":" + m
-                else:
-                    slot_time[i["key"]] = h + ":" + "0" + m
-
-        if button_reply_obj["id"][0] != "T":
+            now = datetime.now()
+            h,m= getTimeFromStamp(slot_start[button_reply_obj["id"]])
+            he,me= getTimeFromStamp(slot_end[button_reply_obj["id"]])
+            start_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
+            end_time = now.replace(hour=he, minute=me, second=0, microsecond=0)
             order_doc: Order = await db.order.find_one_and_update(
                 {"_id": last_message["order_id"]},
                 {
                     "$set": {
                         "time_slot": button_reply_obj["id"],
                         "updated_on": datetime.now(),
-                        "pick_up_time": {
-                            "time": slot_time[button_reply_obj["id"]],
-                            "Date": date.today(),
-                        },
+                        "pick_up_time": {"start":start_time , "end":end_time},
                     },
                     "$push": {
                         "order_status": {
@@ -423,16 +415,17 @@ async def set_new_order_time_slot(
             )
 
         else:
+            now = datetime.now()+timedelta(1)
+            h,m= getTimeFromStamp(slot_start[button_reply_obj["id"][:l-1]])
+            start_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
+            end_time = start_time + timedelta(hours=3)
             order_doc: Order = await db.order.find_one_and_update(
                 {"_id": last_message["order_id"]},
                 {
                     "$set": {
-                        "time_slot": button_reply_obj["id"][1:],
+                        "time_slot": button_reply_obj["id"][:l-1],
                         "updated_on": datetime.now(),
-                        "pick_up_time": {
-                            "time": slot_time[button_reply_obj["id"]],
-                            "Date": date.today() + timedelta(days=1),
-                        },
+                        "pick_up_time": {"start":start_time , "end":end_time} 
                     },
                     "$push": {
                         "order_status": {
@@ -456,7 +449,7 @@ async def set_new_order_time_slot(
             message_body,
             {
                 # TODO change this to actual chosen date
-                "{date}": order.created_on.strftime("%d-%m-%Y"),
+                "{date}": order.pick_up_time.start.strftime("%d-%m-%Y"),
                 "{time}": config.DB_CACHE["call_to_action"]
                 .get(order.time_slot, {})
                 .get("title", "N/A"),
@@ -478,3 +471,25 @@ async def set_new_order_time_slot(
                 order, contact_details.wa_id
             )
         )
+
+
+def getTimeFromStamp (timstr):
+    h= int(timstr[:2])
+    m= int(timstr[3:])
+    return h ,m
+def getSlots(slotObj , option):
+    slot= {}
+    for i in slotObj:
+            h = int(i[option][0:2])
+            m = int(i[option][3:5])
+            if h <= 9:
+                if m > 9:
+                    slot[i["key"]] = "0" + str(h) + ":" + str(m)
+                else:
+                    slot[i["key"]] = "0" + str(h) + ":" + "0" + str(m)
+            else:
+                if m > 9:
+                    slot[i["key"]] = str(h) + ":" + str(m)
+                else:
+                    slot[i["key"]] = str(h) + ":" + "0" + str(m)
+    return slot
