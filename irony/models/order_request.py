@@ -21,7 +21,5 @@ class OrderRequest(BaseModel):
     trigger_time: Optional[datetime] = None
     is_pending: Optional[bool] = None
     try_count: Optional[int] = None
-    median_cloth_count :  Optional[int] = None
-    volume_left :  Optional[int] = None
     class Config(ModelConfig):
         pass

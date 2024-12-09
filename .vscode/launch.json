@@ -6,7 +6,7 @@
       "type": "python",
       "request": "launch",
       "module": "uvicorn",
-      "args": ["irony.main:app"],
+      "args": ["irony.main:app", "--reload"],
       "jinja": true,
       "justMyCode": true,
       "console": "integratedTerminal"
