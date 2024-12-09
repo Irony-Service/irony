@@ -67,7 +67,7 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
     ).to_list(length=1)
     order_request: OrderRequest = OrderRequest(**order_request_list[0])
     order = order_request.order
-    if order.service_location_id is not None:
+    if order.auto_alloted or order.service_location_id is not None:
         # Order already accepted by another ironman : send ironman message that order is already accepted.
         logger.info(f"Order:{order.id} already accepted by another ironman")
         await Message(
@@ -112,10 +112,32 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
                 order.id, OrderStatusEnum.PICKUP_PENDING
             )
             order.service_location_id = order_request.service_location_id
-            order.order_status.insert(0, order_status)
+            if(not order.auto_alloted ):
+                order.order_status.insert(0, order_status)
             order.updated_on = datetime.now()
 
             # update the order in the database
+            if(order.auto_alloted):
+                timeslot_volume : TimeslotVolume = await db.timeslot_volume.find_one({
+                                            "service_location_id": service_location["_id"],
+                                            "$expr": {
+                                                "$eq": [
+                                                    {"$dateToString": {"format": "%Y-%m-%d", "date": "$operation_date"}},
+                                                    {"$dateToString": {"format": "%Y-%m-%d", "date": order.pick_up_time.start}}
+                                                ]
+                                            }
+                                        })
+                timeslot =timeslot_volume["timeslot_distributions"][order.time_slot] 
+                   
+                timeslot_volume["timeslot_distributions"][order.time_slot]['current'] -=cache.get_clothes_cta_count(order.count_range)
+                timeslot_volume['current_cloths'] -=cache.get_clothes_cta_count(order.count_range)
+
+                await db.timeslot_volume.replace_one(
+                {"_id": timeslot_volume["id"]},
+                timeslot_volume.model_dump(exclude_defaults=True, by_alias=True),
+            )
+
+                
             await db.order.replace_one(
                 {"_id": order.id},
                 order.model_dump(exclude_defaults=True, by_alias=True),
@@ -146,10 +168,10 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
                     .get("title", "N/A"),
                 },
             )
-
-            await Message(user_ironman_alloted_msg).send_message(
-                order_request.order.user_wa_id
-            )
+            if (not order.auto_alloted):
+                await Message(user_ironman_alloted_msg).send_message(
+                    order_request.order.user_wa_id
+                )
 
             # Send message to ironman that order is assigened to him.
             ironman_order_alloted_message = whatsapp_utils.get_reply_message(

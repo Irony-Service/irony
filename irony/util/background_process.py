@@ -121,7 +121,64 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
             self_pickup_service_locations = nearby_service_locations_dict[
                 DeliveryTypeEnum.SELF_PICKUP
             ]
+            auto_allotted = True;
+            already_alloted= False;
+            temp_name = ""
             for index, service_location in enumerate(self_pickup_service_locations):
+
+                if(service_location["auto_accept"]):
+                    if already_alloted:
+                        self_pickup_service_locations.pop(index)
+
+                    timeslot_volume : TimeslotVolume = await db.timeslot_volume.find_one({
+                                            "service_location_id": service_location["_id"],
+                                            "$expr": {
+                                                "$eq": [
+                                                    {"$dateToString": {"format": "%Y-%m-%d", "date": "$operation_date"}},
+                                                    {"$dateToString": {"format": "%Y-%m-%d", "date": order.pick_up_time.start}}
+                                                ]
+                                            }
+                                        })
+                    timeslot =timeslot_volume["timeslot_distributions"][order.time_slot] 
+                    if(timeslot['limit']-timeslot['current'] >= cache.get_clothes_cta_count(order.count_range) ):
+
+                        timeslot_volume["timeslot_distributions"][order.time_slot]['current'] +=cache.get_clothes_cta_count(order.count_range)
+                        timeslot_volume['current_cloths'] +=cache.get_clothes_cta_count(order.count_range)
+                        await db.timeslot_volume.update_one(
+                                {"_id": timeslot_volume["_id"]},  # Match the document by its _id
+                                    {"$set": {"timeslot_distributions": timeslot_volume["timeslot_distributions"]}})
+                        
+                        order_status = await whatsapp_utils.get_new_order_status(
+                            order.id, OrderStatusEnum.PICKUP_PENDING
+                        )
+                        order.service_location_id = service_location["_id"]
+                        order.order_status.insert(0, order_status)
+                        order.updated_on = datetime.now()
+                        order.auto_alloted= True
+
+                       
+
+                        await db.order.replace_one(
+                                        {"_id": order.id},
+                                            order.model_dump(exclude_defaults=True, exclude={"id"}, by_alias=True),
+                                        )
+                        auto_allotted = False ;
+                        self_pickup_service_locations.pop(index)
+                        already_alloted= True;
+                        temp_name = service_location['name']
+
+
+                        message_body = whatsapp_utils.get_reply_message( message_key="new_order_ironman_alloted",message_sub_type="text",)
+
+                        last_message_update = {
+                        "type": 'ORDER_CONFIRMED',
+                        "order_id":  order.id,
+                         "order_taken": True,
+                        }
+
+                        logger.info(f"Sending message to user : {message_body}")
+                        await Message(message_body).send_message(order.user_wa_id, last_message_update)
+
                 trigger_time = trigger_time + timedelta(minutes=index * 1)
                 order_request = OrderRequest(
                     order_id=order.id,
@@ -156,16 +213,19 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
             )
             order_requests.append(order_request)
 
-        result = await db.order_request.insert_many(
-            [
-                order_request.model_dump(exclude_defaults=True)
-                for order_request in order_requests
-            ]
-        )
 
-        logger.info(
-            f"Inserted {len(result.inserted_ids)} rows. Into order_request collection. ids : {result.inserted_ids}"
-        )
+        if(auto_allotted):
+            result = await db.order_request.insert_many(
+                [
+                    order_request.model_dump(exclude_defaults=True)
+                    for order_request in order_requests
+                ]
+            )
+
+            logger.info(
+                f"Inserted {len(result.inserted_ids)} rows. Into order_request collection. ids : {result.inserted_ids}"
+            )
+        logger.info(f"Order assigned to ServiceLocation {temp_name}.")
     except Exception as e:
         logger.error("Exception in find_ironman", exc_info=True)
         pass

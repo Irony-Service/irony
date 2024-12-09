@@ -50,6 +50,7 @@ class ServiceLocation(BaseModel):
     is_active: Optional[bool] = None
     rating: Optional[float] = None
     wa_id: Optional[str] = None
+    auto_accept: Optional[bool] = None
 
     class Config(ModelConfig):
         pass
