@@ -6,6 +6,7 @@ from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
 
 from irony.config.logger import logger
+from irony.models.order_status import OrderStatusEnum
 from irony.services.whatsapp import user_whatsapp_service
 from irony.services.whatsapp import ironman_whatsapp_service
 
@@ -49,6 +50,18 @@ async def handle_button_reply(contact_details: ContactDetails, interaction, cont
     elif str(reply_id).startswith(config.IRONMAN_REQUEST):
         await ironman_whatsapp_service.process_ironman_response(
             contact_details, context, reply
+        )
+    elif str(reply_id).startswith(config.IRONMAN_COLLECT_ORDER):
+        await ironman_whatsapp_service.update_order_status(
+            reply, OrderStatusEnum.PICKUP_COMPLETE
+        )
+    elif str(reply_id).startswith(config.IRONMAN_ORDER_WORK_DONE):
+        await ironman_whatsapp_service.update_order_status(
+            reply, OrderStatusEnum.WORK_DONE
+        )
+    elif str(reply_id).startswith(config.IRONMAN_DROP_OFF_ORDER):
+        await ironman_whatsapp_service.update_order_status(
+            reply, OrderStatusEnum.DELIVERED
         )
         pass
     else:

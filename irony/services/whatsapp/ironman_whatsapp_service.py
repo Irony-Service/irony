@@ -6,8 +6,9 @@ from irony import cache
 from irony.config import config
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
+from irony.models.order import Order
 from irony.models.order_request import OrderRequest
-from irony.models.order_status import OrderStatusEnum
+from irony.models.order_status import OrderStatus, OrderStatusEnum
 from irony.config.logger import logger
 from irony.util import utils
 
@@ -16,6 +17,51 @@ from irony.util import whatsapp_utils
 from irony.util.message import Message
 
 from irony.db import db
+
+
+async def update_order_status(reply, status: OrderStatusEnum):
+    logger.info("Collect order logic start")
+    order_id = reply.get("id").split("#")[-1]
+    # PICKUP_COMPLETE
+    order_statuses = []
+    where = ({"_id": order_id},)
+    if status == OrderStatusEnum.PICKUP_COMPLETE:
+        where["order_status.0.status"] = OrderStatusEnum.PICKUP_PENDING.value
+        order_statuses.append(
+            OrderStatus(
+                status=OrderStatusEnum.WORK_IN_PROGRESS, created_on=datetime.now()
+            ).model_dump(exclude={"_id", "order_id"})
+        )
+    elif status == OrderStatusEnum.WORK_DONE:
+        where["order_status.0.status"] = OrderStatusEnum.WORK_IN_PROGRESS.value
+        order_statuses.append(
+            OrderStatus(
+                status=OrderStatusEnum.DELIVERY_PENDING, created_on=datetime.now()
+            ).model_dump(exclude={"_id", "order_id"})
+        )
+    elif status == OrderStatusEnum.DELIVERED:
+        where["order_status.0.status"] = OrderStatusEnum.DELIVERY_PENDING.value
+
+    order_statuses.append(
+        OrderStatus(status=status, created_on=datetime.now()).model_dump(
+            exclude={"_id", "order_id"}
+        )
+    )
+    order_doc: Order = await db.order.find_one_and_update(
+        {
+            "$push": {
+                "order_status": {
+                    "$each": order_statuses,
+                    "$position": 0,
+                }
+            },
+        },
+        return_document=True,
+    )
+    if not order_doc:
+        logger.error(
+            f"Unable to update status for order where {where} to status {status.value}"
+        )
 
 
 async def process_ironman_response(contact_details: ContactDetails, context, reply):

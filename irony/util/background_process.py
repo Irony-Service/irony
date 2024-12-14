@@ -31,6 +31,10 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
 
         # create a 2d sphere index for a service location table
         # find all records within 2km.
+        order_slots = [order.time_slot]
+        next_slot = cache.get_next_time_slot(order.time_slot)
+        if next_slot is not None:
+            order_slots.append(next_slot)
 
         services_match_list = [
             {"$elemMatch": {"service_id": service.id} for service in order.services}
@@ -58,7 +62,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                         ]  # Filter where range is greater or equal to distance
                     },
                     "services": {"$all": services_match_list},
-                    "time_slots": order.time_slot,
+                    "time_slots": {"$in": order_slots},
                 }
             },
             # {
@@ -82,7 +86,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
             #     }
             # },
             {"$sort": {"distance": 1}},
-            {"$limit": 10},
+            {"$limit": 25},
         ]
 
         nearby_service_locations: List[ServiceLocation] = (
@@ -508,6 +512,11 @@ async def send_ironman_delivery_schedule():
     logger.info("Completed send_ironman_schedule")
 
 
+# New batch to assign unpicked up orders to other ironmans in next schedule asap.
+async def assign_missed_pickup_to_other_ironmans(pending_schedule):
+    logger.info("Started assign_missed_pickup_to_other_ironmans")
+
+
 async def send_ironman_work_schedule():
     logger.info("Started send_ironman_schedule")
     logger.info("Finding pending pickup/drop orders")
@@ -640,6 +649,7 @@ async def send_ironman_work_schedule():
             {"$set": {"is_work_schedule_pending": False}},
         )
 
+    assign_missed_pickup_to_other_ironmans(pending_schedule)
     logger.info("Completed send_ironman_schedule")
 
 
