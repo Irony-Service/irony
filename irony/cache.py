@@ -90,4 +90,4 @@ def get_next_time_slot(slot_key):
     elif time_slot_index == len(config.DB_CACHE["ordered_time_slots"]) - 1:
         return None
 
-    return time_slot_index + 1
+    return config.DB_CACHE["ordered_time_slots"][time_slot_index + 1]

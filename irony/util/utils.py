@@ -17,6 +17,7 @@ def replace_keys_with_values(input_string, replacements):
 
 
 def is_time_slot_expired(time_slot):
+    # TODO check if this logic is right.
     n = config.DB_CACHE["config"]["delivery_schedule_time_gap"]["value"]
     current_time_plus_n = datetime.now() + timedelta(minutes=n)
     current_time_plus_n = (

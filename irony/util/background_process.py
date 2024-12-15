@@ -34,7 +34,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
         order_slots = [order.time_slot]
         next_slot = cache.get_next_time_slot(order.time_slot)
         if next_slot is not None:
-            order_slots.append(next_slot)
+            order_slots.append(next_slot["key"])
 
         services_match_list = [
             {"$elemMatch": {"service_id": service.id} for service in order.services}
@@ -120,22 +120,51 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
 
         order_requests: List[OrderRequest] = []
         trigger_time = datetime.now()
+        next_slot_trigger_time = None
+        if next_slot != None:
+            # create time object
+            trigger_time = datetime.strptime(next_slot["start_time"], "%H:%M").time()
+            # create today's date object. TODO if select tommorrow time slot then make it tommorrow.
+            trigger_date = datetime.now().date()
+
+            delay = config.DB_CACHE["config"]["work_schedule_time_gap"]["value"]
+            next_slot_trigger_time = datetime.combine(
+                trigger_date, trigger_time
+            ) + timedelta(minutes=delay + 2)
 
         if nearby_service_locations_dict[DeliveryTypeEnum.SELF_PICKUP]:
             self_pickup_service_locations = nearby_service_locations_dict[
                 DeliveryTypeEnum.SELF_PICKUP
             ]
             for index, service_location in enumerate(self_pickup_service_locations):
-                trigger_time = trigger_time + timedelta(minutes=index * 1)
-                order_request = OrderRequest(
-                    order_id=order.id,
-                    delivery_type=DeliveryTypeEnum.SELF_PICKUP,
-                    service_location_id=service_location["_id"],
-                    distance=service_location["distance"],
-                    trigger_time=trigger_time,
-                    is_pending=True,
-                    try_count=0,
-                )
+                if order.time_slot in service_location["time_slots"]:
+                    trigger_time = trigger_time + timedelta(minutes=index * 1)
+                    order_request = OrderRequest(
+                        order_id=order.id,
+                        delivery_type=DeliveryTypeEnum.SELF_PICKUP,
+                        service_location_id=service_location["_id"],
+                        distance=service_location["distance"],
+                        trigger_time=trigger_time,
+                        is_pending=True,
+                        try_count=0,
+                    )
+
+                if (
+                    next_slot != None
+                    and next_slot["key"] in service_location["time_slots"]
+                ):
+                    next_slot_trigger_time = next_slot_trigger_time + timedelta(
+                        seconds=index * 30
+                    )
+                    order_request = OrderRequest(
+                        order_id=order.id,
+                        delivery_type=DeliveryTypeEnum.SELF_PICKUP,
+                        service_location_id=service_location["_id"],
+                        distance=service_location["distance"],
+                        trigger_time=next_slot_trigger_time,
+                        is_pending=True,
+                        try_count=0,
+                    )
                 order_requests.append(order_request)
 
         # delivery type service location's order request will be created here
