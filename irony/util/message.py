@@ -90,10 +90,14 @@ class Message:
                 last_message_update["last_sent_msg_id"] = response_data["messages"][0][
                     "id"
                 ]
-            await db.last_message.update_one(
+            result = await db.last_message.replace_one(
                 {"user": to},
                 {"$set": last_message_update},
                 upsert=True,
+            )
+
+            logger.info(
+                f"Temp, last message doc replaced. Result of last_message.replace_one(): {result}"
             )
 
         return response
