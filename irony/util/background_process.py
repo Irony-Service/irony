@@ -20,6 +20,7 @@ from irony.models.service_location import (
     ServiceEntry,
     get_delivery_enum_from_string,
 )
+from irony.models.timeslot_volume import TimeslotVolume
 from irony.models.user import User
 from irony.util.message import Message
 import irony.util.whatsapp_utils as whatsapp_utils
@@ -49,7 +50,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                         "coordinates": order.location.location.coordinates,
                     },
                     "distanceField": "distance",
-                    "maxDistance": 2000,
+                    "maxDistance": 10000,
                     "spherical": True,
                 }
             },
@@ -123,13 +124,15 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
         next_slot_trigger_time = None
         if next_slot != None:
             # create time object
-            trigger_time = datetime.strptime(next_slot["start_time"], "%H:%M").time()
+            next_slot_start_time = datetime.strptime(
+                next_slot["start_time"], "%H:%M"
+            ).time()
             # create today's date object. TODO if select tommorrow time slot then make it tommorrow.
-            trigger_date = datetime.now().date()
+            next_slot_date = datetime.now().date()
 
             delay = config.DB_CACHE["config"]["work_schedule_time_gap"]["value"]
-            next_slot_trigger_time = datetime.combine(
-                trigger_date, trigger_time
+            next_slot_start_time = datetime.combine(
+                next_slot_date, next_slot_start_time
             ) + timedelta(minutes=delay + 2)
 
         if nearby_service_locations_dict[DeliveryTypeEnum.SELF_PICKUP]:
@@ -169,27 +172,16 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                     timeslot = timeslot_volume["timeslot_distributions"][
                         order.time_slot
                     ]
-                    if timeslot["limit"] - timeslot[
-                        "current"
-                    ] >= cache.get_clothes_cta_count(order.count_range):
+                    clothes_count = cache.get_clothes_cta_count(order.count_range)
+                    if timeslot["limit"] - timeslot["current"] >= clothes_count:
 
-                        timeslot_volume["timeslot_distributions"][order.time_slot][
-                            "current"
-                        ] += cache.get_clothes_cta_count(order.count_range)
-                        timeslot_volume[
-                            "current_cloths"
-                        ] += cache.get_clothes_cta_count(order.count_range)
-                        await db.timeslot_volume.update_one(
+                        timeslot["current"] += clothes_count
+                        timeslot_volume["current_cloths"] += clothes_count
+                        await db.timeslot_volume.replace_one(
                             {
                                 "_id": timeslot_volume["_id"]
                             },  # Match the document by its _id
-                            {
-                                "$set": {
-                                    "timeslot_distributions": timeslot_volume[
-                                        "timeslot_distributions"
-                                    ]
-                                }
-                            },
+                            timeslot_volume,
                         )
 
                         order_status = await whatsapp_utils.get_new_order_status(

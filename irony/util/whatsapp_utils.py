@@ -153,10 +153,10 @@ async def verify_context_id(contact_details, context):
         )
 
         # TODO uncomment this after before prod
-        raise WhatsappException(
-            "Context id is not matching with last message id.",
-            reply_message="Looks like you are replying to some old message. Please reply to the latest message or start a fresh conversation by sending 'Hi'.",
-        )
+        # raise WhatsappException(
+        #     "Context id is not matching with last message id.",
+        #     reply_message="Looks like you are replying to some old message. Please reply to the latest message or start a fresh conversation by sending 'Hi'.",
+        # )
 
     return last_message
 

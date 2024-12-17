@@ -92,12 +92,13 @@ class Message:
                 ]
             result = await db.last_message.replace_one(
                 {"user": to},
-                {"$set": last_message_update},
+                last_message_update,
+                # {"$set": last_message_update},
                 upsert=True,
             )
 
             logger.info(
-                f"Temp, last message doc replaced. Result of last_message.replace_one(): {result}"
+                f"Temp, last message doc replaced. update documents count: {result.modified_count}"
             )
 
         return response
