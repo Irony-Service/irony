@@ -66,6 +66,17 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                     "time_slots": {"$in": order_slots},
                 }
             },
+            {
+                "$lookup": {
+                    "from": "timeslot_volume",  # the collection to join
+                    "localField": "_id",  # field in orders referencing service_locations._id
+                    "foreignField": "service_location_id",  # field in service_locations to match
+                    "as": "time_slot_volume",  # output array field for matched documents
+                }
+            },
+            {
+                "$unwind": "$time_slot_volume"  # flatten if each order has only one service location
+            },
             # {
             #     "$project": {
             #         "distance": 1,
@@ -128,47 +139,46 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                 next_slot["start_time"], "%H:%M"
             ).time()
             # create today's date object. TODO if select tommorrow time slot then make it tommorrow.
-            next_slot_date = datetime.now().date()
+            next_slot_start_date = order.pick_up_time.start.date()
 
             delay = config.DB_CACHE["config"]["work_schedule_time_gap"]["value"]
-            next_slot_start_time = datetime.combine(
-                next_slot_date, next_slot_start_time
+            next_slot_trigger_time = datetime.combine(
+                next_slot_start_date, next_slot_start_time
             ) + timedelta(minutes=delay + 2)
 
         if nearby_service_locations_dict[DeliveryTypeEnum.SELF_PICKUP]:
             self_pickup_service_locations = nearby_service_locations_dict[
                 DeliveryTypeEnum.SELF_PICKUP
             ]
-            auto_allotted = True
-            already_alloted = False
             temp_name = ""
             for index, service_location in enumerate(self_pickup_service_locations):
 
                 if service_location["auto_accept"]:
-                    if already_alloted:
-                        self_pickup_service_locations.pop(index)
+                    timeslot_volume: TimeslotVolume = service_location[
+                        "timeslot_volume"
+                    ]
 
-                    timeslot_volume: TimeslotVolume = await db.timeslot_volume.find_one(
-                        {
-                            "service_location_id": service_location["_id"],
-                            "$expr": {
-                                "$eq": [
-                                    {
-                                        "$dateToString": {
-                                            "format": "%Y-%m-%d",
-                                            "date": "$operation_date",
-                                        }
-                                    },
-                                    {
-                                        "$dateToString": {
-                                            "format": "%Y-%m-%d",
-                                            "date": order.pick_up_time.start,
-                                        }
-                                    },
-                                ]
-                            },
-                        }
-                    )
+                    # timeslot_volume: TimeslotVolume = await db.timeslot_volume.find_one(
+                    #     {
+                    #         "service_location_id": service_location["_id"],
+                    #         "$expr": {
+                    #             "$eq": [
+                    #                 {
+                    #                     "$dateToString": {
+                    #                         "format": "%Y-%m-%d",
+                    #                         "date": "$operation_date",
+                    #                     }
+                    #                 },
+                    #                 {
+                    #                     "$dateToString": {
+                    #                         "format": "%Y-%m-%d",
+                    #                         "date": order.pick_up_time.start,
+                    #                     }
+                    #                 },
+                    #             ]
+                    #         },
+                    #     }
+                    # )
                     timeslot = timeslot_volume["timeslot_distributions"][
                         order.time_slot
                     ]
@@ -198,9 +208,6 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                                 exclude_defaults=True, exclude={"id"}, by_alias=True
                             ),
                         )
-                        auto_allotted = False
-                        self_pickup_service_locations.pop(index)
-                        already_alloted = True
                         temp_name = service_location["name"]
 
                         message_body = whatsapp_utils.get_reply_message(
@@ -218,6 +225,8 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                         await Message(message_body).send_message(
                             order.user_wa_id, last_message_update
                         )
+                        # once we find a auto allot service location we can stop creating futher order requests for other service locations in this order
+                        break
 
                 trigger_time = trigger_time + timedelta(minutes=index * 1)
                 order_request = OrderRequest(
@@ -253,17 +262,16 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
             )
             order_requests.append(order_request)
 
-        if auto_allotted:
-            result = await db.order_request.insert_many(
-                [
-                    order_request.model_dump(exclude_defaults=True)
-                    for order_request in order_requests
-                ]
-            )
+        result = await db.order_request.insert_many(
+            [
+                order_request.model_dump(exclude_defaults=True)
+                for order_request in order_requests
+            ]
+        )
 
-            logger.info(
-                f"Inserted {len(result.inserted_ids)} rows. Into order_request collection. ids : {result.inserted_ids}"
-            )
+        logger.info(
+            f"Inserted {len(result.inserted_ids)} rows. Into order_request collection. ids : {result.inserted_ids}"
+        )
         logger.info(f"Order assigned to ServiceLocation {temp_name}.")
     except Exception as e:
         logger.error("Exception in find_ironman", exc_info=True)
