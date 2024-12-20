@@ -32,10 +32,6 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
 
         # create a 2d sphere index for a service location table
         # find all records within 2km.
-        order_slots = [order.time_slot]
-        next_slot = cache.get_next_time_slot(order.time_slot)
-        if next_slot is not None:
-            order_slots.append(next_slot["key"])
 
         services_match_list = [
             {"$elemMatch": {"service_id": service.id} for service in order.services}
@@ -63,7 +59,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                         ]  # Filter where range is greater or equal to distance
                     },
                     "services": {"$all": services_match_list},
-                    "time_slots": {"$in": order_slots},
+                    "time_slots": {"$in": [order.time_slot]},
                 }
             },
             {
@@ -71,12 +67,12 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                     "from": "timeslot_volume",  # the collection to join
                     "localField": "_id",  # field in orders referencing service_locations._id
                     "foreignField": "service_location_id",  # field in service_locations to match
-                    "as": "time_slot_volume",  # output array field for matched documents
+                    "as": "time_slot_volumes",  # output array field for matched documents
                 }
             },
-            {
-                "$unwind": "$time_slot_volume"  # flatten if each order has only one service location
-            },
+            # {
+            #     "$unwind": "$time_slot_volume"  # flatten if each order has only one service location
+            # },
             # {
             #     "$project": {
             #         "distance": 1,
@@ -132,19 +128,6 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
 
         order_requests: List[OrderRequest] = []
         trigger_time = datetime.now()
-        next_slot_trigger_time = None
-        if next_slot != None:
-            # create time object
-            next_slot_start_time = datetime.strptime(
-                next_slot["start_time"], "%H:%M"
-            ).time()
-            # create today's date object. TODO if select tommorrow time slot then make it tommorrow.
-            next_slot_start_date = order.pick_up_time.start.date()
-
-            delay = config.DB_CACHE["config"]["work_schedule_time_gap"]["value"]
-            next_slot_trigger_time = datetime.combine(
-                next_slot_start_date, next_slot_start_time
-            ) + timedelta(minutes=delay + 2)
 
         if nearby_service_locations_dict[DeliveryTypeEnum.SELF_PICKUP]:
             self_pickup_service_locations = nearby_service_locations_dict[
@@ -276,6 +259,69 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
     except Exception as e:
         logger.error("Exception in find_ironman", exc_info=True)
         pass
+
+
+async def auto_allot_service(
+    order: Order, service_location, self_pickup_service_locations, index
+):
+    timeslot_volume: List[TimeslotVolume] = next(
+        (
+            timeslot_volume
+            for timeslot_volume in service_location["timeslot_volumes"]
+            if order.pick_up_time.start.strftime("%Y-%m-%d")
+            in timeslot_volume["operation_date"]
+        ),
+        None,
+    )
+
+    timeslot = timeslot_volume["timeslot_distributions"][order.time_slot]
+    service = timeslot_volume["services_distribution"][
+        order.services[0]["call_to_action_key"]
+    ]
+
+    clothes_count = cache.get_clothes_cta_count(order.count_range)
+    if (
+        timeslot["limit"] - timeslot["current"] >= clothes_count
+        and service["limit"] - service["current"] >= clothes_count
+    ):
+        timeslot["current"] += clothes_count
+        service["current"] += clothes_count
+        timeslot_volume["current_cloths"] += clothes_count
+
+        await db.timeslot_volume.replace_one(
+            {"_id": timeslot_volume["_id"]},  # Match the document by its _id
+            timeslot_volume,
+        )
+
+        order_status = await whatsapp_utils.get_new_order_status(
+            order.id, OrderStatusEnum.PICKUP_PENDING
+        )
+        order.service_location_id = service_location["_id"]
+        order.order_status.insert(0, order_status)
+        order.updated_on = datetime.now()
+        order.auto_alloted = True
+
+        await db.order.replace_one(
+            {"_id": order.id},
+            order.model_dump(exclude_defaults=True, exclude={"id"}, by_alias=True),
+        )
+        temp_name = service_location["name"]
+
+        message_body = whatsapp_utils.get_reply_message(
+            message_key="new_order_ironman_alloted",
+            message_sub_type="text",
+        )
+
+        last_message_update = {
+            "type": "ORDER_CONFIRMED",
+            "order_id": order.id,
+            "order_taken": True,
+        }
+
+        logger.info(f"Sending message to user : {message_body}")
+        await Message(message_body).send_message(order.user_wa_id, last_message_update)
+        return True
+    return False
 
 
 async def send_pending_order_requests():
