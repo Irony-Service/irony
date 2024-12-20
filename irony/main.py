@@ -30,6 +30,10 @@ scheduler.add_job(
 scheduler.add_job(
     background_process.send_ironman_pending_work_schedule, CronTrigger(minute="*/1")
 )
+scheduler.add_job(
+    background_process.create_timeslot_volume_record,
+    CronTrigger(hour=0, minute=0),  # This triggers at 12:00 AM every day
+)
 
 scheduler.add_job(background_process.create_order_requests, CronTrigger(minute="*/1"))
 
@@ -46,7 +50,7 @@ async def lifespan(app: FastAPI):
     # Startup event equivalent
     config.DB_CACHE = await cache.fetch_data_from_db(config.DB_CACHE)
     logger.info("Data loaded into cache")
-    # scheduler.start()
+    scheduler.start()
     # await background_process.send_pending_order_requests()
     logger.info("Scheduler started")
     # Yield control to the app
