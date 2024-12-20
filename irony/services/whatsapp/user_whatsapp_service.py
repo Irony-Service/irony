@@ -153,7 +153,7 @@ async def set_new_order_service(
         )
         order_doc = Order(**order_doc)
 
-        message_body = get_time_slot_message()
+        message_body = await get_time_slot_message()
 
         last_message_update = {
             "type": config.SERVICE_ID_KEY,
@@ -246,7 +246,7 @@ async def set_new_order_location(message_details, contact_details: ContactDetail
     else:
         location = await whatsapp_utils.add_user_location(contact_details, coords)
         order.location = location
-        message_body = get_time_slot_message()
+        message_body = await get_time_slot_message()
         order.order_status.insert(
             0,
             OrderStatus(

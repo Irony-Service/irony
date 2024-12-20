@@ -33,9 +33,9 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
         # create a 2d sphere index for a service location table
         # find all records within 2km.
 
-        services_match_list = [
-            {"$elemMatch": {"service_id": service.id} for service in order.services}
-        ]
+        # services_match_list = [
+        #     {"$elemMatch": {"service_id": service.id} for service in order.services}
+        # ]
 
         pipeline = [
             {
@@ -58,7 +58,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                             "$distance",
                         ]  # Filter where range is greater or equal to distance
                     },
-                    "services": {"$all": services_match_list},
+                    "services": {"$all": [str(service.id) for service in order.services]},
                     "time_slots": {"$in": [order.time_slot]},
                 }
             },
@@ -67,7 +67,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                     "from": "timeslot_volume",  # the collection to join
                     "localField": "_id",  # field in orders referencing service_locations._id
                     "foreignField": "service_location_id",  # field in service_locations to match
-                    "as": "time_slot_volumes",  # output array field for matched documents
+                    "as": "timeslot_volumes",  # output array field for matched documents
                 }
             },
             # {
