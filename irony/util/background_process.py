@@ -32,10 +32,6 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
 
         # create a 2d sphere index for a service location table
         # find all records within 2km.
-        order_slots = [order.time_slot]
-        next_slot = cache.get_next_time_slot(order.time_slot)
-        if next_slot is not None:
-            order_slots.append(next_slot["key"])
 
         services_match_list = [
             {"$elemMatch": {"service_id": service.id} for service in order.services}
@@ -63,7 +59,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                         ]  # Filter where range is greater or equal to distance
                     },
                     "services": {"$all": services_match_list},
-                    "time_slots": {"$in": order_slots},
+                    "time_slots": {"$in": [order.time_slot]},
                 }
             },
             {
@@ -71,12 +67,12 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                     "from": "timeslot_volume",  # the collection to join
                     "localField": "_id",  # field in orders referencing service_locations._id
                     "foreignField": "service_location_id",  # field in service_locations to match
-                    "as": "time_slot_volume",  # output array field for matched documents
+                    "as": "time_slot_volumes",  # output array field for matched documents
                 }
             },
-            {
-                "$unwind": "$time_slot_volume"  # flatten if each order has only one service location
-            },
+            # {
+            #     "$unwind": "$time_slot_volume"  # flatten if each order has only one service location
+            # },
             # {
             #     "$project": {
             #         "distance": 1,
@@ -132,19 +128,6 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
 
         order_requests: List[OrderRequest] = []
         trigger_time = datetime.now()
-        next_slot_trigger_time = None
-        if next_slot != None:
-            # create time object
-            next_slot_start_time = datetime.strptime(
-                next_slot["start_time"], "%H:%M"
-            ).time()
-            # create today's date object. TODO if select tommorrow time slot then make it tommorrow.
-            next_slot_start_date = order.pick_up_time.start.date()
-
-            delay = config.DB_CACHE["config"]["work_schedule_time_gap"]["value"]
-            next_slot_trigger_time = datetime.combine(
-                next_slot_start_date, next_slot_start_time
-            ) + timedelta(minutes=delay + 2)
 
         if nearby_service_locations_dict[DeliveryTypeEnum.SELF_PICKUP]:
             self_pickup_service_locations = nearby_service_locations_dict[
@@ -210,29 +193,18 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
 
 
 async def auto_allot_service(
-    order, service_location, self_pickup_service_locations, index
+    order: Order, service_location, self_pickup_service_locations, index
 ):
-    timeslot_volume: TimeslotVolume = await db.timeslot_volume.find_one(
-        {
-            "service_location_id": service_location["_id"],
-            "$expr": {
-                "$eq": [
-                    {
-                        "$dateToString": {
-                            "format": "%Y-%m-%d",
-                            "date": "$operation_date",
-                        }
-                    },
-                    {
-                        "$dateToString": {
-                            "format": "%Y-%m-%d",
-                            "date": order.pick_up_time.start,
-                        }
-                    },
-                ]
-            },
-        }
+    timeslot_volume: List[TimeslotVolume] = next(
+        (
+            timeslot_volume
+            for timeslot_volume in service_location["timeslot_volumes"]
+            if order.pick_up_time.start.strftime("%Y-%m-%d")
+            in timeslot_volume["operation_date"]
+        ),
+        None,
     )
+
     timeslot = timeslot_volume["timeslot_distributions"][order.time_slot]
     service = timeslot_volume["services_distribution"][
         order.services[0]["call_to_action_key"]
