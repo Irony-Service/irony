@@ -32,17 +32,23 @@ async def start_new_order(contact_details: ContactDetails):
 
     last_message_update = None
 
+    # 1: get step 1 message body.
     message_body = whatsapp_utils.get_reply_message(
         message_key="new_order_step_1",
         message_sub_type="reply",
     )
 
+    # 2: update last_message doc for
     last_message_update = {"type": config.MAKE_NEW_ORDER}
 
     logger.info(f"Sending message to user : {message_body}")
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
 
     # BUG Continue here
+    await create_user_if_not_exists(contact_details)
+
+
+async def create_user_if_not_exists(contact_details):
     user = await db.user.find_one({"_id": contact_details.wa_id})
     if not user:
         new_user = User(
@@ -147,9 +153,7 @@ async def set_new_order_service(
         )
         order_doc = Order(**order_doc)
 
-        message_body = whatsapp_utils.get_reply_message(
-            message_key="time_slots_message"
-        )
+        message_body = get_time_slot_message()
 
         last_message_update = {
             "type": config.SERVICE_ID_KEY,
@@ -242,63 +246,7 @@ async def set_new_order_location(message_details, contact_details: ContactDetail
     else:
         location = await whatsapp_utils.add_user_location(contact_details, coords)
         order.location = location
-        message_body = whatsapp_utils.get_reply_message(
-            message_key="time_slots_message",
-            message_sub_type="radio",
-        )
-        # Teja start
-        current_time = datetime.now().time()
-
-        hours = current_time.hour
-        minutes = current_time.minute
-
-        total_min = hours * 60 + minutes
-
-        call_action_config = await db.config.find({"group": "TIME_SLOT_ID"}).to_list(
-            None
-        )
-
-        delivery_schedule_time_gap = config.DB_CACHE["config"][
-            "delivery_schedule_time_gap"
-        ]["value"]
-
-        total_min += delivery_schedule_time_gap
-
-        slot_start = {}
-        slot_end = {}
-        for i in call_action_config:
-            h = int(i["start_time"][0:2])
-            m = int(i["start_time"][3:5])
-            tot = h * 60 + m
-            slot_start[i["key"]] = tot
-            he = int(i["end_time"][0:2])
-            me = int(i["end_time"][3:5])
-            te = he * 60 + me
-            slot_end[i["key"]] = te
-
-        body = message_body["interactive"]["action"]["sections"][0]["rows"]
-        if (
-            total_min
-            > slot_start[
-                message_body["interactive"]["action"]["sections"][0]["rows"][0]["id"]
-            ]
-        ):
-           
-            filtered_today_slots = [
-                slot for slot in body if slot_start[slot["id"]] > total_min
-            ]
-            filtered_tom_slots = body
-            filtered_tom_slots = [slot.copy() for slot in body]
-            for slot1 in filtered_tom_slots:
-                slot1["title"] = "Tomorrow " + " ".join(slot1["title"].split(" ")[1:])
-                slot1["id"] =  slot1["id"]+"T" 
-            body = filtered_today_slots + filtered_tom_slots
-
-        else:
-            pass
-
-        message_body["interactive"]["action"]["sections"][0]["rows"] = body
-        # Teja end
+        message_body = get_time_slot_message()
         order.order_status.insert(
             0,
             OrderStatus(
@@ -382,16 +330,15 @@ async def set_new_order_time_slot(
         call_action_config = await db.config.find({"group": "TIME_SLOT_ID"}).to_list(
             None
         )
-        slot_start = getSlots(call_action_config,"start_time")
-        slot_end = getSlots(call_action_config ,"end_time")
-        
-        
-        l= len(button_reply_obj["id"])
-        if button_reply_obj["id"][l-1] != "T":
+        slot_start = getSlots(call_action_config, "start_time")
+        slot_end = getSlots(call_action_config, "end_time")
+
+        l = len(button_reply_obj["id"])
+        if button_reply_obj["id"][l - 1] != "T":
 
             now = datetime.now()
-            h,m= getTimeFromStamp(slot_start[button_reply_obj["id"]])
-            he,me= getTimeFromStamp(slot_end[button_reply_obj["id"]])
+            h, m = getTimeFromStamp(slot_start[button_reply_obj["id"]])
+            he, me = getTimeFromStamp(slot_end[button_reply_obj["id"]])
             start_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
             end_time = now.replace(hour=he, minute=me, second=0, microsecond=0)
             order_doc: Order = await db.order.find_one_and_update(
@@ -400,7 +347,7 @@ async def set_new_order_time_slot(
                     "$set": {
                         "time_slot": button_reply_obj["id"],
                         "updated_on": datetime.now(),
-                        "pick_up_time": {"start":start_time , "end":end_time},
+                        "pick_up_time": {"start": start_time, "end": end_time},
                     },
                     "$push": {
                         "order_status": {
@@ -415,17 +362,17 @@ async def set_new_order_time_slot(
             )
 
         else:
-            now = datetime.now()+timedelta(1)
-            h,m= getTimeFromStamp(slot_start[button_reply_obj["id"][:l-1]])
+            now = datetime.now() + timedelta(1)
+            h, m = getTimeFromStamp(slot_start[button_reply_obj["id"][: l - 1]])
             start_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
             end_time = start_time + timedelta(hours=3)
             order_doc: Order = await db.order.find_one_and_update(
                 {"_id": last_message["order_id"]},
                 {
                     "$set": {
-                        "time_slot": button_reply_obj["id"][:l-1],
+                        "time_slot": button_reply_obj["id"][: l - 1],
                         "updated_on": datetime.now(),
-                        "pick_up_time": {"start":start_time , "end":end_time} 
+                        "pick_up_time": {"start": start_time, "end": end_time},
                     },
                     "$push": {
                         "order_status": {
@@ -473,23 +420,82 @@ async def set_new_order_time_slot(
         )
 
 
-def getTimeFromStamp (timstr):
-    h= int(timstr[:2])
-    m= int(timstr[3:])
-    return h ,m
-def getSlots(slotObj , option):
-    slot= {}
+async def get_time_slot_message():
+    message_body = whatsapp_utils.get_reply_message(
+        message_key="time_slots_message",
+        message_sub_type="radio",
+    )
+    # Teja start
+    current_time = datetime.now().time()
+
+    hours = current_time.hour
+    minutes = current_time.minute
+
+    total_min = hours * 60 + minutes
+
+    call_action_config = await db.config.find({"group": "TIME_SLOT_ID"}).to_list(None)
+
+    delivery_schedule_time_gap = config.DB_CACHE["config"][
+        "delivery_schedule_time_gap"
+    ]["value"]
+
+    total_min += delivery_schedule_time_gap
+
+    slot_start = {}
+    slot_end = {}
+    for i in call_action_config:
+        h = int(i["start_time"][0:2])
+        m = int(i["start_time"][3:5])
+        tot = h * 60 + m
+        slot_start[i["key"]] = tot
+        he = int(i["end_time"][0:2])
+        me = int(i["end_time"][3:5])
+        te = he * 60 + me
+        slot_end[i["key"]] = te
+
+    body = message_body["interactive"]["action"]["sections"][0]["rows"]
+    if (
+        total_min
+        > slot_start[
+            message_body["interactive"]["action"]["sections"][0]["rows"][0]["id"]
+        ]
+    ):
+
+        filtered_today_slots = [
+            slot for slot in body if slot_start[slot["id"]] > total_min
+        ]
+        filtered_tom_slots = body
+        filtered_tom_slots = [slot.copy() for slot in body]
+        for slot1 in filtered_tom_slots:
+            slot1["title"] = "Tomorrow " + " ".join(slot1["title"].split(" ")[1:])
+            slot1["id"] = slot1["id"] + "T"
+        body = filtered_today_slots + filtered_tom_slots
+
+    message_body["interactive"]["action"]["sections"][0]["rows"] = body
+    # Teja end
+
+    return message_body
+
+
+def getTimeFromStamp(timstr):
+    h = int(timstr[:2])
+    m = int(timstr[3:])
+    return h, m
+
+
+def getSlots(slotObj, option):
+    slot = {}
     for i in slotObj:
-            h = int(i[option][0:2])
-            m = int(i[option][3:5])
-            if h <= 9:
-                if m > 9:
-                    slot[i["key"]] = "0" + str(h) + ":" + str(m)
-                else:
-                    slot[i["key"]] = "0" + str(h) + ":" + "0" + str(m)
+        h = int(i[option][0:2])
+        m = int(i[option][3:5])
+        if h <= 9:
+            if m > 9:
+                slot[i["key"]] = "0" + str(h) + ":" + str(m)
             else:
-                if m > 9:
-                    slot[i["key"]] = str(h) + ":" + str(m)
-                else:
-                    slot[i["key"]] = str(h) + ":" + "0" + str(m)
+                slot[i["key"]] = "0" + str(h) + ":" + "0" + str(m)
+        else:
+            if m > 9:
+                slot[i["key"]] = str(h) + ":" + str(m)
+            else:
+                slot[i["key"]] = str(h) + ":" + "0" + str(m)
     return slot

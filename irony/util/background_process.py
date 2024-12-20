@@ -66,6 +66,17 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                     "time_slots": {"$in": order_slots},
                 }
             },
+            {
+                "$lookup": {
+                    "from": "timeslot_volume",  # the collection to join
+                    "localField": "_id",  # field in orders referencing service_locations._id
+                    "foreignField": "service_location_id",  # field in service_locations to match
+                    "as": "time_slot_volume",  # output array field for matched documents
+                }
+            },
+            {
+                "$unwind": "$time_slot_volume"  # flatten if each order has only one service location
+            },
             # {
             #     "$project": {
             #         "distance": 1,
@@ -128,11 +139,11 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                 next_slot["start_time"], "%H:%M"
             ).time()
             # create today's date object. TODO if select tommorrow time slot then make it tommorrow.
-            next_slot_date = datetime.now().date()
+            next_slot_start_date = order.pick_up_time.start.date()
 
             delay = config.DB_CACHE["config"]["work_schedule_time_gap"]["value"]
-            next_slot_start_time = datetime.combine(
-                next_slot_date, next_slot_start_time
+            next_slot_trigger_time = datetime.combine(
+                next_slot_start_date, next_slot_start_time
             ) + timedelta(minutes=delay + 2)
 
         if nearby_service_locations_dict[DeliveryTypeEnum.SELF_PICKUP]:
@@ -143,7 +154,9 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
             for index, service_location in enumerate(self_pickup_service_locations):
 
                 if service_location["auto_accept"]:
-                    if await auto_allot_service(order, service_location, self_pickup_service_locations, index):
+                    if await auto_allot_service(
+                        order, service_location, self_pickup_service_locations, index
+                    ):
                         break
                 else:
                     trigger_time = trigger_time + timedelta(minutes=index * 1)
@@ -195,81 +208,78 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
         logger.error("Exception in find_ironman", exc_info=True)
         pass
 
-async def auto_allot_service(order, service_location, self_pickup_service_locations,  index):
+
+async def auto_allot_service(
+    order, service_location, self_pickup_service_locations, index
+):
     timeslot_volume: TimeslotVolume = await db.timeslot_volume.find_one(
-                        {
-                            "service_location_id": service_location["_id"],
-                            "$expr": {
-                                "$eq": [
-                                    {
-                                        "$dateToString": {
-                                            "format": "%Y-%m-%d",
-                                            "date": "$operation_date",
-                                        }
-                                    },
-                                    {
-                                        "$dateToString": {
-                                            "format": "%Y-%m-%d",
-                                            "date": order.pick_up_time.start,
-                                        }
-                                    },
-                                ]
-                            },
+        {
+            "service_location_id": service_location["_id"],
+            "$expr": {
+                "$eq": [
+                    {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": "$operation_date",
                         }
-                    )
-    timeslot = timeslot_volume["timeslot_distributions"][
-                        order.time_slot
-                    ]
+                    },
+                    {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": order.pick_up_time.start,
+                        }
+                    },
+                ]
+            },
+        }
+    )
+    timeslot = timeslot_volume["timeslot_distributions"][order.time_slot]
     service = timeslot_volume["services_distribution"][
-                        order.services[0]["call_to_action_key"]
-                    ]
-    
+        order.services[0]["call_to_action_key"]
+    ]
+
     clothes_count = cache.get_clothes_cta_count(order.count_range)
-    if timeslot["limit"] - timeslot["current"] >= clothes_count  and service["limit"] - service["current"] >= clothes_count: 
+    if (
+        timeslot["limit"] - timeslot["current"] >= clothes_count
+        and service["limit"] - service["current"] >= clothes_count
+    ):
         timeslot["current"] += clothes_count
         service["current"] += clothes_count
         timeslot_volume["current_cloths"] += clothes_count
-        
 
         await db.timeslot_volume.replace_one(
-                            {
-                                "_id": timeslot_volume["_id"]
-                            },  # Match the document by its _id
-                            timeslot_volume,
-                        )
+            {"_id": timeslot_volume["_id"]},  # Match the document by its _id
+            timeslot_volume,
+        )
 
         order_status = await whatsapp_utils.get_new_order_status(
-                            order.id, OrderStatusEnum.PICKUP_PENDING
-                        )
+            order.id, OrderStatusEnum.PICKUP_PENDING
+        )
         order.service_location_id = service_location["_id"]
         order.order_status.insert(0, order_status)
         order.updated_on = datetime.now()
         order.auto_alloted = True
 
         await db.order.replace_one(
-                            {"_id": order.id},
-                            order.model_dump(
-                                exclude_defaults=True, exclude={"id"}, by_alias=True
-                            ),
-                        )
+            {"_id": order.id},
+            order.model_dump(exclude_defaults=True, exclude={"id"}, by_alias=True),
+        )
         temp_name = service_location["name"]
 
         message_body = whatsapp_utils.get_reply_message(
-                            message_key="new_order_ironman_alloted",
-                            message_sub_type="text",
-                        )
+            message_key="new_order_ironman_alloted",
+            message_sub_type="text",
+        )
 
         last_message_update = {
-                            "type": "ORDER_CONFIRMED",
-                            "order_id": order.id,
-                            "order_taken": True,
-                        }
+            "type": "ORDER_CONFIRMED",
+            "order_id": order.id,
+            "order_taken": True,
+        }
 
         logger.info(f"Sending message to user : {message_body}")
-        await Message(message_body).send_message(
-                            order.user_wa_id, last_message_update
-                        )
-        return True 
+        await Message(message_body).send_message(order.user_wa_id, last_message_update)
+        return True
     return False
 
 
@@ -896,6 +906,7 @@ async def send_ironman_pending_work_schedule():
 
     logger.info("Completed send_ironman_schedule")
 
+
 async def create_timeslot_volume_record():
 
     source_collection = db["timeslot_volume"]
@@ -903,43 +914,39 @@ async def create_timeslot_volume_record():
 
     today = datetime.now()
     day_before_yesterday = today - timedelta(days=1)
-    start_of_day = datetime(day_before_yesterday.year, day_before_yesterday.month, day_before_yesterday.day)
+    start_of_day = datetime(
+        day_before_yesterday.year, day_before_yesterday.month, day_before_yesterday.day
+    )
     end_of_day = start_of_day + timedelta(days=1)
     tomorrow_date = today + timedelta(days=1)
 
     pipeline = [
-        {
-            "$match": {
-                "operation_date": {
-                    "$gte": start_of_day,
-                    "$lt": end_of_day
-                }
-            }
-        }
+        {"$match": {"operation_date": {"$gte": start_of_day, "$lt": end_of_day}}}
     ]
-    records_to_archive = await source_collection.aggregate(pipeline).to_list(length=None)
+    records_to_archive = await source_collection.aggregate(pipeline).to_list(
+        length=None
+    )
 
-    tomorrow_records=[]
+    tomorrow_records = []
     for record in records_to_archive:
         record_copy = copy.deepcopy(record)
-        record_copy.pop("_id", None) 
+        record_copy.pop("_id", None)
         record_copy["operation_date"] = tomorrow_date
         tomorrow_records.append(record_copy)
-    
-        
+
     if records_to_archive:
         await archive_collection.insert_many(records_to_archive)
-        result = await source_collection.delete_many({
-            "operation_date": {
-                "$gte": start_of_day,
-                "$lt": end_of_day
-            }
-        })
+        result = await source_collection.delete_many(
+            {"operation_date": {"$gte": start_of_day, "$lt": end_of_day}}
+        )
         await source_collection.insert_many(tomorrow_records)
-        
-        
-        logger.info(f"Archived {len(records_to_archive)} records to the archive collection and deleted them from the source collection.")
-        logger.info(f"Deleted {result.deleted_count} records from the source collection.")
+
+        logger.info(
+            f"Archived {len(records_to_archive)} records to the archive collection and deleted them from the source collection."
+        )
+        logger.info(
+            f"Deleted {result.deleted_count} records from the source collection."
+        )
     else:
         logger.info("No records found for the specified date range.")
 
