@@ -6,6 +6,7 @@ from bson import ObjectId
 from irony.models.common_model import ModelConfig
 from irony.models.order import Order
 from irony.models.service_location import DeliveryTypeEnum, ServiceLocation
+from irony.models.timeslot_volume import TimeslotVolume
 
 
 class OrderRequest(BaseModel):
@@ -21,6 +22,7 @@ class OrderRequest(BaseModel):
     trigger_time: Optional[datetime] = None
     is_pending: Optional[bool] = None
     try_count: Optional[int] = None
+    timeslot_volumes: Optional[List[TimeslotVolume]] = None
 
     class Config(ModelConfig):
         pass

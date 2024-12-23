@@ -168,11 +168,8 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                 for index, service_location in enumerate(self_pickup_service_locations):
                     service_location = ServiceLocation(**service_location)
                     if service_location.auto_accept:
-                        if await auto_allot_service(
-                            order,
-                            service_location,
-                            self_pickup_service_locations,
-                            index,
+                        if await check_limit_and_allot_order(
+                            order, service_location, True
                         ):
                             break
                     else:
@@ -226,11 +223,10 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
         pass
 
 
-async def auto_allot_service(
+async def check_limit_and_allot_order(
     order: Order,
     service_location: ServiceLocation,
-    self_pickup_service_locations,
-    index,
+    auto_allot: bool = False,
 ):
     if (
         not order.time_slot
@@ -291,7 +287,8 @@ async def auto_allot_service(
         if order.order_status:
             order.order_status.insert(0, order_status)
         order.updated_on = datetime.now()
-        order.auto_alloted = True
+        if auto_allot:
+            order.auto_alloted = True
 
         await db.order.replace_one(
             {"_id": order.id},
