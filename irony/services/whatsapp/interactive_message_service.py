@@ -4,14 +4,10 @@ from fastapi import Response
 from irony.config import config
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
-
 from irony.config.logger import logger
 from irony.models.order_status import OrderStatusEnum
 from irony.services.whatsapp import user_whatsapp_service
 from irony.services.whatsapp import ironman_whatsapp_service
-
-
-from irony.db import db
 
 
 async def handle_message(message, contact_details: ContactDetails):

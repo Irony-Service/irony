@@ -4,7 +4,6 @@ from typing import List, Optional
 from datetime import datetime
 
 from irony.models.common_model import ModelConfig
-from irony.models.user import User
 
 
 class Location(BaseModel):

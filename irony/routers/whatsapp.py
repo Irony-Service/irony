@@ -1,19 +1,16 @@
 import traceback
-from typing import Dict, List
-from fastapi import APIRouter, Query, Request, Response
+from fastapi import APIRouter, Request, Response
 
-from irony.exception.WhatsappException import WhatsappException
-from irony.models.contact_details import ContactDetails
 from irony.util import whatsapp_utils
 from ..config import config
 from irony.config.logger import logger
 
 from irony.services.whatsapp import whatsapp_service
 
-router = APIRouter()
 
 from ..models.user import User
-from ..db import get_users, create_user
+
+router = APIRouter()
 
 
 @router.post("/webhook")

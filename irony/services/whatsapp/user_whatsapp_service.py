@@ -1,16 +1,9 @@
 import asyncio
-from datetime import datetime, timedelta, time, date
-import json
-import random
-from typing import Any, List, Optional
-from bson import ObjectId
-from fastapi import Response
-from fastapi.encoders import jsonable_encoder
+from datetime import datetime, timedelta
 
 from irony.config import config
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
-from irony.models.location import Location, UserLocation
 from irony.models.order import Order
 from irony.models.order_status import OrderStatus, OrderStatusEnum
 from irony.models.service import Service

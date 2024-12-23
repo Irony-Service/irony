@@ -1,19 +1,11 @@
 from datetime import datetime
-import json
-import os
-import random
-import re
-
 from fastapi import Response
-import requests
-from irony.config import config
-import joblib
 
+from irony.config import config
 from irony.models.contact_details import ContactDetails
 from irony.util.message import Message
 from irony.config.logger import logger
 from irony.util import whatsapp_utils
-
 from irony.db import db
 
 # make_prediction = joblib.load('message_classification_function.pkl')

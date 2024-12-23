@@ -1,5 +1,4 @@
 from datetime import datetime
-from enum import Enum
 from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -12,7 +11,6 @@ from irony.models.pickup_tIme import PickupTime
 from irony.models.service import Service
 from irony.models.service_location import ServiceLocation
 from irony.models.user import User
-from .pyObjectId import PyObjectId
 
 
 class Order(BaseModel):

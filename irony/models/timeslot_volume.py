@@ -1,18 +1,9 @@
 from datetime import datetime
-from enum import Enum
 from bson import ObjectId
 from pydantic import BaseModel, Field
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from irony.models.common_model import ModelConfig
-from irony.models.location import UserLocation
-from irony.models.order_item import OrderItem
-from irony.models.order_status import OrderStatus
-from irony.models.pickup_tIme import PickupTime
-from irony.models.service import Service
-from irony.models.service_location import ServiceLocation
-from irony.models.user import User
-from .pyObjectId import PyObjectId
 
 
 class TimeslotQuota(BaseModel):

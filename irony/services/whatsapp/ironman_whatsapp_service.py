@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Any, Dict, List
 from bson import ObjectId
 
-from irony import cache
 from irony.config import config
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
@@ -10,14 +9,9 @@ from irony.models.order import Order
 from irony.models.order_request import OrderRequest
 from irony.models.order_status import OrderStatus, OrderStatusEnum
 from irony.config.logger import logger
-from irony.models.service_location import ServiceEntry
-from irony.models.timeslot_volume import TimeslotVolume
 from irony.util import background_process, utils
-
 from irony.util import whatsapp_utils
-
 from irony.util.message import Message
-
 from irony.db import db
 
 

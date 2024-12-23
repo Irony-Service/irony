@@ -1,5 +1,5 @@
 from irony.config import config
-from irony.models.message import MessageType, ReplyMessage
+from irony.models.message import MessageType
 
 
 class WhatsappException(Exception):

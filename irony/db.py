@@ -1,22 +1,22 @@
-from typing import Any, Dict, List
+from typing import Any, List
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorClientSession
+from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReplaceOne
 import certifi
+from pymongo.errors import PyMongoError
+from motor.core import AgnosticClient, AgnosticDatabase
+
 from irony.config import config
 from irony.config.logger import logger
-from pymongo.errors import PyMongoError
 
-from motor.core import AgnosticClient, AgnosticDatabase
+# Pydantic models
+from .models.user import User
 
 client: AgnosticClient = AsyncIOMotorClient(
     config.DATABASE_CONNECTION, tlsCAFile=certifi.where()
 )
 db: AgnosticDatabase = client["irony"]
-
-# Pydantic models
-from .models.user import User
 
 
 # DB methods
