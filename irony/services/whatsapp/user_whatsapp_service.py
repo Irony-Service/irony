@@ -71,15 +71,17 @@ async def set_new_order_clothes_count(
 
     await whatsapp_utils.verify_context_id(contact_details, context)
 
-    user: User = await db.user.find_one({"wa_id": contact_details.wa_id})
-
+    user_doc = await db.user.find_one({"wa_id": contact_details.wa_id})
+    user: User
+    if user_doc is not None:
+        user = User(**user_doc)
     order_status = OrderStatus(
         status=OrderStatusEnum.SERVICE_PENDING,
         created_on=datetime.now(),
     )
 
     order: Order = Order(
-        user_id=user["_id"],
+        user_id=user._id,
         user_wa_id=contact_details.wa_id,
         count_range=button_reply_obj["id"],
         is_active=False,
@@ -124,6 +126,7 @@ async def set_new_order_service(
     )
 
     # Last location with nickname exists. Directly send time slot message.
+    order_doc = None
     if last_location_doc:
         order_status = OrderStatus(
             status=OrderStatusEnum.TIME_SLOT_PENDING,
@@ -174,7 +177,7 @@ async def set_new_order_service(
         )
         # since there are no nicknames for any locaiton, makes no sense to store existing locations.
         await db.location.delete_many({"user": contact_details.wa_id})
-        order_doc: Order = await db.order.find_one_and_update(
+        order_doc = await db.order.find_one_and_update(
             {"_id": last_message["order_id"]},
             {
                 "$set": {
@@ -215,8 +218,9 @@ async def set_new_order_location(message_details, contact_details: ContactDetail
     )
     coords = message_details["location"]
 
-    order: Order = await db.order.find_one({"_id": last_message["order_id"]})
-    order = Order(**order)
+    order = await db.order.find_one({"_id": last_message["order_id"]})
+    if order is not None:
+        order = Order(**order)
 
     if order.existing_location:
         order.existing_location = False
@@ -296,7 +300,7 @@ async def set_new_order_time_slot(
     )
 
     if "existing_location" in last_message:
-        order_doc: Order = await db.order.find_one_and_update(
+        order = await db.order.find_one_and_update(
             {"_id": last_message["order_id"]},
             {
                 "$set": {
@@ -315,7 +319,7 @@ async def set_new_order_time_slot(
             return_document=True,
         )
 
-        order = Order(**order_doc)
+        order = Order(**order)
 
         # send message to user that last location will be used with location reply. and if he wants to change location he can do so.
         message_body = whatsapp_utils.get_reply_message(
@@ -366,7 +370,7 @@ async def set_new_order_time_slot(
             h, m = getTimeFromStamp(slot_start[button_reply_obj["id"][: l - 1]])
             start_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
             end_time = start_time + timedelta(hours=3)
-            order_doc: Order = await db.order.find_one_and_update(
+            order = await db.order.find_one_and_update(
                 {"_id": last_message["order_id"]},
                 {
                     "$set": {
@@ -385,7 +389,7 @@ async def set_new_order_time_slot(
                 },
                 return_document=True,
             )
-        order = Order(**order_doc)
+        order = Order(**order)
 
         message_body = whatsapp_utils.get_reply_message(
             message_key="new_order_pending",

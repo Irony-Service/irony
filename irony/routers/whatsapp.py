@@ -59,7 +59,7 @@ async def whatsapp(request: Request):
 
 
 @router.get("/webhook", response_model=User)
-async def create_user(request: Request):
+async def verify_webhook(request: Request):
     logger.info(f"GET method(verify webhook) triggered : {request.query_params}")
     if (
         request.query_params["hub.mode"] == "subscribe"

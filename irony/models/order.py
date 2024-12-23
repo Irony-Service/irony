@@ -38,8 +38,9 @@ class Order(BaseModel):
     drop_agent_id: Optional[ObjectId] = None
     created_on: Optional[datetime] = None
     updated_on: Optional[datetime] = None
-    pick_up_time:Optional[PickupTime] = None
+    pick_up_time: Optional[PickupTime] = None
     auto_alloted: Optional[bool] = None
+
     class Config(ModelConfig):
         populate_by_name = True
         arbitrary_types_allowed = True

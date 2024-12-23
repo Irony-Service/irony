@@ -9,7 +9,7 @@ from irony.models.user import User
 
 class Location(BaseModel):
     type: Optional[str] = "Point"
-    coordinates: List[float] = Field(..., min_items=2, max_items=2)
+    coordinates: List[float] = Field(..., min_items=2, max_items=2)  # type: ignore
 
 
 class UserLocation(BaseModel):

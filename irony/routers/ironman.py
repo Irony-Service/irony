@@ -3,9 +3,10 @@ from fastapi import APIRouter
 
 
 from irony.models.user import User
-from ..db import get_users, create_user
 
 router = APIRouter()
+
+# Below is placeholder code
 
 
 @router.get("/home")

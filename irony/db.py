@@ -10,7 +10,9 @@ from pymongo.errors import PyMongoError
 
 from motor.core import AgnosticClient, AgnosticDatabase
 
-client: AgnosticClient = AsyncIOMotorClient(config.DATABASE_CONNECTION,tlsCAFile=certifi.where())
+client: AgnosticClient = AsyncIOMotorClient(
+    config.DATABASE_CONNECTION, tlsCAFile=certifi.where()
+)
 db: AgnosticDatabase = client["irony"]
 
 # Pydantic models
@@ -22,7 +24,7 @@ async def replace_documents_in_transaction(
     collection_name: str, replacements: List[Any]
 ):
     # Prepare bulk operations list
-    operations = []
+    operations: list = []
 
     for replacement in replacements:
         # Filter criteria for each document to be replaced

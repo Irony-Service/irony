@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from irony.models.common_model import ModelConfig
 from irony.models.location import Location
 from irony.models.service import Service
+from irony.models.timeslot_volume import TimeslotVolume
 
 
 class LocationTypeEnum(str, Enum):
@@ -19,7 +20,7 @@ class DeliveryTypeEnum(str, Enum):
     SELF_PICKUP = "SELF_PICKUP"
 
 
-def get_delivery_enum_from_string(value):
+def get_delivery_enum_from_string(value: str):
     return DeliveryTypeEnum.__members__.get(value.upper(), DeliveryTypeEnum.DELIVERY)
 
 
@@ -41,7 +42,8 @@ class ServiceEntry(BaseModel):
 class ServiceLocation(BaseModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     name: Optional[str] = None
-    services: Optional[List[ServiceEntry]] = None
+    services: Optional[List[ObjectId]] = None
+    time_slots: Optional[List[str]] = None
     coords: Optional[Location] = None
     range: Optional[float] = None
     location_type: Optional[LocationTypeEnum] = None
@@ -51,6 +53,8 @@ class ServiceLocation(BaseModel):
     rating: Optional[float] = None
     wa_id: Optional[str] = None
     auto_accept: Optional[bool] = None
+    distance: Optional[float] = None
+    timeslot_volumes: Optional[List[TimeslotVolume]] = None
 
     class Config(ModelConfig):
         pass

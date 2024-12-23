@@ -13,7 +13,7 @@ class OrderRequest(BaseModel):
     order_id: Optional[ObjectId] = None
     order: Optional[Order] = None
     delivery_type: Optional[DeliveryTypeEnum] = None
-    delivery_service_locations_ids: Optional[List[ObjectId]] = None
+    delivery_service_locations_ids: Optional[List[ObjectId | None]] = None
     delivery_service_locations: Optional[List[ServiceLocation]] = None
     service_location_id: Optional[ObjectId] = None
     service_location: Optional[ServiceLocation] = None
@@ -21,5 +21,6 @@ class OrderRequest(BaseModel):
     trigger_time: Optional[datetime] = None
     is_pending: Optional[bool] = None
     try_count: Optional[int] = None
+
     class Config(ModelConfig):
         pass

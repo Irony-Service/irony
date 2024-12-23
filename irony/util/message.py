@@ -39,27 +39,6 @@ class Message:
         self.headers = headers
         self.body = body
 
-    def send_message(self, to=None):
-        logger.info("Starting send_message ", to, self.body)
-        # 1. Create request body for sending message.
-        if to is not None:
-            self.body["to"] = to
-
-        if self.body["to"] == None:
-            raise Exception(f"Please specify receipient(to) of message.")
-
-        # 2. Send message to user.
-        response = self._methods[self.method](
-            self.url, headers=self.headers, data=json.dumps(self.body)
-        )
-        # Check the response
-        # if response.status_code == 200:
-        #     logger.info('Request was successful')
-        #     logger.info('Response:', response.json())
-        # else:
-        #     logger.info(f'Request failed with status code {response.status_code}')
-        return response
-
     async def send_message(self, to=None, last_message_update=None):
         # 1. Create request body for sending message.
         if to is not None:

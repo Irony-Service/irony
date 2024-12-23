@@ -1,14 +1,16 @@
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Any, Dict, List
 import asyncio
 import copy
 
 from bson import ObjectId  # Add this import
 
-from irony import cache
+from irony import cache, services
 from irony.config import config
 from irony.config.logger import logger
 from irony.db import db, replace_documents_in_transaction
+from irony.exception.WhatsappException import WhatsappException
+from irony.models import location
 from irony.models.contact_details import ContactDetails
 from irony.models.location import Location, UserLocation
 from irony.models.order import Order
@@ -37,7 +39,19 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
         #     {"$elemMatch": {"service_id": service.id} for service in order.services}
         # ]
 
-        pipeline = [
+        no_ironman_message_body = whatsapp_utils.get_reply_message(
+            "new_order_no_ironman", message_type="text"
+        )
+
+        if not order.location or not order.location.location or not order.services:
+            logger.error(
+                "Developer concern, Order has required empty value %s but trying to create ironman order requests. order_id : %s",
+                {"order.location": order.location, "order.services": order.services},
+                order.id,
+            )
+            raise WhatsappException(config.DEFAULT_ERROR_REPLY_MESSAGE)
+
+        pipeline: List[Dict[str, Any]] = [
             {
                 "$geoNear": {
                     "key": "coords",
@@ -58,7 +72,9 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                             "$distance",
                         ]  # Filter where range is greater or equal to distance
                     },
-                    "services": {"$all": [str(service.id) for service in order.services]},
+                    "services": {
+                        "$all": [str(service.id) for service in order.services]
+                    },
                     "time_slots": {"$in": [order.time_slot]},
                 }
             },
@@ -68,6 +84,14 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                     "localField": "_id",  # field in orders referencing service_locations._id
                     "foreignField": "service_location_id",  # field in service_locations to match
                     "as": "timeslot_volumes",  # output array field for matched documents
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$delivery_type",  # Group by the "category" field
+                    "documents": {
+                        "$push": "$$ROOT"
+                    },  # Push the entire document into the "documents" array
                 }
             },
             # {
@@ -97,84 +121,94 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
             {"$limit": 25},
         ]
 
-        nearby_service_locations: List[ServiceLocation] = (
-            await db.service_locations.aggregate(pipeline=pipeline).to_list(10)
+        delivery_type_service_locations_list: List[Dict[str, Any]] = (
+            await db.service_locations.aggregate(pipeline=pipeline).to_list(length=None)
+        )
+
+        # List[Dict[DeliveryTypeEnum, List[ServiceLocation]]]
+        atleast_one_service_location_present = any(
+            location_type["documents"]
+            for location_type in delivery_type_service_locations_list
         )
         # return nearby_service_locations
-        if not nearby_service_locations:
+        if not atleast_one_service_location_present:
             # send message to user that no ironman found.
-            message_body = whatsapp_utils.get_reply_message(
+            no_ironman_message_body = whatsapp_utils.get_reply_message(
                 "new_order_no_ironman", message_type="text"
             )
-            await Message(message_body).send_message(wa_id)
+            await Message(no_ironman_message_body).send_message(wa_id)
             raise Exception("No nearby ironman found.")
 
         # Split nearby_service_locations into a dictionary based on delivery_type
-        nearby_service_locations_dict = {
-            DeliveryTypeEnum.DELIVERY: [],
-            DeliveryTypeEnum.SELF_PICKUP: [],
-        }
+        # nearby_service_locations_dict = {
+        #     DeliveryTypeEnum.DELIVERY: [],
+        #     DeliveryTypeEnum.SELF_PICKUP: [],
+        # }
 
-        for service_location in nearby_service_locations:
-            # first check if service completed_count is less than daily_count for that service.
-            delivery_type = get_delivery_enum_from_string(
-                service_location.get("delivery_type")
-            )
-            nearby_service_locations_dict[delivery_type].append(service_location)
+        # for service_location in location_type_with_service_locations:
+        #     # first check if service completed_count is less than daily_count for that service.
+        #     delivery_type = get_delivery_enum_from_string(
+        #         service_location.get("delivery_type")
+        #     )
+        #     nearby_service_locations_dict[delivery_type].append(service_location)
 
-        # # Sort each list by distance
+        # Sort each list by distance
         # for delivery_type in nearby_service_locations_dict:
         #     nearby_service_locations_dict[delivery_type].sort(key=lambda x: x["distance"])
 
         order_requests: List[OrderRequest] = []
         trigger_time = datetime.now()
+        temp_name = ""
 
-        if nearby_service_locations_dict[DeliveryTypeEnum.SELF_PICKUP]:
-            self_pickup_service_locations = nearby_service_locations_dict[
-                DeliveryTypeEnum.SELF_PICKUP
-            ]
-            temp_name = ""
-            for index, service_location in enumerate(self_pickup_service_locations):
+        for delivery_type_service_locations in delivery_type_service_locations_list:
+            if delivery_type_service_locations["_id"] == DeliveryTypeEnum.SELF_PICKUP:
+                self_pickup_service_locations = delivery_type_service_locations[
+                    "documents"
+                ]
+                for index, service_location in enumerate(self_pickup_service_locations):
+                    service_location = ServiceLocation(**service_location)
+                    if service_location.auto_accept:
+                        if await auto_allot_service(
+                            order,
+                            service_location,
+                            self_pickup_service_locations,
+                            index,
+                        ):
+                            break
+                    else:
+                        trigger_time = trigger_time + timedelta(minutes=index * 1)
+                        order_request = OrderRequest(
+                            order_id=order.id,
+                            delivery_type=DeliveryTypeEnum.SELF_PICKUP,
+                            service_location_id=service_location.id,
+                            distance=service_location.distance,
+                            trigger_time=trigger_time,
+                            is_pending=True,
+                            try_count=0,
+                        )
+                        order_requests.append(order_request)
 
-                if service_location["auto_accept"]:
-                    if await auto_allot_service(
-                        order, service_location, self_pickup_service_locations, index
-                    ):
-                        break
-                else:
-                    trigger_time = trigger_time + timedelta(minutes=index * 1)
-                    order_request = OrderRequest(
-                        order_id=order.id,
-                        delivery_type=DeliveryTypeEnum.SELF_PICKUP,
-                        service_location_id=service_location["_id"],
-                        distance=service_location["distance"],
-                        trigger_time=trigger_time,
-                        is_pending=True,
-                        try_count=0,
-                    )
-                    order_requests.append(order_request)
+            # delivery type service location's order request will be created here
+            elif delivery_type_service_locations["_id"] == DeliveryTypeEnum.DELIVERY:
+                delivery_service_locations = delivery_type_service_locations[
+                    "documents"
+                ]
 
-        # delivery type service location's order request will be created here
-        if nearby_service_locations_dict[DeliveryTypeEnum.DELIVERY]:
-            delivery_service_locations = nearby_service_locations_dict[
-                DeliveryTypeEnum.DELIVERY
-            ]
+                delivery_service_locations_ids = [
+                    ServiceLocation(**service_location).id
+                    for service_location in delivery_service_locations
+                ]
 
-            delivery_service_locations_ids = [
-                service_location["_id"]
-                for service_location in delivery_service_locations
-            ]
-            trigger_time = trigger_time + timedelta(minutes=15)
-
-            order_request = OrderRequest(
-                order_id=order.id,
-                delivery_type=DeliveryTypeEnum.DELIVERY,
-                delivery_service_locations_ids=delivery_service_locations_ids,
-                trigger_time=trigger_time,
-                is_pending=True,
-                try_count=0,
-            )
-            order_requests.append(order_request)
+                trigger_time = trigger_time + timedelta(minutes=15)
+                order_request = OrderRequest(
+                    order_id=order.id,
+                    delivery_type=DeliveryTypeEnum.DELIVERY,
+                    delivery_service_locations_ids=delivery_service_locations_ids,
+                    trigger_time=trigger_time,
+                    is_pending=True,
+                    try_count=0,
+                )
+                order_requests.append(order_request)
 
         result = await db.order_request.insert_many(
             [
@@ -193,42 +227,69 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
 
 
 async def auto_allot_service(
-    order: Order, service_location, self_pickup_service_locations, index
+    order: Order,
+    service_location: ServiceLocation,
+    self_pickup_service_locations,
+    index,
 ):
-    timeslot_volume: List[TimeslotVolume] = next(
+    if (
+        not order.time_slot
+        or not order.services
+        or not order.services[0].call_to_action_key
+        or not service_location.timeslot_volumes
+    ):
+        return False
+
+    timeslot_volume: TimeslotVolume | None = next(
         (
             timeslot_volume
-            for timeslot_volume in service_location["timeslot_volumes"]
-            if order.pick_up_time.start.strftime("%Y-%m-%d")
-            in timeslot_volume["operation_date"]
+            for timeslot_volume in service_location.timeslot_volumes
+            if timeslot_volume
+            and timeslot_volume.operation_date
+            and order.pick_up_time
+            and order.pick_up_time.start
+            and order.pick_up_time.start.strftime("%Y-%m-%d")
+            in str(timeslot_volume.operation_date)
         ),
         None,
     )
 
-    timeslot = timeslot_volume["timeslot_distributions"][order.time_slot]
-    service = timeslot_volume["services_distribution"][
-        order.services[0]["call_to_action_key"]
+    if (
+        not timeslot_volume
+        or not timeslot_volume.timeslot_distributions
+        or not timeslot_volume.services_distribution
+    ):
+        return False
+
+    timeslot = timeslot_volume.timeslot_distributions[order.time_slot]
+    service = timeslot_volume.services_distribution[
+        order.services[0].call_to_action_key
     ]
 
     clothes_count = cache.get_clothes_cta_count(order.count_range)
     if (
-        timeslot["limit"] - timeslot["current"] >= clothes_count
-        and service["limit"] - service["current"] >= clothes_count
+        timeslot.limit
+        and timeslot.current
+        and service.limit
+        and service.current
+        and timeslot.limit - timeslot.current >= clothes_count
+        and service.limit - service.current >= clothes_count
     ):
-        timeslot["current"] += clothes_count
-        service["current"] += clothes_count
-        timeslot_volume["current_cloths"] += clothes_count
+        timeslot.current += clothes_count
+        service.current += clothes_count
+        timeslot_volume.current_clothes += clothes_count
 
         await db.timeslot_volume.replace_one(
-            {"_id": timeslot_volume["_id"]},  # Match the document by its _id
-            timeslot_volume,
+            {"_id": timeslot_volume.id},  # Match the document by its _id
+            timeslot_volume.model_dump(exclude_defaults=True, exclude={"id"}),
         )
 
         order_status = await whatsapp_utils.get_new_order_status(
             order.id, OrderStatusEnum.PICKUP_PENDING
         )
-        order.service_location_id = service_location["_id"]
-        order.order_status.insert(0, order_status)
+        order.service_location_id = service_location.id
+        if order.order_status:
+            order.order_status.insert(0, order_status)
         order.updated_on = datetime.now()
         order.auto_alloted = True
 
@@ -236,7 +297,7 @@ async def auto_allot_service(
             {"_id": order.id},
             order.model_dump(exclude_defaults=True, exclude={"id"}, by_alias=True),
         )
-        temp_name = service_location["name"]
+        temp_name = service_location.name
 
         message_body = whatsapp_utils.get_reply_message(
             message_key="new_order_ironman_alloted",
