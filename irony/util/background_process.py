@@ -72,9 +72,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                             "$distance",
                         ]  # Filter where range is greater or equal to distance
                     },
-                    "services": {
-                        "$all": [str(service.id) for service in order.services]
-                    },
+                    "services": {"$all": [service.id for service in order.services]},
                     "time_slots": {"$in": [order.time_slot]},
                 }
             },

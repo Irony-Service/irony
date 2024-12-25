@@ -127,6 +127,7 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
             )
             return
 
+        # TODO check if this logic is right.
         if utils.is_time_slot_expired(order.time_slot):
             # Time slot expired: send ironman message that time slot is expired.
             logger.info(f"Order:{order.id} time slot expired")

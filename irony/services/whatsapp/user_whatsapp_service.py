@@ -313,21 +313,24 @@ async def set_new_order_time_slot(
     )
 
     buton_reply_length = len(button_reply_obj["id"])
-    now = datetime.now()
+    pickup_datetime = datetime.now()
     if button_reply_obj["id"][buton_reply_length - 1] == "T":
-        now = now + timedelta(days=1)
+        pickup_datetime = pickup_datetime + timedelta(days=1)
+
+    button_reply_id = button_reply_obj["id"][: buton_reply_length - 1]
     # check if last location exists, update timeslot and send message to user saying that last location will be used.
     if "existing_location" in last_message:
         order = await update_order_timeslot_details(
-            button_reply_obj,
+            button_reply_id,
             last_message,
             order_status,
-            now,
+            pickup_datetime,
             extra_set={
                 "trigger_order_request_at": datetime.now() + timedelta(minutes=3),
                 "trigger_order_request_pending": True,
             },
         )
+        order = Order(**order)
 
         # send message to user that last location will be used with location reply. and if he wants to change location he can do so.
         message_body = whatsapp_utils.get_reply_message(
@@ -341,8 +344,9 @@ async def set_new_order_time_slot(
     # Else update timeslot and send message new_order_pending message to user.
     else:
         order = await update_order_timeslot_details(
-            button_reply_obj, last_message, order_status, now
+            button_reply_id, last_message, order_status, pickup_datetime
         )
+        order = Order(**order)
 
         message_body = whatsapp_utils.get_reply_message(
             message_key="new_order_pending",
@@ -360,7 +364,6 @@ async def set_new_order_time_slot(
             },
         )
 
-    order = Order(**order)
     # update last message doc
     last_message_update = {
         "type": config.TIME_SLOT_ID_KEY,
@@ -382,20 +385,24 @@ async def set_new_order_time_slot(
 
 
 async def update_order_timeslot_details(
-    button_reply_obj, last_message, order_status, now, extra_set={}
+    button_reply_id: str,
+    last_message: dict,
+    order_status: OrderStatus,
+    pickup_datetime: datetime,
+    extra_set={},
 ):
     call_action_config = await db.config.find({"group": "TIME_SLOT_ID"}).to_list(None)
     slot_start = get_slots(call_action_config, "start_time")
     slot_end = get_slots(call_action_config, "end_time")
-    h, m = get_time_from_stamp(slot_start[button_reply_obj["id"]])
-    he, me = get_time_from_stamp(slot_end[button_reply_obj["id"]])
-    start_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
-    end_time = now.replace(hour=he, minute=me, second=0, microsecond=0)
+    h, m = get_time_from_stamp(slot_start[button_reply_id])
+    he, me = get_time_from_stamp(slot_end[button_reply_id])
+    start_time = pickup_datetime.replace(hour=h, minute=m, second=0, microsecond=0)
+    end_time = pickup_datetime.replace(hour=he, minute=me, second=0, microsecond=0)
     order = await db.order.find_one_and_update(
         {"_id": last_message["order_id"]},
         {
             "$set": {
-                "time_slot": button_reply_obj["id"],
+                "time_slot": button_reply_id,
                 "updated_on": datetime.now(),
                 "pick_up_time": {"start": start_time, "end": end_time},
                 **extra_set,

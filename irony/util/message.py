@@ -51,11 +51,14 @@ class Message:
         response = self._methods[self.method](
             self.url, headers=self.headers, data=json.dumps(self.body)
         )
+        if response.status_code != 200:
+            logger.error(f"Error while sending message : {response.text}")
+
         response_data = response.json()
         logger.info(f"Sent message response : {response_data}")
 
         # 3. Update last message for user.
-        if last_message_update != None:
+        if response.status_code == 200 and last_message_update != None:
             last_message_update["user"] = to
             if "messages" in response_data and "id" in response_data["messages"][0]:
                 last_message_update["last_sent_msg_id"] = response_data["messages"][0][
