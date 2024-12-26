@@ -5,7 +5,8 @@ import copy
 
 from bson import ObjectId  # Add this import
 
-from irony import cache, services
+import pprint
+from irony import cache
 from irony.config import config
 from irony.config.logger import logger
 from irony.db import db, replace_documents_in_transaction
@@ -16,12 +17,14 @@ from irony.models.location import Location, UserLocation
 from irony.models.order import Order
 from irony.models.order_request import OrderRequest
 from irony.models.order_status import OrderStatusEnum
+from irony.services.whatsapp import user_whatsapp_service
 from irony.models.service_location import (
     DeliveryTypeEnum,
     ServiceLocation,
     ServiceEntry,
     get_delivery_enum_from_string,
 )
+from irony.models.contact_details import ContactDetails
 from irony.models.timeslot_volume import TimeslotVolume
 from irony.models.user import User
 from irony.util.message import Message
@@ -114,6 +117,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
             {"$sort": {"distance": 1}},
             {"$limit": 25},
         ]
+        pprint.pprint(pipeline) 
 
         delivery_type_service_locations_list: List[Dict[str, Any]] = (
             await db.service_locations.aggregate(pipeline=pipeline).to_list(length=None)
@@ -1009,3 +1013,98 @@ async def create_order_requests():
     await asyncio.gather(*tasks)
 
     logger.info("Completed create_order_requests")
+
+async def reassign_missed_orders():
+
+    logger.info("Started reassign_missed_orders")
+    n = config.DB_CACHE["config"]["missing_pickup_gap"]["value"]
+
+    current_time = datetime.now() + timedelta(minutes=n)
+    start_of_today = datetime(current_time.year, current_time.month, current_time.day)
+    formatted_time = current_time.strftime("%H:%M")
+
+    pipeline = [
+    {
+        "$match": {
+            "end_time":  {"$lte": formatted_time},  
+            "group": "TIME_SLOT_ID"
+        }
+    }
+    ]
+    pending_schedules = await db.config.aggregate(pipeline=pipeline).to_list(None)
+
+    # if not pending_schedules: 
+    #     logger.info("No pending schedules found")
+    #     return
+
+    # for pending_schedule in pending_schedules:
+    pipeline = [
+        {
+                "$match": {
+                    "order_status.0.status": {
+                        "$in": [
+                            OrderStatusEnum.PICKUP_PENDING.value,
+                        ]
+                    },
+                    "pick_up_time.end": {"$gte": start_of_today, "$lte": current_time},
+                }
+            },
+    ]
+    missed_orders : List[Order] = await db.order.aggregate(pipeline=pipeline).to_list(None) 
+    pprint.pprint(pipeline)
+    
+
+    if missed_orders:
+        for index,order in enumerate(missed_orders):
+            order_status= order["order_status"]
+            i=0
+            while(True):
+                if i ==len(order_status):
+                    break
+                if order_status[i]["status"] == "PICKUP_PENDING" : # or order_status[i]["status"]  =="FINDING_IRONMAN":
+                    del order_status[i]
+                    i=i-1
+                i=i+1
+
+            next_slot = cache.get_next_time_slot(order["time_slot"])
+            if None == next_slot:
+                break #comment this if you want handle missing next day too
+                next_slot = config.DB_CACHE["ordered_time_slots"][0]["key"]+"T"
+
+            # uname =  await db.user.find_one({"wa_id": order["user_wa_id"]})
+
+            call_action_config =[ value for key, value in config.DB_CACHE["config"].items() if "TIME_SLOT_ID" in key]
+            slot_start = user_whatsapp_service.getSlots(call_action_config, "start_time")
+            slot_end = user_whatsapp_service.getSlots(call_action_config, "end_time")
+            l = len(next_slot["key"])
+            now = datetime.now()
+            h, m = user_whatsapp_service.getTimeFromStamp(slot_start[next_slot["key"]])
+            he, me = user_whatsapp_service.getTimeFromStamp(slot_end[next_slot["key"]])
+            start_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
+            end_time = now.replace(hour=he, minute=me, second=0, microsecond=0)
+
+            order["time_slot"] =  next_slot["key"]
+            order["updated_on"] = now
+            order["pick_up_time"] =  {"start": start_time, "end": end_time}
+
+            order["service_location_id"] = None
+            order["auto_alloted"]= None
+
+            await create_ironman_order_requests(order, order["user_wa_id"])
+        
+        await db.order.update_many(missed_orders)
+        
+
+
+            
+
+        
+
+
+        
+
+
+
+
+
+  
