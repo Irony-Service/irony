@@ -39,10 +39,6 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
         #     {"$elemMatch": {"service_id": service.id} for service in order.services}
         # ]
 
-        no_ironman_message_body = whatsapp_utils.get_reply_message(
-            "new_order_no_ironman", message_type="text"
-        )
-
         if not order.location or not order.location.location or not order.services:
             logger.error(
                 "Developer concern, Order has required empty value %s but trying to create ironman order requests. order_id : %s",
@@ -262,10 +258,10 @@ async def check_limit_and_allot_order(
 
     clothes_count = cache.get_clothes_cta_count(order.count_range)
     if (
-        timeslot.limit
-        and timeslot.current
-        and service.limit
-        and service.current
+        timeslot.limit is not None
+        and timeslot.current is not None
+        and service.limit is not None
+        and service.current is not None
         and timeslot.limit - timeslot.current >= clothes_count
         and service.limit - service.current >= clothes_count
     ):
