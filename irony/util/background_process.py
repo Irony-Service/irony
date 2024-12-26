@@ -1026,7 +1026,7 @@ async def reassign_missed_orders():
     pipeline = [
     {
         "$match": {
-            "end_time":  {"$lte": formatted_time},  
+            "end_time":  {"$eq": formatted_time},  
             "group": "TIME_SLOT_ID"
         }
     }
