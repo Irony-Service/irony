@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
     # Startup event equivalent
     config.DB_CACHE = await cache.fetch_data_from_db(config.DB_CACHE)
     logger.info("Data loaded into cache")
-    scheduler.start()
+    # scheduler.start()
     # await background_process.send_pending_order_requests()
     logger.info("Scheduler started")
     # Yield control to the app
