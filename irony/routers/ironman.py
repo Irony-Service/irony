@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 
 
 from irony.db import db
-from irony.models.service_agent import ServiceAgent
+from irony.models.service_agent import ServiceAgent, ServiceAgentRegister
 from irony.models.user import User
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
@@ -34,10 +34,10 @@ async def login(user: UserLogin):
         data={"sub": user.mobile},
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    return {"access_token": token, "token_type": "bearer", user: db_user.model_dump()}
+    return {"access_token": token, "token_type": "bearer", "user": db_user.model_dump(exclude={"password"})}
 
 @router.post("/register")
-async def register(user: ServiceAgent):
+async def register(user: ServiceAgentRegister):
     # Check if passwords match
     if not user.mobile or not user.password or not user.confirm_password:
         raise HTTPException(status_code=400, detail="Mobile, Password or confirm password not provided")
@@ -52,17 +52,20 @@ async def register(user: ServiceAgent):
         raise HTTPException(status_code=400, detail="Passwords do not match")
 
     # Check if email is already registered
-    db_user = db.service_agent.find_one({"mobile": user.mobile})
+    db_user = await db.service_agent.find_one({"mobile": user.mobile})
     if db_user:
         raise HTTPException(status_code=400, detail="Mobile already registered")
 
     # Hash the password
     user.password = auth.hash_password(user.password)
 
+    service_agent = ServiceAgent(**user.model_dump())
     # Save user to the database
-    await db.service_agent.insert_one(user.model_dump(exclude={"_id", "confirm_password"}))
+    result = await db.service_agent.insert_one(service_agent.model_dump(exclude={"id"}))
 
-    return {"message": "User registered successfully"}
+    service_agent.id = result.inserted_id
+
+    return {"message": "User registered successfully", "user": service_agent.model_dump(exclude={"password"})}
 
 @router.get("/protected-route")
 async def protected_route(current_user: str = Depends(auth.get_current_user)):

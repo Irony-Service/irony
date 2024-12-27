@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_serializer, field_validator
 from typing import Optional, Union
 from bson import ObjectId
 
@@ -8,15 +8,17 @@ class ModelConfig:
     arbitrary_types_allowed = True
 
 class ServiceAgent(BaseModel):
-    id: Optional[Union[ObjectId,str]] = Field(None, alias='_id')
+    id: Optional[ObjectId] = Field(None, alias='_id')
     name: Optional[str] = None
     mobile: Optional[str] = None
     type: Optional[str] = None
     sub_type: Optional[str] = None
-    service_location_id: Optional[Union[ObjectId,str]] = None
+    service_location_id: Optional[ObjectId] = None
     password: Optional[str] = None
-    confirm_password: Optional[str] = None
 
+    @field_serializer("id", "service_location_id")
+    def serialize_id(self, value: ObjectId) -> str:
+        return str(value)
 
     @field_validator("id", "service_location_id", mode="before")
     def validate_object_id(cls, value):
@@ -32,14 +34,11 @@ class ServiceAgent(BaseModel):
             ObjectId: str
         }
 
-agent = ServiceAgent(
-    _id="64e1c8e1f9e8f8c9b1234567",
-    name="John Doe",
-    mobile="9876543210",
-    type="General",
-    service_location_id="64e1c8e1f9e8f8c9b7654321",
-    password="password123",
-    confirm_password="password123"
-)
-
-print(agent.json())
+class ServiceAgentRegister(BaseModel):
+    name: Optional[str] = None
+    mobile: Optional[str] = None
+    type: Optional[str] = None
+    sub_type: Optional[str] = None
+    service_location_id: Optional[str] = None
+    password: Optional[str] = None
+    confirm_password: Optional[str] = None
