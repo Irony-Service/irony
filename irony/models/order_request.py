@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
 from bson import ObjectId
@@ -14,7 +14,7 @@ class OrderRequest(BaseModel):
     order_id: Optional[ObjectId] = None
     order: Optional[Order] = None
     delivery_type: Optional[DeliveryTypeEnum] = None
-    delivery_service_locations_ids: Optional[List[ObjectId | None]] = None
+    delivery_service_locations_ids: Optional[List[Union[ObjectId, None]]] = None
     delivery_service_locations: Optional[List[ServiceLocation]] = None
     service_location_id: Optional[ObjectId] = None
     service_location: Optional[ServiceLocation] = None
