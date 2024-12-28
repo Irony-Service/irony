@@ -3,6 +3,7 @@ import time
 from fastapi import FastAPI, Request
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from fastapi.middleware.cors import CORSMiddleware
 
 from irony import cache
 from irony.config import config
@@ -68,6 +69,16 @@ app = FastAPI()
 
 app.router.lifespan_context = lifespan
 
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.middleware("http")
 async def log_request_time(request: Request, call_next):
@@ -91,4 +102,4 @@ async def root():
 
 app.include_router(whatsapp.router, prefix="/whatsapp")
 app.include_router(users.router)
-app.include_router(ironman.router, prefix="/ironman")
+app.include_router(ironman.router, prefix="/api/ironman")
