@@ -1,0 +1,68 @@
+import pprint
+from typing import List
+from bson import ObjectId
+from fastapi import Response
+
+from irony.db import db, replace_documents_in_transaction
+from irony.exception.WhatsappException import WhatsappException
+from irony.models.contact_details import ContactDetails
+from irony.config import config
+from irony.models.fetch_order_details_vo import FetchOrderDetailsRequest, FetchOrderDetailsResponse, FetchOrderDetailsResponsebody
+from irony.models.order import Order
+from irony.models.order_status import OrderStatusEnum
+from irony.models.fetch_orders_vo import FetchOrdersResponse, OrderChunk
+from irony.models.user import User
+from irony.services.whatsapp import user_whatsapp_service
+from irony.util import whatsapp_utils
+import irony.services.whatsapp.interactive_message_service as interactive_message_service
+import irony.services.whatsapp.text_message_service as text_message_service
+from irony.config.logger import logger
+
+async def fetch_order_details(request: FetchOrderDetailsRequest):
+    try:
+        order_data = await db.order.find_one({"_id": ObjectId(request.order_id)})
+        if order_data is None:
+           raise WhatsappException("Order not found")
+        order : Order = Order(**order_data)
+        user_data = await db.user.find_one({"wa_id": order.user_wa_id})
+
+        response = FetchOrderDetailsResponse()
+        response.body = map_order_to_response(order, user_data)
+        response.success = True
+        return response.model_dump()
+
+    except Exception as e:
+        logger.error(f"Error occured in fetch order details : {e}")
+        response = FetchOrderDetailsResponse()
+        response.body = None
+        response.error = "Error occured in fetch order details"
+        response.success = False
+        return response.model_dump()
+
+def map_order_to_response(order, user):
+        responsebody = FetchOrderDetailsResponsebody()
+        responsebody.order_id = str(order.id)
+        responsebody.simple_id = order.simple_id
+        responsebody.count_range = order.count_range
+
+        if order.location is not None:
+            responsebody.location = order.location.nickname
+            if order.location.nickname is  None or order.location.nickname == "":
+                if order.location.location is not None:
+                    responsebody.location = str(order.location.location.coordinates[0]) + "," + str(order.location.location.coordinates[1])
+        if order.services is not None and len(order.services) > 0:
+            responsebody.service_name = order.services[0].service_name
+        if order.pick_up_time is not None:
+            if order.pick_up_time.start is not None:
+                responsebody.pickup_time_start = order.pick_up_time.start.isoformat()
+            if order.pick_up_time.end is not None:
+                responsebody.pickup_time_end = order.pick_up_time.end.isoformat()
+        responsebody.time_slot = order.time_slot
+        if order.order_status is not None and len(order.order_status) > 0:
+            responsebody.status = order.order_status[0].status
+        if user is not None:
+            user = User(**user)
+            responsebody.name = user.name
+            responsebody.phone_number = user.wa_id
+
+        return responsebody;
