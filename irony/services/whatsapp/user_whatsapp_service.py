@@ -391,7 +391,9 @@ async def update_order_timeslot_details(
     pickup_datetime: datetime,
     extra_set={},
 ):
-    call_action_config = await db.config.find({"group": "TIME_SLOT_ID"}).to_list(None)
+    # call_action_config = await db.config.find({"group": "TIME_SLOT_ID"}).to_list(None)
+    call_action_config =[ value for key, value in config.DB_CACHE["config"].items() if "TIME_SLOT_ID" in key]
+
     slot_start = get_slots(call_action_config, "start_time")
     slot_end = get_slots(call_action_config, "end_time")
     h, m = get_time_from_stamp(slot_start[button_reply_id])

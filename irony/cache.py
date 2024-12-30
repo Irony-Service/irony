@@ -73,6 +73,9 @@ def set_call_to_action_cache(call_to_action_docs, db_cache):
 def get_clothes_cta_count(key):
     return config.DB_CACHE["call_to_action_docs"][key]["count"]
 
+def get_title_timeslot(id):
+    return config.DB_CACHE["call_to_action_docs"][id["key"]]["value"]
+
 
 def get_next_time_slot(slot_key):
     time_slot_index = next(

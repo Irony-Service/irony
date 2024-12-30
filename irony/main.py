@@ -38,6 +38,9 @@ scheduler.add_job(
 
 scheduler.add_job(background_process.create_order_requests, CronTrigger(minute="*/1"))
 
+scheduler.add_job(background_process.reassign_missed_orders,CronTrigger(minute="*/1"))
+
+
 
 # Runs every 1 minute
 
