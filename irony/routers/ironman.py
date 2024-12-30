@@ -3,13 +3,18 @@ from fastapi import APIRouter, HTTPException
 
 
 from irony.db import db
+from irony.models.fetch_adaptive_route_vo import FetchAdaptiveRouteRequest
+from irony.models.fetch_order_details_vo import FetchOrderDetailsRequest
+from irony.models.fetch_orders_vo import FetchOrderRequest
 from irony.models.service_agent import ServiceAgent, ServiceAgentRegister
+from irony.models.update_order_vo import UpdateOrderRequest
 from irony.models.user import User
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 
 from irony.models.user_login import UserLogin
 from irony.models.user_registration import UserRegistration
+from irony.services.Ironman import fetch_adaptive_route_service, fetch_order_deatils_service, fetch_orders_service, update_order_service
 from irony.util import auth
 
 router = APIRouter()
@@ -71,3 +76,19 @@ async def register(user: ServiceAgentRegister):
 async def protected_route(current_user: str = Depends(auth.get_current_user)):
     return {"message": f"Welcome, {current_user}!"}
 
+@router.get("/fetchOrders")
+async def fetchOrders( current_user: str = Depends(auth.get_current_user)):
+    return await fetch_orders_service.fetch_orders(current_user)
+
+@router.post("/fetchOrderDetails")
+async def fetchOrderDetails(request: FetchOrderDetailsRequest):
+    return await fetch_order_deatils_service.fetch_order_details(request)
+
+@router.post("/updateOrder")
+async def updateOrder(request: UpdateOrderRequest):
+    return await update_order_service.update_order(request)
+
+@router.post("/fetchAdaptiveRoute")
+async def fetchAdaptiveRoute(request: FetchAdaptiveRouteRequest):
+    pass
+    # return await fetch_adaptive_route_service.fetch_route(request)
