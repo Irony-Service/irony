@@ -3,7 +3,7 @@ from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
-from irony.models.common_model import ModelConfig
+from irony.models.common_model import CommonModel, ModelConfig
 from irony.models.location import UserLocation
 from irony.models.order_item import OrderItem
 from irony.models.order_status import OrderStatus
@@ -13,7 +13,7 @@ from irony.models.service_location import ServiceLocation
 from irony.models.user import User
 
 
-class Order(BaseModel):
+class Order(CommonModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     simple_id: Optional[str] = None
     user_id: Optional[ObjectId] = None

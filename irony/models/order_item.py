@@ -1,16 +1,16 @@
 from typing import Optional
 from bson import ObjectId
-from pydantic import BaseModel
+from pydantic import Field
 
-from irony.models.common_model import ModelConfig
+from irony.models.common_model import CommonModel, ModelConfig
 
 
-class OrderItem(BaseModel):
-    id: Optional[ObjectId] = None
-    order_id: Optional[ObjectId]
-    service_id: Optional[ObjectId]
-    count: Optional[float]
-    price: Optional[float]
+class OrderItem(CommonModel):
+    id: Optional[ObjectId] = Field(default=None, alias="_id")
+    order_id: Optional[ObjectId] = None
+    service_id: Optional[ObjectId] = None
+    count: Optional[float] = None
+    price: Optional[float] = None
 
     class Config(ModelConfig):
         pass

@@ -53,7 +53,7 @@ async def login(response: Response, user: UserLogin):
         httponly=True,
         # secure=True,  # Use True in production with HTTPS
         secure=False,  # Use True in production with HTTPS
-        samesite="None",
+        samesite="lax",
         expires=datetime.now(timezone.utc)
         + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )

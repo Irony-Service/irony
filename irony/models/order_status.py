@@ -1,9 +1,9 @@
 from datetime import datetime
 from enum import Enum
 from bson import ObjectId
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
-from irony.models.common_model import ModelConfig
+from irony.models.common_model import CommonModel, ModelConfig
 
 
 class OrderStatusEnum(str, Enum):
@@ -24,8 +24,8 @@ class OrderStatusEnum(str, Enum):
     CLOSED = "CLOSED"
 
 
-class OrderStatus(BaseModel):
-    _id: Optional[ObjectId] = None
+class OrderStatus(CommonModel):
+    id: Optional[ObjectId] = Field(default=None, alias="_id")
     order_id: Optional[ObjectId] = None
     status: Optional[OrderStatusEnum] = None
     created_on: Optional[datetime] = None
