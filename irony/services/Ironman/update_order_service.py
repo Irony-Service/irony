@@ -37,6 +37,7 @@ async def update_order(request: UpdateOrderRequest):
             if order.order_status is not None and len(order.order_status) >0  and request.current_status == order.order_status.__getitem__(0).status:
                 order.order_status.insert(0,(OrderStatus(status=OrderStatusEnum(request.new_status), created_on=now, updated_on=now)))
                 order.updated_on =  now
+                order.collected_cloths = int(request.collected_cloths) if request.collected_cloths is not None else None
                 await db.order.replace_one({"_id": ObjectId(request.order_id)}, order.model_dump())
                 response.body= map_order_to_response(order)
                 response.success = True

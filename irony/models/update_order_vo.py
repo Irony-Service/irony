@@ -8,6 +8,7 @@ class UpdateOrderRequest(BaseModel):
     order_id:  Optional[str] = None;
     current_status: Optional[str] = None;
     new_status: Optional[str] = None;
+    collected_cloths: Optional[str] = None;
     
     class Config(ModelConfig):
         pass

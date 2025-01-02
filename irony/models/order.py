@@ -15,6 +15,7 @@ from irony.models.user import User
 
 class Order(BaseModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
+    collected_cloths: Optional[int] = None
     simple_id: Optional[str] = None
     user_id: Optional[ObjectId] = None
     user: Optional[User] = None
