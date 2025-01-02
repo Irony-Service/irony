@@ -28,19 +28,19 @@ export default function Row({ data, lastRow = false }: RowProps) {
 
   return (
     <div>
-      <div className={clsx("flex justify-between items-center bg-white h-10 px-2", { "border-b border-gray-300": lastRow })}>
-        <div className="w-4/5 flex justify-between">
-          <div className="flex items-center gap-1">
+      <div className={clsx("flex justify-between items-center bg-white h-10 px-4", { "border-b border-gray-300": !lastRow })}>
+        <div className="w-[95%] flex justify-between">
+          <div className="w-1/3 flex items-center gap-1">
             <Image src="/fluent-mdl2_shirt.svg" alt="Login" width={18} height={18} />
             <span>{data.count_range}</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="w-1/3 flex items-center gap-1">
             <Image src="/streamline_iron.svg" alt="Login" width={18} height={18} />
             <span>{data.services}</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="w-1/3 flex items-center gap-1">
             <Image src="/material-symbols-light_distance-outline.svg" alt="Login" width={18} height={18} />
-            <span>data.distance</span>
+            <span>{data.distance}</span>
           </div>
         </div>
         <button onClick={showOrder}>

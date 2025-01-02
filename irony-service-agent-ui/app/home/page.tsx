@@ -1,15 +1,21 @@
+import { cookies } from "next/headers";
 import api from "../../utils/axios";
 import HomeClient from "./HomeClient";
 
 export default async function Home() {
-  const data = await fetchHomeData();
-  console.log(data);
+  const response = await fetchHomeData();
 
-  return <HomeClient data={data}></HomeClient>;
+  return <HomeClient data={response}></HomeClient>;
 
   async function fetchHomeData() {
-    const response = await api.get("/fetchOrders");
-    const { data } = response.data;
-    return data;
+    const cookieStore = await cookies();
+    const authToken = cookieStore.get("auth_token");
+    console.log("This is auth_token cookie: ", authToken);
+    const response = await api.get("/agentOrdersByStatusGroupByDateAndTimeSlot", {
+      params: {
+        order_status: "FINDING_IRONMAN,PICKUP_PENDING,WORK_IN_PROGRESS,DELIVERY_PENDING",
+      },
+    });
+    return response.data;
   }
 }

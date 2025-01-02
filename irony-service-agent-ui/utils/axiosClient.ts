@@ -1,6 +1,5 @@
 // utils/axios.ts
 import axios from "axios";
-import { cookies } from "next/headers";
 
 // Get the API base URL from the environment variable
 const apiBaseUrl: string = "http://localhost:8000/api/ironman";
@@ -16,13 +15,6 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-});
-
-api.interceptors.request.use(async (config) => {
-  const cookieHeader = (await cookies()).toString(); // Retrieve cookies in server-side context
-  config.headers["Cookie"] = cookieHeader; // Add cookies to the request
-  config.headers["Content-Type"] = "application/json";
-  return config;
 });
 
 export default api;

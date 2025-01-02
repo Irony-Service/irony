@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import api from "../../utils/axios";
+import api from "../../utils/axiosClient";
 import { LoginButton } from "./components/LoginButton";
 
 export default function Login() {
@@ -16,10 +16,13 @@ export default function Login() {
     e.preventDefault();
     try {
       const response = await api.post("/login", { mobile, password });
-      const { token } = response.data;
+      console.log(response);
+      console.log(response.data);
+
+      // const { token } = response.data;
 
       // Store token in localStorage
-      localStorage.setItem("auth_token", token);
+      // localStorage.setItem("auth_token", token);
 
       // Redirect to home page upon success
       router.push("/home");
