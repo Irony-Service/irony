@@ -1,6 +1,9 @@
-fastapi
+fastapi[all]
 uvicorn
 motor
 requests
 joblib
 apscheduler
+passlib
+bcrypt
+pyjwt

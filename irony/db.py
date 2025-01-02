@@ -1,20 +1,22 @@
-from typing import Any, Dict, List
+from typing import Any, List
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorClientSession
+from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReplaceOne
 import certifi
-from irony.config import config
-from irony.config.logger import logger
 from pymongo.errors import PyMongoError
-
 from motor.core import AgnosticClient, AgnosticDatabase
 
-client: AgnosticClient = AsyncIOMotorClient(config.DATABASE_CONNECTION,tlsCAFile=certifi.where())
-db: AgnosticDatabase = client["irony"]
+from irony.config import config
+from irony.config.logger import logger
 
 # Pydantic models
 from .models.user import User
+
+client: AgnosticClient = AsyncIOMotorClient(
+    config.DATABASE_CONNECTION, tlsCAFile=certifi.where()
+)
+db: AgnosticDatabase = client["irony"]
 
 
 # DB methods
@@ -22,7 +24,7 @@ async def replace_documents_in_transaction(
     collection_name: str, replacements: List[Any]
 ):
     # Prepare bulk operations list
-    operations = []
+    operations: list = []
 
     for replacement in replacements:
         # Filter criteria for each document to be replaced

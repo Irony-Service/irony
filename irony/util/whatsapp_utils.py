@@ -22,12 +22,20 @@ sample_interactive = {
 
 
 def get_random_one_from_messages(message_doc: MessageConfig):
+    if message_doc.message_options is None:
+        logger.error(
+            "Developer concern, No message options for message_doc with _id : %s, message_key: %s",
+            message_doc.id,
+            message_doc.message_key,
+        )
+        raise WhatsappException(config.DEFAULT_ERROR_REPLY_MESSAGE)
+
     return message_doc.message_options[
         random.randint(0, len(message_doc.message_options) - 1)
     ]
 
 
-def get_contact_details_dict(value) -> ContactDetails:
+def get_contact_details_dict(value) -> dict[str, ContactDetails]:
     contact_list = value.get("contacts", [])
     contact_details_dict: Dict[str, ContactDetails] = {}
     for contact in contact_list:
@@ -48,15 +56,7 @@ async def send_error_reply_message(
 ):
     wa_id = contact_details.wa_id
     if error.reply_message_type == MessageType.TEXT:
-        message_body = {
-            "messaging_product": "whatsapp",
-            "recipient_type": "individual",
-            "to": wa_id,
-            "type": "text",
-            "text": {
-                "body": error.reply_message,
-            },
-        }
+        message_body = get_free_text_message(error.reply_message)
     elif error.reply_message_type == MessageType.INTERACTIVE:
         message_body = {
             "messaging_product": "whatsapp",
@@ -85,7 +85,7 @@ def get_contact_details(contact) -> ContactDetails:
 async def update_order_status(order_id, status: OrderStatusEnum):
     order_status = OrderStatus(
         order_id=order_id,
-        status=status.value,
+        status=status,
         created_on=datetime.now(),
     )
 
@@ -97,7 +97,7 @@ async def update_order_status(order_id, status: OrderStatusEnum):
 async def get_new_order_status(order_id, status: OrderStatusEnum):
     return OrderStatus(
         order_id=order_id,
-        status=status.value,
+        status=status,
         created_on=datetime.now(),
     )
 

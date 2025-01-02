@@ -1,7 +1,5 @@
-from datetime import datetime
-from typing import Any, Optional
-
 from fastapi import Response
+
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.contact_details import ContactDetails
 from irony.config import config
@@ -9,10 +7,6 @@ from irony.services.whatsapp import user_whatsapp_service
 from irony.util import whatsapp_utils
 import irony.services.whatsapp.interactive_message_service as interactive_message_service
 import irony.services.whatsapp.text_message_service as text_message_service
-from irony.db import db
-from irony.models.location import UserLocation
-from irony.models.user import User
-from irony.models.order import Order
 from irony.config.logger import logger
 
 

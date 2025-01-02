@@ -1,7 +1,8 @@
 from typing import Dict, List
+
 from irony.config import config, logger
 from irony.db import db
-from irony.models.call_to_action import CallToAction
+from irony.exception.WhatsappException import WhatsappException
 from irony.models.message import MessageConfig
 from irony.models.service import Service
 
@@ -72,6 +73,9 @@ def set_call_to_action_cache(call_to_action_docs, db_cache):
 def get_clothes_cta_count(key):
     return config.DB_CACHE["call_to_action_docs"][key]["count"]
 
+def get_title_timeslot(id):
+    return config.DB_CACHE["call_to_action_docs"][id["key"]]["value"]
+
 
 def get_next_time_slot(slot_key):
     time_slot_index = next(
@@ -83,10 +87,11 @@ def get_next_time_slot(slot_key):
         None,
     )
     if time_slot_index is None:
-        logger.info(
-            "Developer concern : for get_next_time_slot, unable to find given slot in db_cache stored time_slots"
+        logger.error(
+            "Developer concern, for get_next_time_slot, unable to find given slot in db_cache stored time_slots. slot_key %s",
+            slot_key,
         )
-        return None
+        raise WhatsappException(config.DEFAULT_ERROR_REPLY_MESSAGE)
     elif time_slot_index == len(config.DB_CACHE["ordered_time_slots"]) - 1:
         return None
 

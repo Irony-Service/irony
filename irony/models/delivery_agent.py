@@ -1,4 +1,3 @@
-from datetime import datetime
 from enum import Enum
 from bson import ObjectId
 from pydantic import BaseModel
@@ -16,7 +15,7 @@ class DeliveryAgent(BaseModel):
     rating: float
 
 
-class VehicleSubTypeEnum(int, Enum):
+class VehicleTypeEnum(int, Enum):
     TWO = 2
     THREE = 3
     FOUR = 4
