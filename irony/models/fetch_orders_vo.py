@@ -1,8 +1,9 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
 from irony.models.common_model import ModelConfig
+from irony.models.order import Order
 
 
 class FetchOrderRequest(BaseModel):
@@ -32,14 +33,31 @@ class FetchOrderResponseBody(BaseModel):
         pass
 
 
+class TimeSlotItem(BaseModel):
+    time_slot: Optional[str] = None
+    orders: Optional[List[Order]] = None
+
+
+class DateItem(BaseModel):
+    date: Optional[str] = None
+    time_slots: Optional[List[TimeSlotItem]]
+
+
+class FetchOrdersResponseBodyItem1(BaseModel):
+    key: Optional[str] = None
+    label: Optional[str] = None
+    dates: Optional[List[DateItem]] = None
+
+
 class FetchOrdersResponseBodyItem(BaseModel):
     key: Optional[str] = None
-    value: Optional[str] = None
-    orders: Optional[List[OrderChunk]] = None
+    label: Optional[str] = None
+    orders: Optional[List[Order]] = None
 
 
 class FetchOrdersResponse(BaseModel):
-    body: Optional[Dict[str, List[OrderChunk]]] = None
+    # {"pending_pick_up": {"value":"Pickup", orders:[]}, "work_in_progress":  {"value":"Work In Progress", orders:[]}, "delivery_pending":  {"value":"Delivery", orders:[]}}
+    body: Optional[Dict[str, FetchOrdersResponseBodyItem]] = None
     success: Optional[bool] = None
     error: Optional[str] = None
 

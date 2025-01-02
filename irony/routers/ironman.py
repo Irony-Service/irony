@@ -7,6 +7,7 @@ from irony.db import db
 from irony.models.fetch_adaptive_route_vo import FetchAdaptiveRouteRequest
 from irony.models.fetch_order_details_vo import FetchOrderDetailsRequest
 from irony.models.fetch_orders_vo import FetchOrderRequest
+from irony.models.order_status import OrderStatusEnum
 from irony.models.service_agent import ServiceAgent, ServiceAgentRegister
 from irony.models.update_order_vo import UpdateOrderRequest
 from irony.models.user import User
@@ -107,9 +108,42 @@ async def protected_route(current_user: str = Depends(auth.get_current_user)):
     return {"message": f"Welcome, {current_user}!"}
 
 
-@router.get("/fetchOrders")
-async def fetchOrders(current_user: str = Depends(auth.get_current_user)):
-    return await fetch_orders_service.fetch_orders(current_user)
+@router.get("/agentOrdersByStatus")
+async def getAgentOrdersByStatus(
+    current_user: str = Depends(auth.get_current_user), order_status: str = ""
+):
+    ordered_statuses = [
+        OrderStatusEnum(status) for status in order_status.split(",") if status
+    ]
+    if not ordered_statuses:
+        ordered_statuses = [
+            OrderStatusEnum.PICKUP_PENDING,
+            OrderStatusEnum.WORK_IN_PROGRESS,
+            OrderStatusEnum.DELIVERY_PENDING,
+        ]
+    return await fetch_orders_service.get_orders_by_status_for_agent_locations(
+        current_user,
+        ordered_statuses=ordered_statuses,
+    )
+
+
+@router.get("/agentOrdersByStatusGroupByDateAndTimeSlot")
+async def getAgentOrdersByStatusGroupByDateAndTimeSlot(
+    current_user: str = Depends(auth.get_current_user), order_status: str = ""
+):
+    ordered_statuses = [
+        OrderStatusEnum(status) for status in order_status.split(",") if status
+    ]
+    if not ordered_statuses:
+        ordered_statuses = [
+            OrderStatusEnum.PICKUP_PENDING,
+            OrderStatusEnum.WORK_IN_PROGRESS,
+            OrderStatusEnum.DELIVERY_PENDING,
+        ]
+    return await fetch_orders_service.get_orders_by_status_and_group_by_date_and_time_slot_for_agent_locations(
+        current_user,
+        ordered_statuses=ordered_statuses,
+    )
 
 
 @router.post("/fetchOrderDetails")

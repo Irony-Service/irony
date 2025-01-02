@@ -24,10 +24,12 @@ class Order(CommonModel):
     service_location: Optional[ServiceLocation] = None
     services: Optional[List[Service]] = None
     count_range: Optional[str] = None
+    count_range_description: Optional[str] = None
     location: Optional[UserLocation] = None
     existing_location: Optional[bool] = None
     trigger_order_request_at: Optional[datetime] = None
     time_slot: Optional[str] = None
+    time_slot_description: Optional[str] = None
     total_price: Optional[float] = None
     total_count: Optional[float] = None
     # TODO: wheter to use status_id of embedded object, or make it a list of embedded status objects
