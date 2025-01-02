@@ -3,7 +3,7 @@ from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
-from irony.models.common_model import ModelConfig
+from irony.models.common_model import CommonModel, ModelConfig
 from irony.models.location import UserLocation
 from irony.models.order_item import OrderItem
 from irony.models.order_status import OrderStatus
@@ -13,7 +13,7 @@ from irony.models.service_location import ServiceLocation
 from irony.models.user import User
 
 
-class Order(BaseModel):
+class Order(CommonModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     collected_cloths: Optional[int] = None
     simple_id: Optional[str] = None
@@ -25,10 +25,12 @@ class Order(BaseModel):
     service_location: Optional[ServiceLocation] = None
     services: Optional[List[Service]] = None
     count_range: Optional[str] = None
+    count_range_description: Optional[str] = None
     location: Optional[UserLocation] = None
     existing_location: Optional[bool] = None
     trigger_order_request_at: Optional[datetime] = None
     time_slot: Optional[str] = None
+    time_slot_description: Optional[str] = None
     total_price: Optional[float] = None
     total_count: Optional[float] = None
     # TODO: wheter to use status_id of embedded object, or make it a list of embedded status objects

@@ -22,21 +22,21 @@ async def update_order_status(reply, status: OrderStatusEnum):
     order_statuses = []
     where = {"_id": order_id}
     if status == OrderStatusEnum.PICKUP_COMPLETE:
-        where["order_status.0.status"] = OrderStatusEnum.PICKUP_PENDING.value
+        where["order_status.0.status"] = OrderStatusEnum.PICKUP_PENDING
         order_statuses.append(
             OrderStatus(
                 status=OrderStatusEnum.WORK_IN_PROGRESS, created_on=datetime.now()
             ).model_dump(exclude={"_id", "order_id"})
         )
     elif status == OrderStatusEnum.WORK_DONE:
-        where["order_status.0.status"] = OrderStatusEnum.WORK_IN_PROGRESS.value
+        where["order_status.0.status"] = OrderStatusEnum.WORK_IN_PROGRESS
         order_statuses.append(
             OrderStatus(
                 status=OrderStatusEnum.DELIVERY_PENDING, created_on=datetime.now()
             ).model_dump(exclude={"_id", "order_id"})
         )
     elif status == OrderStatusEnum.DELIVERED:
-        where["order_status.0.status"] = OrderStatusEnum.DELIVERY_PENDING.value
+        where["order_status.0.status"] = OrderStatusEnum.DELIVERY_PENDING
 
     order_statuses.append(
         OrderStatus(status=status, created_on=datetime.now()).model_dump(

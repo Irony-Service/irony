@@ -3,7 +3,7 @@ from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import Dict, Optional
 
-from irony.models.common_model import ModelConfig
+from irony.models.common_model import CommonModel, ModelConfig
 
 
 class TimeslotQuota(BaseModel):
@@ -14,7 +14,7 @@ class TimeslotQuota(BaseModel):
         pass
 
 
-class TimeslotVolume(BaseModel):
+class TimeslotVolume(CommonModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     service_loaction_id: Optional[ObjectId] = None
     daily_limit: Optional[int] = None

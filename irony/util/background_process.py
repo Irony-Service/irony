@@ -544,8 +544,8 @@ async def send_ironman_delivery_schedule():
                     "time_slot": pending_schedule["key"],
                     "order_status.0.status": {
                         "$in": [
-                            OrderStatusEnum.PICKUP_PENDING.value,
-                            OrderStatusEnum.DELIVERY_PENDING.value,
+                            OrderStatusEnum.PICKUP_PENDING,
+                            OrderStatusEnum.DELIVERY_PENDING,
                         ]
                     },
                 }
@@ -686,8 +686,8 @@ async def send_ironman_work_schedule():
                     "time_slot": pending_schedule["key"],
                     "order_status.0.status": {
                         "$in": [
-                            OrderStatusEnum.PICKUP_COMPLETE.value,
-                            OrderStatusEnum.WORK_IN_PROGRESS.value,
+                            OrderStatusEnum.PICKUP_COMPLETE,
+                            OrderStatusEnum.WORK_IN_PROGRESS,
                         ]
                     },
                 }
@@ -832,8 +832,8 @@ async def send_ironman_pending_work_schedule():
                     "time_slot": pending_schedule["key"],
                     "order_status.0.status": {
                         "$in": [
-                            OrderStatusEnum.PICKUP_COMPLETE.value,
-                            OrderStatusEnum.WORK_IN_PROGRESS.value,
+                            OrderStatusEnum.PICKUP_COMPLETE,
+                            OrderStatusEnum.WORK_IN_PROGRESS,
                         ]
                     },
                     "updated_on": {"$gte": start_datetime, "$lte": end_datetime},
@@ -1014,6 +1014,7 @@ async def create_order_requests():
 
     logger.info("Completed create_order_requests")
 
+
 async def reassign_missed_orders():
 
     logger.info("Started reassign_missed_orders")
@@ -1024,84 +1025,83 @@ async def reassign_missed_orders():
     formatted_time = current_time.strftime("%H:%M")
 
     pipeline = [
-    {
-        "$match": {
-            "end_time":  {"$eq": formatted_time},  
-            "group": "TIME_SLOT_ID"
-        }
-    }
+        {"$match": {"end_time": {"$eq": formatted_time}, "group": "TIME_SLOT_ID"}}
     ]
     pending_schedules = await db.config.aggregate(pipeline=pipeline).to_list(None)
 
-    if not pending_schedules: 
+    if not pending_schedules:
         logger.info("No pending schedules found")
         return
 
     # for pending_schedule in pending_schedules:
     pipeline = [
         {
-                "$match": {
-                    "order_status.0.status": {
-                        "$in": [
-                            OrderStatusEnum.PICKUP_PENDING.value,
-                        ]
-                    },
-                    "pick_up_time.end": {"$gte": start_of_today, "$lte": current_time},
-                }
-            },
+            "$match": {
+                "order_status.0.status": {
+                    "$in": [
+                        OrderStatusEnum.PICKUP_PENDING,
+                    ]
+                },
+                "pick_up_time.end": {"$gte": start_of_today, "$lte": current_time},
+            }
+        },
     ]
-    missed_orders : List[Order] = await db.order.aggregate(pipeline=pipeline).to_list(None) 
-    
-    call_action_config =[ value for key, value in config.DB_CACHE["config"].items() if "TIME_SLOT_ID" in key]
+    missed_orders = await db.order.aggregate(pipeline=pipeline).to_list(None)
+
+    call_action_config = [
+        value
+        for key, value in config.DB_CACHE["config"].items()
+        if "TIME_SLOT_ID" in key
+    ]
     slot_start = user_whatsapp_service.get_slots(call_action_config, "start_time")
-    slot_end= user_whatsapp_service.get_slots(call_action_config, "end_time")
-    
+    slot_end = user_whatsapp_service.get_slots(call_action_config, "end_time")
 
     if missed_orders:
-        for index,order in enumerate(missed_orders):
+        for index, order in enumerate(missed_orders):
             order = Order(**order)
-            order_status= order.order_status
-            i=0
-            while(True):
-                if i ==len(order_status):
+            order_status = order.order_status
+            i = 0
+            while True:
+                if i == len(order_status):
                     break
-                if order_status.__getitem__(i).status == "PICKUP_PENDING" : # or order_status[i]["status"]  =="FINDING_IRONMAN":
+                if (
+                    order_status.__getitem__(i).status == "PICKUP_PENDING"
+                ):  # or order_status[i]["status"]  =="FINDING_IRONMAN":
                     del order_status[i]
-                    i=i-1
-                i=i+1
+                    i = i - 1
+                i = i + 1
 
             next_slot = cache.get_next_time_slot(order.time_slot)
             if None == next_slot:
-                break #comment this if you want handle missing next day too
-                next_slot = config.DB_CACHE["ordered_time_slots"][0]["key"]+"T"
-
+                break  # comment this if you want handle missing next day too
+                next_slot = config.DB_CACHE["ordered_time_slots"][0]["key"] + "T"
 
             l = len(next_slot["key"])
             now = datetime.now()
-            h, m = user_whatsapp_service.get_time_from_stamp(slot_start[next_slot["key"]])
-            he, me = user_whatsapp_service.get_time_from_stamp(slot_end[next_slot["key"]])
+            h, m = user_whatsapp_service.get_time_from_stamp(
+                slot_start[next_slot["key"]]
+            )
+            he, me = user_whatsapp_service.get_time_from_stamp(
+                slot_end[next_slot["key"]]
+            )
             start_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
             end_time = now.replace(hour=he, minute=me, second=0, microsecond=0)
 
-            order.time_slot =  next_slot["key"]
+            order.time_slot = next_slot["key"]
             order.updated_on = now
-            order.pick_up_time =  PickupTime(start=start_time, end=end_time)
-            await db.order.update_one({"_id": order.id},{"$set": {**order.model_dump(exclude_defaults=True, exclude={"id"}, by_alias=True), "service_location_id": None , "auto_alloted":None }}) 
+            order.pick_up_time = PickupTime(start=start_time, end=end_time)
+            await db.order.update_one(
+                {"_id": order.id},
+                {
+                    "$set": {
+                        **order.model_dump(
+                            exclude_defaults=True, exclude={"id"}, by_alias=True
+                        ),
+                        "service_location_id": None,
+                        "auto_alloted": None,
+                    }
+                },
+            )
             await create_ironman_order_requests(order, order.user_wa_id)
     else:
         logger.info("No missed orders found")
-        
-
-
-            
-
-        
-
-
-        
-
-
-
-
-
-  

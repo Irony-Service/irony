@@ -25,7 +25,7 @@ def get_random_one_from_messages(message_doc: MessageConfig):
     if message_doc.message_options is None:
         logger.error(
             "Developer concern, No message options for message_doc with _id : %s, message_key: %s",
-            message_doc._id,
+            message_doc.id,
             message_doc.message_key,
         )
         raise WhatsappException(config.DEFAULT_ERROR_REPLY_MESSAGE)
