@@ -66,7 +66,7 @@ export default function HomeClient({ data }: HomeProps) {
 
   return (
     <div className="mx-auto w-full max-w-[480px]">
-      <div {...handlers} className="relative flex overflow-hidden overflow-y-auto w-full min-h-screen">
+      <div {...handlers} className="relative flex overflow-hidden overflow-y-scroll w-full min-h-screen">
         {sections.map((section, index) => (
           <div
             key={index}
@@ -76,22 +76,29 @@ export default function HomeClient({ data }: HomeProps) {
           >
             <div className="flex w-full justify-between content-center py-3 my-2">
               <button onClick={() => handleSwipe(-1)}>
-                <Image className="object-contain text-amber-200" src="/mingcute_left-line.svg" alt="Previous" width={28} height={28} />
+                <Image className="object-contain text-gray-700" src="/mingcute_left-line_black.svg" alt="Previous" width={28} height={28} />
               </button>
-              <h1 className="text-3xl font-bold text-sky-300">{section.label}</h1>
+              <h1 className="text-3xl font-bold text-amber-300">{section.label}</h1>
               <button onClick={() => handleSwipe(1)}>
-                <Image className="object-contain text-amber-200" src="/mingcute_right-line.svg" alt="Next" width={28} height={28} />
+                <Image className="object-contain text-gray-700" src="/mingcute_right-line_black.svg" alt="Next" width={28} height={28} />
               </button>
+              {/* <button onClick={() => handleSwipe(-1)}>
+                <Image className="object-contain text-amber-300" src="/mingcute_left-line.svg" alt="Previous" width={28} height={28} />
+              </button>
+              <h1 className="text-3xl font-bold text-gray-700">{section.label}</h1>
+              <button onClick={() => handleSwipe(1)}>
+                <Image className="object-contain text-amber-300" src="/mingcute_right-line.svg" alt="Next" width={28} height={28} />
+              </button> */}
             </div>
             {section.dates.map((dateItem, index) => (
               <section key={index} className="w-full bg-gray-100 py-4 border-b">
                 <div className="w-[96%]  mx-auto">
-                  <h1 className="text-2xl  text-sky-300 font-semibold mb-5 px-2">
+                  <h1 className="text-2xl  text-gray-700 font-semibold mb-5 px-2">
                     {formatDate(dateItem.date)} ({getOrdersInDate(dateItem.time_slots)} Orders)
                   </h1>
 
                   {dateItem.time_slots.map((timeSlotItem, index) => (
-                    <div key={index} className="flex flex-col text-gray-700 rounded-3xl overflow-hidden mb-10">
+                    <div key={index} className="flex flex-col text-gray-700 rounded-3xl overflow-hidden mb-6 border">
                       <div className="flex justify-between items-center h-10 px-4 bg-amber-300">
                         <h2 className="text-base">
                           Slot : {timeSlotItem?.orders[0]?.time_slot_description} ({timeSlotItem.orders.length} Orders)
