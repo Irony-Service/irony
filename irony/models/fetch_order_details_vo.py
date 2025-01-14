@@ -3,6 +3,7 @@ from bson import ObjectId
 from pydantic import BaseModel, Field
 
 from irony.models.common_model import ModelConfig
+from irony.models.service import Service
 
 class FetchOrderDetailsRequest(BaseModel):
     order_id:  Optional[str] = None;
@@ -17,7 +18,8 @@ class FetchOrderDetailsResponsebody(BaseModel):
     phone_number : Optional[str] = None;
     count_range: Optional[str] = None;
     location: Optional[str] = None;
-    service_name: Optional[str] = None;
+    service_location_id: Optional[str] = None;
+    services: Optional[List[Service]] = None;
     pickup_time_start: Optional[str] = None;
     pickup_time_end: Optional[str] = None;
     time_slot: Optional[str] = None;

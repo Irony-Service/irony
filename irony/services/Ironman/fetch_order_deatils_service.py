@@ -11,6 +11,7 @@ from irony.models.fetch_order_details_vo import FetchOrderDetailsRequest, FetchO
 from irony.models.order import Order
 from irony.models.order_status import OrderStatusEnum
 from irony.models.fetch_orders_vo import FetchOrdersResponse, OrderChunk
+from irony.models.service_location import ServiceLocation
 from irony.models.user import User
 from irony.services.whatsapp import user_whatsapp_service
 from irony.util import whatsapp_utils
@@ -25,10 +26,15 @@ async def fetch_order_details(request: FetchOrderDetailsRequest):
            raise WhatsappException("Order not found")
         order : Order = Order(**order_data)
         user_data = await db.user.find_one({"wa_id": order.user_wa_id})
-
+        service_loc = await db.service_locations.find_one({"_id": order.service_location_id})
         response = FetchOrderDetailsResponse()
-        response.body = map_order_to_response(order, user_data)
-        response.success = True
+        if None is not service_loc:
+            response.body = map_order_to_response(order, user_data ,ServiceLocation(**service_loc))
+            response.success = True
+        else: 
+            response.body = None
+            response.error = "Service Location not found"
+            response.success = False
         return response.model_dump()
 
     except Exception as e:
@@ -39,19 +45,18 @@ async def fetch_order_details(request: FetchOrderDetailsRequest):
         response.success = False
         return response.model_dump()
 
-def map_order_to_response(order, user):
+def map_order_to_response(order: Order, user , service_location : ServiceLocation):
         responsebody = FetchOrderDetailsResponsebody()
         responsebody.order_id = str(order.id)
         responsebody.simple_id = order.simple_id
         responsebody.count_range = order.count_range
-
+        responsebody.services = order.services
+        responsebody.service_location_id = str(order.service_location_id)
         if order.location is not None:
             responsebody.location = order.location.nickname
             if order.location.nickname is  None or order.location.nickname == "":
                 if order.location.location is not None:
                     responsebody.location = str(order.location.location.coordinates[0]) + "," + str(order.location.location.coordinates[1])
-        if order.services is not None and len(order.services) > 0:
-            responsebody.service_name = order.services[0].service_name
         if order.pick_up_time is not None:
             if order.pick_up_time.start is not None:
                 responsebody.pickup_time_start = order.pick_up_time.start.isoformat()

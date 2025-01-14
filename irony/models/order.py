@@ -15,11 +15,13 @@ from irony.models.user import User
 
 class Order(CommonModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
+    collected_cloths: Optional[int] = None
     simple_id: Optional[str] = None
+    sub_id: Optional[str] = None
     user_id: Optional[ObjectId] = None
     user: Optional[User] = None
     user_wa_id: Optional[str] = None
-    order_items: Optional[List[OrderItem]] = None
+    order_item: Optional[OrderItem] = None
     service_location_id: Optional[ObjectId] = None
     service_location: Optional[ServiceLocation] = None
     services: Optional[List[Service]] = None
@@ -43,6 +45,8 @@ class Order(CommonModel):
     auto_alloted: Optional[bool] = None
     delivery_type: Optional[str] = None
     maps_link: Optional[str] = None
+    preferred_delivery_slot: Optional[str] = None
+    picked_up_time: Optional[datetime] = None
 
     # class Config(ModelConfig):
     #     populate_by_name = True

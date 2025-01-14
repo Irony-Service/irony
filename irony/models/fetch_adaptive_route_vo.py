@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from irony.models.common_model import ModelConfig
 
 class FetchAdaptiveRouteRequest(BaseModel):
-    service_location_id:  Optional[str] = None;
+    service_agent_id:  Optional[str] = None;
 
     class Config(ModelConfig):
         pass

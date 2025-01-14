@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from irony.models.common_model import CommonModel, ModelConfig
 
+
 HUMAN_READABLE_LABELS = {
     "SERVICE_PENDING": "Service Pending",
     "LOCATION_PENDING": "Location Pending",
@@ -27,6 +28,7 @@ DELIVERY_LABELS = {
     "PICKUP_PENDING": "Pickup",
     "DELIVERY_PENDING": "Drop",
 }
+
 
 
 class OrderStatusEnum(str, Enum):
