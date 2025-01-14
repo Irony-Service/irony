@@ -6,9 +6,7 @@ from irony.models.common_model import CommonModel, ModelConfig
 
 
 class OrderItem(BaseModel):
-    # id: Optional[ObjectId] = None
-    # order_id: Optional[ObjectId]
-    service_id: Optional[ObjectId]
+    service_name: Optional[str]
     count: Optional[float]
     price: Optional[float]
 

@@ -66,6 +66,9 @@ async def set_new_order_clothes_count(
     # 2 : get user
     user = await db.user.find_one({"wa_id": contact_details.wa_id})
 
+    track_doc = await db.config.find_one({"key": "simple_id_track"})
+    track = track_doc["value"] if track_doc else ""
+
     if user:
         user = User(**user)
 
@@ -74,16 +77,18 @@ async def set_new_order_clothes_count(
         status=OrderStatusEnum.SERVICE_PENDING,
         created_on=datetime.now(),
     )
-
     # 4: update order with clothes count and order status
     order: Order = Order(
-        user_id=user._id,
+        user_id=user.id,
+        simple_id=track,
         user_wa_id=contact_details.wa_id,
         count_range=button_reply_obj["id"],
         is_active=False,
         order_status=[order_status],
         created_on=datetime.now(),
     )
+    track = str(int(track) + 1)
+    await db.config.update_one({"key": "simple_id_track"}, {"$set": {"value": track}})
 
     # 5: create new order
     order_doc = await db.order.insert_one(order.model_dump(exclude_defaults=True))

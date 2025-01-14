@@ -36,11 +36,16 @@ class ServiceEntry(CommonModel):
     class Config(ModelConfig):
         pass
 
+class Service(BaseModel):
+    service_id : Optional[str] = None
+    service_name : Optional[str] = None
+    class Config(ModelConfig):
+        pass
 
 class ServiceLocation(BaseModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     name: Optional[str] = None
-    services: Optional[List[ObjectId]] = None
+    services: Optional[List[Service]] = None
     time_slots: Optional[List[str]] = None
     coords: Optional[Location] = None
     range: Optional[float] = None
