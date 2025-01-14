@@ -24,7 +24,6 @@ from irony.services.Ironman import (
     fetch_order_deatils_service,
     fetch_orders_service,
     service_agent_auth_service,
-    update_order_service,
     update_pickup_pending_service,
 )
 from irony.util import auth
