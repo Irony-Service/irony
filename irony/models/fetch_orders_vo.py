@@ -3,6 +3,7 @@ from bson import ObjectId
 from pydantic import BaseModel, Field
 
 from irony.models.common_model import ModelConfig
+from irony.models.common_response import CommonReponse
 from irony.models.order import Order
 
 
@@ -43,23 +44,22 @@ class DateItem(BaseModel):
     time_slots: Optional[List[TimeSlotItem]]
 
 
-class FetchOrdersResponseBodyItem1(BaseModel):
+class FetchOrdersResponseBodyItem(BaseModel):
     key: Optional[str] = None
     label: Optional[str] = None
     dates: Optional[List[DateItem]] = None
 
 
-class FetchOrdersResponseBodyItem(BaseModel):
+class FetchOrdersResponseBodyItem2(BaseModel):
     key: Optional[str] = None
     label: Optional[str] = None
     orders: Optional[List[Order]] = None
 
 
-class FetchOrdersResponse(BaseModel):
+class FetchOrdersResponse(CommonReponse):
     # {"pending_pick_up": {"value":"Pickup", orders:[]}, "work_in_progress":  {"value":"Work In Progress", orders:[]}, "delivery_pending":  {"value":"Delivery", orders:[]}}
-    body: Optional[Dict[str, FetchOrdersResponseBodyItem]] = None
-    success: Optional[bool] = None
-    error: Optional[str] = None
+    # body: Optional[Dict[str, FetchOrdersResponseBodyItem]] = None
+    body: Optional[List[FetchOrdersResponseBodyItem]] = None
 
     class Config(ModelConfig):
         pass

@@ -48,7 +48,7 @@ async def create_user_if_not_exists(contact_details):
             name=contact_details.name,
             created_on=datetime.now(),
         )
-        new_user_json = new_user.model_dump(exclude_defaults=True)
+        new_user_json = new_user.model_dump(exclude_unset=True)
         # 2: create user
         await db.user.insert_one(new_user_json)
         logger.info(f"Created new user : {new_user_json}")
@@ -58,7 +58,7 @@ async def create_user_if_not_exists(contact_details):
 async def set_new_order_clothes_count(
     contact_details: ContactDetails, context, button_reply_obj
 ):
-    message_body = {}
+    message_body: dict = {}
     last_message_update = None
     # 1: verify context id
     await whatsapp_utils.verify_context_id(contact_details, context)
@@ -77,7 +77,7 @@ async def set_new_order_clothes_count(
 
     # 4: update order with clothes count and order status
     order: Order = Order(
-        user_id=user._id,
+        user_id=user.id,
         user_wa_id=contact_details.wa_id,
         count_range=button_reply_obj["id"],
         is_active=False,
@@ -86,7 +86,7 @@ async def set_new_order_clothes_count(
     )
 
     # 5: create new order
-    order_doc = await db.order.insert_one(order.model_dump(exclude_defaults=True))
+    order_doc = await db.order.insert_one(order.model_dump(exclude_unset=True))
 
     # 6: get message body for services message
     message_body = whatsapp_utils.get_reply_message(
@@ -162,7 +162,7 @@ async def set_new_order_service(
 
 
 async def handle_no_location_order_update(
-    contact_details, last_message, selected_service
+    contact_details, last_message, selected_service: Service
 ):
     order_status = OrderStatus(
         status=OrderStatusEnum.LOCATION_PENDING,
@@ -193,7 +193,7 @@ async def handle_no_location_order_update(
 
 
 async def handle_existing_location_order_update(
-    last_message, selected_service, last_location_doc
+    last_message, selected_service: Service, last_location_doc
 ):
     order_status = OrderStatus(
         status=OrderStatusEnum.TIME_SLOT_PENDING,
@@ -392,7 +392,11 @@ async def update_order_timeslot_details(
     extra_set={},
 ):
     # call_action_config = await db.config.find({"group": "TIME_SLOT_ID"}).to_list(None)
-    call_action_config =[ value for key, value in config.DB_CACHE["config"].items() if "TIME_SLOT_ID" in key]
+    call_action_config = [
+        value
+        for key, value in config.DB_CACHE["config"].items()
+        if "TIME_SLOT_ID" in key
+    ]
 
     slot_start = get_slots(call_action_config, "start_time")
     slot_end = get_slots(call_action_config, "end_time")

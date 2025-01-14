@@ -55,9 +55,7 @@ def get_token_from_request(request: Request) -> str:
             return token
 
     # Raise an exception if no token is found
-    raise HTTPException(
-        status_code=401, detail="Authentication credentials were not provided."
-    )
+    raise HTTPException(status_code=401, detail="User not logged in. Please log in.")
 
 
 def get_current_user(request: Request, token: str = Depends(get_token_from_request)):

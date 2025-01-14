@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 from typing import List, Optional, Union
 from bson import ObjectId
 
@@ -48,8 +48,16 @@ class ServiceAgent(CommonModel):
             return validated_list
         raise ValueError("service_location_ids must be a list of ObjectId or string.")
 
-    class Config(ModelConfig):
-        json_encoders = {ObjectId: str}
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders={
+            ObjectId: str,  # Convert ObjectId to string
+        },
+    )
+
+    # class Config(ModelConfig):
+    #     json_encoders = {ObjectId: str}
+    #     pass
 
 
 class ServiceAgentRegister(BaseModel):
@@ -57,6 +65,6 @@ class ServiceAgentRegister(BaseModel):
     mobile: Optional[str] = None
     type: Optional[str] = None
     sub_type: Optional[str] = None
-    service_location_id: Optional[str] = None
+    service_location_ids: Optional[List[str]] = None
     password: Optional[str] = None
     confirm_password: Optional[str] = None

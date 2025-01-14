@@ -1,9 +1,12 @@
 from datetime import datetime, timedelta, timezone
 import time
+from typing import List
+from venv import logger
 from fastapi import APIRouter, HTTPException, Response
 
 
 from irony.db import db
+from irony.models import service
 from irony.models.fetch_adaptive_route_vo import FetchAdaptiveRouteRequest
 from irony.models.fetch_order_details_vo import FetchOrderDetailsRequest
 from irony.models.fetch_orders_vo import FetchOrderRequest
@@ -20,43 +23,18 @@ from irony.services.Ironman import (
     fetch_adaptive_route_service,
     fetch_order_deatils_service,
     fetch_orders_service,
+    service_agent_auth_service,
     update_order_service,
 )
 from irony.util import auth
 
 router = APIRouter()
 
-# Below is placeholder code
-
-
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
-
 
 @router.post("/login")
 async def login(response: Response, user: UserLogin):
-    db_user = await db.service_agent.find_one({"mobile": user.mobile})
-    if not db_user:
-        raise HTTPException(status_code=401, detail="Invalid mobile or password")
-
-    db_user = ServiceAgent(**db_user)
-    if not auth.verify_password(user.password, db_user.password):
-        raise HTTPException(status_code=401, detail="Invalid mobile or password")
-
-    # Generate JWT token
-    token = auth.create_access_token(
-        data={"sub": user.mobile},
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-    )
-
-    response.set_cookie(
-        key="auth_token",
-        value=token,
-        httponly=True,
-        # secure=True,  # Use True in production with HTTPS
-        secure=False,  # Use True in production with HTTPS
-        samesite="lax",
-        expires=datetime.now(timezone.utc)
-        + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    [token, db_user] = await service_agent_auth_service.login_service_agent(
+        response, user
     )
 
     return {
@@ -68,34 +46,7 @@ async def login(response: Response, user: UserLogin):
 
 @router.post("/register")
 async def register(user: ServiceAgentRegister):
-    # Check if passwords match
-    if not user.mobile or not user.password or not user.confirm_password:
-        raise HTTPException(
-            status_code=400, detail="Mobile, Password or confirm password not provided"
-        )
-
-    if not user.name:
-        raise HTTPException(status_code=400, detail="Name not provided")
-
-    if not user.service_location_id:
-        raise HTTPException(status_code=400, detail="Service location not provided")
-
-    if user.password != user.confirm_password:
-        raise HTTPException(status_code=400, detail="Passwords do not match")
-
-    # Check if email is already registered
-    db_user = await db.service_agent.find_one({"mobile": user.mobile})
-    if db_user:
-        raise HTTPException(status_code=400, detail="Mobile already registered")
-
-    # Hash the password
-    user.password = auth.hash_password(user.password)
-
-    service_agent = ServiceAgent(**user.model_dump())
-    # Save user to the database
-    result = await db.service_agent.insert_one(service_agent.model_dump(exclude={"id"}))
-
-    service_agent.id = result.inserted_id
+    service_agent = await service_agent_auth_service.register_service_agent(user)
 
     return {
         "message": "User registered successfully",
@@ -127,11 +78,11 @@ async def getAgentOrdersByStatus(
     )
 
 
-@router.get("/agentOrdersByStatusGroupByDateAndTimeSlot")
-async def getAgentOrdersByStatusGroupByDateAndTimeSlot(
+@router.get("/agentOrdersByStatusGroupByStatusAndDateAndTimeSlot")
+async def getAgentOrdersByStatusGroupByStatusAndDateAndTimeSlot(
     current_user: str = Depends(auth.get_current_user), order_status: str = ""
 ):
-    ordered_statuses = [
+    ordered_statuses: List[OrderStatusEnum] = [
         OrderStatusEnum(status) for status in order_status.split(",") if status
     ]
     if not ordered_statuses:
@@ -140,7 +91,25 @@ async def getAgentOrdersByStatusGroupByDateAndTimeSlot(
             OrderStatusEnum.WORK_IN_PROGRESS,
             OrderStatusEnum.DELIVERY_PENDING,
         ]
-    return await fetch_orders_service.get_orders_by_status_and_group_by_date_and_time_slot_for_agent_locations(
+    return await fetch_orders_service.get_orders_group_by_status_and_date_and_time_slot_for_agent_locations(
+        current_user,
+        ordered_statuses=ordered_statuses,
+    )
+
+
+@router.get("/agentOrdersByStatusGroupByDateAndTimeSlot")
+async def getAgentOrdersByStatusGroupByDateAndTimeSlot(
+    current_user: str = Depends(auth.get_current_user), order_status: str = ""
+):
+    ordered_statuses: List[OrderStatusEnum] = [
+        OrderStatusEnum(status) for status in order_status.split(",") if status
+    ]
+    if not ordered_statuses:
+        ordered_statuses = [
+            OrderStatusEnum.PICKUP_PENDING,
+            OrderStatusEnum.DELIVERY_PENDING,
+        ]
+    return await fetch_orders_service.get_orders_for_statuses_group_by_date_and_time_slot_for_agent_locations(
         current_user,
         ordered_statuses=ordered_statuses,
     )

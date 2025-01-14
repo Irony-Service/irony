@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from irony.config import config
+from irony.models.location import Location, UserLocation
 
 
 def replace_message_keys_with_values(message_body, replacements):
@@ -28,3 +29,10 @@ def is_time_slot_expired(time_slot):
         if current_time_plus_n < time_slot_data.get("start_time", "00:00"):
             return False
     return True
+
+
+def get_maps_link(location: UserLocation):
+    maps_link = config.DB_CACHE["google_maps_link"]
+    if location.location and location.location.coordinates:
+        return f"{maps_link}{location.location.coordinates[0]},{location.location.coordinates[1]}"
+    return ""

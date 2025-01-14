@@ -35,13 +35,15 @@ class Order(CommonModel):
     # TODO: wheter to use status_id of embedded object, or make it a list of embedded status objects
     order_status: Optional[List[OrderStatus]] = None
     is_active: Optional[bool] = None
-    pickup_agent_id: Optional[ObjectId] = None
-    drop_agent_id: Optional[ObjectId] = None
+    pickup_agent_id: Optional[str] = None
+    drop_agent_id: Optional[str] = None
     created_on: Optional[datetime] = None
     updated_on: Optional[datetime] = None
     pick_up_time: Optional[PickupTime] = None
     auto_alloted: Optional[bool] = None
+    delivery_type: Optional[str] = None
+    maps_link: Optional[str] = None
 
-    class Config(ModelConfig):
-        populate_by_name = True
-        arbitrary_types_allowed = True
+    # class Config(ModelConfig):
+    #     populate_by_name = True
+    #     arbitrary_types_allowed = True

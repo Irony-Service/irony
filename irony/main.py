@@ -1,8 +1,8 @@
 from contextlib import asynccontextmanager
 import time
 from fastapi import FastAPI, Request
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
+from apscheduler.triggers.cron import CronTrigger  # type: ignore
 from fastapi.middleware.cors import CORSMiddleware
 
 from irony import cache
@@ -71,7 +71,7 @@ app = FastAPI()
 
 app.router.lifespan_context = lifespan
 
-origins = ["http://localhost:3000"]
+origins = ["http://localhost:3000", "http://192.168.1.47:3000"]
 
 app.add_middleware(
     CORSMiddleware,

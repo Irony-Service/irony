@@ -145,7 +145,7 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
         ):
             await db.order.replace_one(
                 {"_id": order.id},
-                order.model_dump(exclude_defaults=True, by_alias=True),
+                order.model_dump(exclude_unset=True, by_alias=True),
             )
 
             logger.info(

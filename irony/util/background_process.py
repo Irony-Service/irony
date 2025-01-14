@@ -28,6 +28,7 @@ from irony.models.service_location import (
 from irony.models.contact_details import ContactDetails
 from irony.models.timeslot_volume import TimeslotVolume
 from irony.models.user import User
+from irony.util import utils
 from irony.util.message import Message
 import irony.util.whatsapp_utils as whatsapp_utils
 import asyncio
@@ -583,7 +584,6 @@ async def send_ironman_delivery_schedule():
             None
         )
 
-        maps_link = config.DB_CACHE["google_maps_link"]
         for service_location_order in service_location_orders:
             tasks = []
             orders = service_location_order.documents
@@ -593,7 +593,7 @@ async def send_ironman_delivery_schedule():
 
                 message = None
                 count = None
-                link = f"{maps_link}{order.location.location.coordinates[0]},{order.location.location.coordinates[1]}"
+                link = utils.get_maps_link(order.location)
 
                 if order.order_status[0].status == OrderStatusEnum.PICKUP_PENDING:
                     message = copy.deepcopy(collect_message_root)

@@ -1,8 +1,11 @@
 from datetime import date
+import json
 import pprint
 from typing import Any, Dict, List
 from urllib import response
 from bson import ObjectId
+import bson
+import bson.json_util
 from fastapi import Response
 from rich import _console
 
@@ -17,14 +20,14 @@ from irony.models.fetch_orders_vo import (
     FetchOrderRequest,
     FetchOrderResponseBody,
     FetchOrdersResponse,
+    FetchOrdersResponseBodyItem2,
     FetchOrdersResponseBodyItem,
-    FetchOrdersResponseBodyItem1,
     OrderChunk,
     TimeSlotItem,
 )
 from irony.models.service_agent import ServiceAgent
 from irony.services.whatsapp import user_whatsapp_service
-from irony.util import whatsapp_utils
+from irony.util import utils, whatsapp_utils
 import irony.services.whatsapp.interactive_message_service as interactive_message_service
 import irony.services.whatsapp.text_message_service as text_message_service
 from irony.config.logger import logger
@@ -33,7 +36,7 @@ from irony.config.logger import logger
 async def get_orders_by_status_for_agent_locations(
     agent_mobile: str,
     ordered_statuses,
-):
+) -> dict[str, Any]:
     response = FetchOrdersResponse()
     try:
         agent_data = await db.service_agent.find_one({"mobile": agent_mobile})
@@ -43,13 +46,13 @@ async def get_orders_by_status_for_agent_locations(
         agent: ServiceAgent = ServiceAgent(**agent_data)
 
         if agent.service_location_ids is None:
-            raise Exception("Service agent has no service locations")
+            raise Exception("Service agent is not linked to any service location")
 
         pipeline: List[Dict[str, Any]] = [
             {
                 "$match": {
-                    "order_status.0.status": {"$in": ordered_statuses},
                     "service_location_id": {"$in": agent.service_location_ids},
+                    "order_status.0.status": {"$in": ordered_statuses},
                 }
             },
         ]
@@ -60,7 +63,7 @@ async def get_orders_by_status_for_agent_locations(
             response.error = "No orders found"
             return response.model_dump()
 
-        response.body = setResponseBody(orders, ordered_statuses)
+        response.body = set_response_body(orders, ordered_statuses)
         response.success = True
         return response.model_dump(
             exclude={
@@ -86,9 +89,9 @@ async def get_orders_by_status_for_agent_locations(
         return response.model_dump()
 
 
-async def get_orders_by_status_and_group_by_date_and_time_slot_for_agent_locations(
+async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_locations(
     agent_mobile: str,
-    ordered_statuses,
+    ordered_statuses: List[OrderStatusEnum],
 ):
     response = FetchOrdersResponse()
     try:
@@ -104,14 +107,85 @@ async def get_orders_by_status_and_group_by_date_and_time_slot_for_agent_locatio
         pipeline: List[Dict[str, Any]] = [
             {
                 "$match": {
+                    "service_location_id": {"$in": agent.service_location_ids},
                     "order_status.0.status": {"$in": ordered_statuses},
-                    # "service_location_id": {"$in": agent.service_location_ids},
                 }
             },
             {"$sort": {"pick_up_time.start": -1, "time_slot": 1}},
             {
                 "$addFields": {
-                    "latest_status": {"$arrayElemAt": ["$order_status", 0]},
+                    "pick_up_date": {
+                        "$dateToString": {
+                            "format": "%d-%m-%Y",
+                            "date": "$pick_up_time.start",
+                        }
+                    },
+                }
+            },
+            {
+                "$group": {
+                    "_id": {
+                        "pick_up_date": "$pick_up_date",
+                        "time_slot": "$time_slot",
+                    },
+                    "orders": {"$push": "$$ROOT"},
+                }
+            },
+            {
+                "$sort": {
+                    "_id.pick_up_date": -1,
+                    "_id.time_slot": 1,
+                }
+            },
+        ]
+
+        grouped_orders = await db.order.aggregate(pipeline).to_list(None)
+
+        if not grouped_orders:
+            response.success = False
+            response.error = "No orders found"
+            return response.model_dump()
+
+        # return grouped_orders
+        response.body = set_group_by_response_body_delivery(
+            grouped_orders, ordered_statuses, "Pickup / Delivery"
+        )
+        response.success = True
+        return response
+
+    except Exception as e:
+        logger.error(f"Error occurred in fetch orders: {e}", exc_info=True)
+        response.success = False
+        response.error = "Error occured in fetch orders"
+        return response.model_dump()
+
+
+async def get_orders_group_by_status_and_date_and_time_slot_for_agent_locations(
+    agent_mobile: str,
+    ordered_statuses: List[OrderStatusEnum],
+):
+    response = FetchOrdersResponse()
+    try:
+        agent_data = await db.service_agent.find_one({"mobile": agent_mobile})
+        if agent_data is None:
+            raise Exception("Service agent not found")
+
+        agent: ServiceAgent = ServiceAgent(**agent_data)
+
+        if agent.service_location_ids is None:
+            raise Exception("Service agent has no service locations")
+
+        pipeline: List[Dict[str, Any]] = [
+            {
+                "$match": {
+                    "service_location_id": {"$in": agent.service_location_ids},
+                    "order_status.0.status": {"$in": ordered_statuses},
+                }
+            },
+            {"$sort": {"pick_up_time.start": -1, "time_slot": 1}},
+            {
+                "$addFields": {
+                    "latest_status": {"$first": "$order_status"},
                     "pick_up_date": {
                         "$dateToString": {
                             "format": "%d-%m-%Y",
@@ -137,6 +211,39 @@ async def get_orders_by_status_and_group_by_date_and_time_slot_for_agent_locatio
                     "_id.time_slot": 1,
                 }
             },
+            # {
+            #     "$group": {
+            #         "_id": {
+            #             "order_status": "$latest_status.status",
+            #             "pick_up_date": "$pick_up_date",
+            #             "time_slot": "$time_slot",
+            #         },
+            #         "orders": {"$push": "$$ROOT"},
+            #     }
+            # },
+            # {
+            #     "$group": {
+            #         "_id": {
+            #             "order_status": "$_id.order_status",
+            #             "pick_up_date": "$_id.pick_up_date",
+            #         },
+            #         "time_slots": {
+            #             "$push": {"time_slot": "$_id.time_slot", "orders": "$orders"}
+            #         },
+            #     }
+            # },
+            # {
+            #     "$group": {
+            #         "_id": "$_id.order_status",
+            #         "pick_up_dates": {
+            #             "$push": {
+            #                 "pick_up_date": "$_id.pick_up_date",
+            #                 "time_slots": "$time_slots",
+            #             }
+            #         },
+            #     }
+            # },
+            # {"$project": {"_id": 0, "order_status": "$_id", "pick_up_dates": 1}},
         ]
 
         grouped_orders = await db.order.aggregate(pipeline).to_list(None)
@@ -146,8 +253,11 @@ async def get_orders_by_status_and_group_by_date_and_time_slot_for_agent_locatio
             response.error = "No orders found"
             return response.model_dump()
 
+        # return bson.json_util.dumps(grouped_orders)
         # return grouped_orders
-        response.body = setGroupByResponseBody(grouped_orders, ordered_statuses)
+        response.body = set_group_by_response_body_agent(
+            grouped_orders, ordered_statuses
+        )
         response.success = True
         return response
 
@@ -158,9 +268,9 @@ async def get_orders_by_status_and_group_by_date_and_time_slot_for_agent_locatio
         return response.model_dump()
 
 
-def setResponseBody(orders, ordered_statuses):
+def set_response_body(orders, ordered_statuses):
     logger.info(f"Orders: {orders}")
-    response_dict: Dict[OrderStatusEnum, FetchOrdersResponseBodyItem] = {}
+    response_dict: Dict[OrderStatusEnum, FetchOrdersResponseBodyItem2] = {}
     # {
     #     "pending_pick_up": FetchOrdersResponseBodyItem(value="Pickup", orders=[]),
     #     "work_in_progress": FetchOrdersResponseBodyItem(
@@ -183,7 +293,7 @@ def setResponseBody(orders, ordered_statuses):
         )
         if response_dict.get(order_status) is None:
             home_section_label = OrderStatusEnum.getHomeSectionLabel(order_status)
-            response_dict[order_status] = FetchOrdersResponseBodyItem(
+            response_dict[order_status] = FetchOrdersResponseBodyItem2(
                 key=order_status, label=home_section_label, orders=[order]
             )
         else:
@@ -196,7 +306,7 @@ def setResponseBody(orders, ordered_statuses):
     return respnse_body
 
 
-def setGroupByResponseBody(grouped_orders, ordered_statuses):
+def set_group_by_response_body_agent(grouped_orders, ordered_statuses):
     # logger.info(f"Orders: {grouped_orders}")
     # response_dict: Dict[OrderStatusEnum, FetchOrdersResponseBodyItem] = {}
     response_dict = {}
@@ -217,20 +327,18 @@ def setGroupByResponseBody(grouped_orders, ordered_statuses):
         ):
             continue
 
-        if order_group.get("_id").get("latest_status") not in response_dict:
-            response_dict[order_group.get("_id").get("latest_status")] = {}
+        status = order_group.get("_id").get("latest_status")
+        date = order_group.get("_id").get("pick_up_date")
+        time_slot = order_group.get("_id").get("time_slot")
 
-        status_dict = response_dict[order_group.get("_id").get("latest_status")]
+        if status not in response_dict:
+            response_dict[status] = {}
 
-        if order_group.get("_id").get("pick_up_date") not in status_dict:
-            status_dict[order_group.get("_id").get("pick_up_date")] = {}
+        if date not in response_dict[status]:
+            response_dict[status][date] = {}
 
-        date_dict = status_dict[order_group.get("_id").get("pick_up_date")]
-
-        if order_group.get("_id").get("time_slot") not in date_dict:
-            date_dict[order_group.get("_id").get("time_slot")] = []
-
-        slot_list = date_dict[order_group.get("_id").get("time_slot")]
+        if time_slot not in response_dict[status][date]:
+            response_dict[status][date][time_slot] = []
 
         for order in order_group.get("orders"):
             order = Order(**order)
@@ -244,7 +352,7 @@ def setGroupByResponseBody(grouped_orders, ordered_statuses):
                 .get(order.count_range, {})
                 .get("title", None)
             )
-            slot_list.append(order)
+            response_dict[status][date][time_slot].append(order)
 
     response_body = []
     for order_status in ordered_statuses:
@@ -263,7 +371,7 @@ def setGroupByResponseBody(grouped_orders, ordered_statuses):
             date_item_list.append(DateItem(date=date, time_slots=time_slot_item_list))
 
         response_body.append(
-            FetchOrdersResponseBodyItem1(
+            FetchOrdersResponseBodyItem(
                 key=order_status, label=label, dates=date_item_list
             )
         )
@@ -276,14 +384,86 @@ def setGroupByResponseBody(grouped_orders, ordered_statuses):
     return response_dict
 
 
-def setModel(order: Order):
-    orderChunk = OrderChunk()
-    if order is not None:
-        orderChunk.order_id = str(order.id) if order.id is not None else None
-        orderChunk.simple_id = order.simple_id
-        orderChunk.clothes_count = str(order.count_range)
-        if order.services is not None and len(order.services) > 0:
-            orderChunk.service_name = order.services.__getitem__(0).service_name
-        if order.pick_up_time is not None and order.pick_up_time.start is not None:
-            orderChunk.pickup_time = order.pick_up_time.start.isoformat()
-    return orderChunk
+def set_group_by_response_body_delivery(
+    grouped_orders, ordered_statuses: List[OrderStatusEnum], label=None
+):
+    # logger.info(f"Orders: {grouped_orders}")
+    # response_dict: Dict[OrderStatusEnum, FetchOrdersResponseBodyItem] = {}
+    response_dict: dict = {}
+    # {
+    #     "pending_pick_up": FetchOrdersResponseBodyItem(value="Pickup", orders=[]),
+    #     "work_in_progress": FetchOrdersResponseBodyItem(
+    #         value="Work In Progress", orders=[]
+    #     ),
+    #     "delivery_pending": FetchOrdersResponseBodyItem(value="Delivery", orders=[]),
+    # }e
+    for order_group in grouped_orders:
+        if (
+            order_group.get("_id") is None
+            or order_group.get("_id").get("pick_up_date") is None
+            or order_group.get("_id").get("time_slot") is None
+            or order_group.get("orders") is None
+        ):
+            continue
+
+        date = order_group.get("_id").get("pick_up_date")
+        time_slot = order_group.get("_id").get("time_slot")
+
+        if date not in response_dict:
+            response_dict[date] = {}
+
+        if time_slot not in response_dict[date]:
+            response_dict[date][time_slot] = []
+
+        for order in order_group.get("orders"):
+            order = Order(**order)
+            order.time_slot_description = (
+                config.DB_CACHE.get("call_to_action", {})
+                .get(order.time_slot, {})
+                .get("title", None)
+            )
+            order.count_range_description = (
+                config.DB_CACHE.get("call_to_action", {})
+                .get(order.count_range, {})
+                .get("title", None)
+            )
+            order.delivery_type = OrderStatusEnum.getDeliveryType(
+                order.order_status[0].status
+            )
+            order.maps_link = utils.get_maps_link(order.location)
+            response_dict[date][time_slot].append(order)
+
+    response_body = []
+    key = "_AND_".join([order_status for order_status in ordered_statuses])
+    if not label:
+        label = "/".join(
+            [
+                OrderStatusEnum.getHomeSectionLabel(order_status)
+                for order_status in ordered_statuses
+            ]
+        )
+
+    # for order_status in ordered_statuses:
+    #     if order_status not in response_dict:
+    #         continue
+    #     status_obj = response_dict[order_status]
+    date_item_list: List[DateItem] = []
+    for date in response_dict:
+        date_obj = response_dict[date]
+        time_slot_item_list: List[TimeSlotItem] = []
+        for time_slot in date_obj:
+            time_slot_item_list.append(
+                TimeSlotItem(time_slot=time_slot, orders=date_obj[time_slot])
+            )
+        date_item_list.append(DateItem(date=date, time_slots=time_slot_item_list))
+
+    response_body.append(
+        FetchOrdersResponseBodyItem(key=key, label=label, dates=date_item_list)
+    )
+
+    return response_body
+
+    respnse_body = [
+        response_dict[date] for date in ordered_statuses if date in response_dict
+    ]
+    return response_dict

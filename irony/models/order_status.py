@@ -23,6 +23,11 @@ HUMAN_READABLE_LABELS = {
     "CLOSED": "Closed",
 }
 
+DELIVERY_LABELS = {
+    "PICKUP_PENDING": "Pickup",
+    "DELIVERY_PENDING": "Drop",
+}
+
 
 class OrderStatusEnum(str, Enum):
     SERVICE_PENDING = "SERVICE_PENDING"
@@ -44,6 +49,10 @@ class OrderStatusEnum(str, Enum):
     @staticmethod
     def getHomeSectionLabel(status: "OrderStatusEnum") -> str:
         return HUMAN_READABLE_LABELS.get(status, status)
+
+    @staticmethod
+    def getDeliveryType(status: "OrderStatusEnum") -> str:
+        return DELIVERY_LABELS.get(status, status)
 
 
 class OrderStatus(CommonModel):

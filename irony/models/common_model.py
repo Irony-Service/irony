@@ -1,18 +1,23 @@
 from bson import ObjectId
+from typing import ClassVar
 from pydantic import BaseModel, field_serializer, field_validator
 
 
-class CommonModel(BaseModel):
+class ModelConfig:
+    arbitrary_types_allowed = True
 
-    @field_validator(
+
+class CommonModel(BaseModel):
+    # Annotate as ClassVar to avoid Pydantic treating it as a field
+    OBJECT_ID_FIELDS: ClassVar[tuple[str, ...]] = (
         "id",
         "order_id",
         "service_location_id",
         "user_id",
         "service_id",
-        mode="before",
-        check_fields=False,
     )
+
+    @field_validator(*OBJECT_ID_FIELDS, mode="before", check_fields=False)
     def validate_and_convert_id(cls, v):
         if v is None:
             return v
@@ -20,23 +25,18 @@ class CommonModel(BaseModel):
             try:
                 v = ObjectId(v)
             except Exception:
-                raise ValueError(f"Invalid ObjectId string for id: {v}")
+                raise ValueError(f"Invalid ObjectId string for field value: {v}")
         elif not isinstance(v, ObjectId):
-            raise ValueError(f"Invalid ObjectId for id: {v}")
+            raise TypeError(f"Expected ObjectId, got {type(v)} for field value: {v}")
         return v
 
-    # Common serializer for age
-    @field_serializer(
-        "id",
-        "order_id",
-        "service_location_id",
-        "user_id",
-        "service_id",
-        check_fields=False,
-    )
-    def serialize_id(self, value: ObjectId) -> str:
+    @field_serializer(*OBJECT_ID_FIELDS, when_used="unless-none", check_fields=False)
+    def serialize_id(self, value: ObjectId | None) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, ObjectId):
+            raise TypeError(f"Expected ObjectId, got {type(value)}")
         return str(value)
 
-
-class ModelConfig:
-    arbitrary_types_allowed = True
+    class Config(ModelConfig):
+        pass
