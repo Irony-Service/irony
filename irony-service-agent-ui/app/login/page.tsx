@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "../../utils/axiosClient";
 import { LoginButton } from "./components/LoginButton";
+import Link from "next/link";
 
 export default function Login() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function Login() {
       // localStorage.setItem("auth_token", token);
 
       // Redirect to home page upon success
-      router.push("/home");
+      router.push("/home/agent");
     } catch (err) {
       console.log(err);
       setError("Invalid credentials");

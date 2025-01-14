@@ -1,9 +1,9 @@
 "use client";
 import Image from "next/image";
-import Row from "./Row";
 import { useSwipeable } from "react-swipeable";
 import { useState } from "react";
 import { format, parse } from "date-fns";
+import DeliveryRow from "./DeliveryRow";
 interface HomeProps {
   data: any;
 }
@@ -32,7 +32,7 @@ type Section = {
 //   { title: "Section 34=", data: "Data for section 3" },
 //   { title: "Section 34=", data: "Data for section 3" },
 // ];
-export default function HomeClient({ data }: HomeProps) {
+export default function DeliveryHomeClient({ data }: HomeProps) {
   const sections: Section[] = data.body;
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -105,9 +105,16 @@ export default function HomeClient({ data }: HomeProps) {
                       </div>
                       <div className="text-xs">
                         {timeSlotItem.orders.map((order, index) => (
-                          <Row
+                          <DeliveryRow
                             key={index}
-                            data={{ count_range: order?.count_range_description, services: order?.services?.map((service: any) => service?.service_name), distance: order?.distance || "N/a" }}
+                            data={{
+                              order: order,
+                              maps_link: order?.maps_link,
+                              delivery_type: order?.delivery_type,
+                              count_range: order?.count_range_description,
+                              services: order?.services?.map((service: any) => service?.service_name),
+                              distance: order?.distance || "N/a",
+                            }}
                             lastRow={index == timeSlotItem.orders.length - 1 ? true : false}
                           />
                         ))}

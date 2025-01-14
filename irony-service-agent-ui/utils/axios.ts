@@ -1,28 +1,39 @@
-// utils/axios.ts
-import axios from "axios";
 import { cookies } from "next/headers";
 
-// Get the API base URL from the environment variable
 const apiBaseUrl: string = "http://localhost:8000/api/ironman";
 
 if (!apiBaseUrl) {
   throw new Error("NEXT_PUBLIC_API_URL is not defined in the environment variables");
 }
 
-// Create an instance of Axios with global configuration
-const api = axios.create({
-  baseURL: apiBaseUrl, // Using the environment variable here
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+export default async function fetchApi<T>(endpoint: string, options: RequestInit = {}, queryParams?: Record<string, string | number | boolean>): Promise<T> {
+  // Construct the URL with query parameters
+  const url = new URL(`${apiBaseUrl}${endpoint}`);
+  if (queryParams) {
+    Object.entries(queryParams).forEach(([key, value]) => {
+      url.searchParams.append(key, String(value));
+    });
+  }
 
-api.interceptors.request.use(async (config) => {
-  const cookieHeader = (await cookies()).toString(); // Retrieve cookies in server-side context
-  config.headers["Cookie"] = cookieHeader; // Add cookies to the request
-  config.headers["Content-Type"] = "application/json";
-  return config;
-});
+  // Retrieve cookies in server-side context
+  const cookieHeader = (await cookies()).toString();
 
-export default api;
+  const fetchOptions: RequestInit = {
+    ...options,
+    headers: {
+      ...options.headers,
+      "Content-Type": "application/json",
+      Cookie: cookieHeader,
+    },
+    credentials: "include",
+  };
+
+  const response = await fetch(url.toString(), fetchOptions);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "An error occurred");
+  }
+
+  return response.json();
+}
