@@ -1,9 +1,11 @@
 "use client";
 import Image from "next/image";
+import Row from "./Row";
 import { useSwipeable } from "react-swipeable";
 import { useState } from "react";
 import { format, parse } from "date-fns";
-import DeliveryRow from "./DeliveryRow";
+import Util from "../util/util";
+
 interface HomeProps {
   data: any;
 }
@@ -32,7 +34,7 @@ type Section = {
 //   { title: "Section 34=", data: "Data for section 3" },
 //   { title: "Section 34=", data: "Data for section 3" },
 // ];
-export default function DeliveryHomeClient({ data }: HomeProps) {
+export default function HomeClient({ data }: HomeProps) {
   const sections: Section[] = data.body;
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -54,15 +56,6 @@ export default function DeliveryHomeClient({ data }: HomeProps) {
     });
   };
 
-  function getOrdersInDate(time_slots: TimeSlotItem[]): import("react").ReactNode {
-    return time_slots.reduce((totalOrders, timeSlot) => totalOrders + timeSlot.orders.length, 0);
-  }
-
-  const formatDate = (inputDate: string): string => {
-    const date = parse(inputDate, "dd-MM-yyyy", new Date());
-    return format(date, "eee, d MMM");
-  };
-
   return (
     <div className="">
       <div {...handlers} className="relative flex overflow-hidden overflow-y-scroll w-full min-h-screen">
@@ -81,19 +74,12 @@ export default function DeliveryHomeClient({ data }: HomeProps) {
               <button onClick={() => handleSwipe(1)}>
                 <Image className="object-contain text-gray-700" src="/mingcute_right-line_black.svg" alt="Next" width={28} height={28} />
               </button>
-              {/* <button onClick={() => handleSwipe(-1)}>
-                <Image className="object-contain text-amber-300" src="/mingcute_left-line.svg" alt="Previous" width={28} height={28} />
-              </button>
-              <h1 className="text-3xl font-bold text-gray-700">{section.label}</h1>
-              <button onClick={() => handleSwipe(1)}>
-                <Image className="object-contain text-amber-300" src="/mingcute_right-line.svg" alt="Next" width={28} height={28} />
-              </button> */}
             </div>
             {section.dates.map((dateItem, index) => (
               <section key={index} className={`w-full bg-gray-100 ${index != section.dates.length - 1 ? "py-4 border-b" : ""}`}>
                 <div className="w-[96%]  mx-auto">
                   <h1 className="text-2xl  text-gray-700 font-semibold mb-5 px-2">
-                    {formatDate(dateItem.date)} ({getOrdersInDate(dateItem.time_slots)} Orders)
+                    {Util.formatDate(dateItem.date)} ({Util.getOrdersInDate(dateItem.time_slots)} Orders)
                   </h1>
 
                   {dateItem.time_slots.map((timeSlotItem, index) => (
@@ -105,16 +91,9 @@ export default function DeliveryHomeClient({ data }: HomeProps) {
                       </div>
                       <div className="text-xs">
                         {timeSlotItem.orders.map((order, index) => (
-                          <DeliveryRow
+                          <Row
                             key={index}
-                            data={{
-                              order: order,
-                              maps_link: order?.maps_link,
-                              delivery_type: order?.delivery_type,
-                              count_range: order?.count_range_description,
-                              services: order?.services?.map((service: any) => service?.service_name),
-                              distance: order?.distance || "N/a",
-                            }}
+                            data={{ count_range: order?.count_range_description, services: order?.services?.map((service: any) => service?.service_name), distance: order?.distance || "N/a" }}
                             lastRow={index == timeSlotItem.orders.length - 1 ? true : false}
                           />
                         ))}

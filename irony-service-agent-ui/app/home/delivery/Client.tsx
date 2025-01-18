@@ -1,11 +1,17 @@
 "use client";
 import Image from "next/image";
-import Row from "./Row";
 import { useSwipeable } from "react-swipeable";
 import { useState } from "react";
-import { format, parse } from "date-fns";
+import DeliveryRow from "./Row";
+import Util from "../util/util";
+import OrderDetails from "./order/OrderDetails";
+import { ServicePrices } from "./order/types";
+
 interface HomeProps {
-  data: any;
+  responses: {
+    orders: any;
+    service_location_prices: any;
+  };
 }
 
 type TimeSlotItem = {
@@ -32,11 +38,31 @@ type Section = {
 //   { title: "Section 34=", data: "Data for section 3" },
 //   { title: "Section 34=", data: "Data for section 3" },
 // ];
-export default function HomeClient({ data }: HomeProps) {
-  const sections: Section[] = data.body;
+export default function DeliveryHomeClient(props: HomeProps) {
+  const { orders: orders_response, service_location_prices: service_location_prices_response } = props.responses;
+  console.log(orders_response, service_location_prices_response);
+  const data = orders_response;
+  const sections: Section[] = orders_response.body;
+  const service_locations_prices: any = service_location_prices_response.body;
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [error, setError] = useState(data.success ? null : data.error);
+
+  const [showOrder, setShowOrder] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedServiceLocationPrices, setSelectedServiceLocationPrices] = useState<ServicePrices[]>([]);
+
+  const handleShowOrder = (order: any) => {
+    setSelectedOrder(order);
+    setSelectedServiceLocationPrices(service_locations_prices[order?.service_location_id] || []);
+    setShowOrder(true);
+  };
+
+  const handleCloseOrder = () => {
+    setShowOrder(false);
+    setSelectedOrder(null);
+    setSelectedServiceLocationPrices([]);
+  };
 
   // Handlers for swiping
   const handlers = useSwipeable({
@@ -54,18 +80,9 @@ export default function HomeClient({ data }: HomeProps) {
     });
   };
 
-  function getOrdersInDate(time_slots: TimeSlotItem[]): import("react").ReactNode {
-    return time_slots.reduce((totalOrders, timeSlot) => totalOrders + timeSlot.orders.length, 0);
-  }
-
-  const formatDate = (inputDate: string): string => {
-    const date = parse(inputDate, "dd-MM-yyyy", new Date());
-    return format(date, "eee, d MMM");
-  };
-
   return (
-    <div className="">
-      <div {...handlers} className="relative flex overflow-hidden overflow-y-scroll w-full min-h-screen">
+    <>
+      <div {...handlers} className="relative flex overflow-hidden overflow-y-auto w-full min-h-screen">
         {sections.map((section, index) => (
           <div
             key={index}
@@ -93,7 +110,7 @@ export default function HomeClient({ data }: HomeProps) {
               <section key={index} className={`w-full bg-gray-100 ${index != section.dates.length - 1 ? "py-4 border-b" : ""}`}>
                 <div className="w-[96%]  mx-auto">
                   <h1 className="text-2xl  text-gray-700 font-semibold mb-5 px-2">
-                    {formatDate(dateItem.date)} ({getOrdersInDate(dateItem.time_slots)} Orders)
+                    {Util.formatDate(dateItem.date)} ({Util.getOrdersInDate(dateItem.time_slots)} Orders)
                   </h1>
 
                   {dateItem.time_slots.map((timeSlotItem, index) => (
@@ -105,10 +122,12 @@ export default function HomeClient({ data }: HomeProps) {
                       </div>
                       <div className="text-xs">
                         {timeSlotItem.orders.map((order, index) => (
-                          <Row
+                          <DeliveryRow
                             key={index}
-                            data={{ count_range: order?.count_range_description, services: order?.services?.map((service: any) => service?.service_name), distance: order?.distance || "N/a" }}
+                            order={order}
+                            services={order?.services?.map((service: any) => service?.service_name)}
                             lastRow={index == timeSlotItem.orders.length - 1 ? true : false}
+                            onShowOrder={handleShowOrder}
                           />
                         ))}
                       </div>
@@ -119,8 +138,13 @@ export default function HomeClient({ data }: HomeProps) {
             ))}
           </div>
         ))}
+        {showOrder && (
+          <div className="w-full min-h-screen z-50 overflow-y-auto">
+            <OrderDetails order={selectedOrder} location_service_prices={selectedServiceLocationPrices} onClose={handleCloseOrder}></OrderDetails>
+          </div>
+        )}
       </div>
       {error && <p className="text-red-500">{error}</p>}
-    </div>
+    </>
   );
 }

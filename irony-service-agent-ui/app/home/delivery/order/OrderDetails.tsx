@@ -2,44 +2,45 @@
 
 import * as React from "react";
 import ServiceBlock from "./ServiceBlock";
-import { OrderDetailsProps1 } from "./types";
+import { OrderDetailsProps, OrderItem } from "./types";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
-export default function OrderDetails(data: OrderDetailsProps1) {
-  const order = data.order;
-  console.log(order);
+export default function OrderDetails(props: OrderDetailsProps) {
+  console.log("OrderDetails", props);
+  const order = props.order;
+  const { location_service_prices } = props;
+  // console.log(order);
   const orderId = order?.simple_id || order?.order_id;
   const customerName = order.user_id;
   const phoneNumber = order.user_wa_id;
   const countRange = order.count_range_description + " clothes";
 
-  const init_services = [
-    {
-      service: "Iron",
-      dress: "Shirt",
-      count: "5",
-    },
-    {
-      service: "Wash",
-      dress: "Pants",
-      count: "2",
-    },
-  ];
-  const [services, setServices] = useState(init_services);
+  const emptyOrderItem = {
+    service: "",
+    dress: "",
+    count: "",
+  };
 
-  const addNewService = () => {
-    const newService = {
-      service: "Dry Clean",
-      dress: "Jacket",
-      count: "1",
-    };
-    setServices([...services, newService]);
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([emptyOrderItem]);
+
+  const addNewOrderItem = () => {
+    setOrderItems([...orderItems, emptyOrderItem]);
+  };
+
+  const handleInputChange = (index: number, field: keyof OrderItem, value: string) => {
+    const updatedOrderItems = [...orderItems];
+    updatedOrderItems[index][field] = value;
+    setOrderItems(updatedOrderItems);
+  };
+
+  const removeOrderItem = (indexToRemove: number) => {
+    setOrderItems((currentOrderItems) => currentOrderItems.filter((_, index) => index !== indexToRemove));
   };
 
   return (
-    <div className="flex flex-col px-2.5 py-1.5">
+    <div className="flex flex-col justify-between px-2.5 py-3 w-full h-full bg-white">
       <div className="flex flex-col w-full">
         <div className="flex flex-col w-full">
           <div className="flex flex-col w-full">
@@ -56,9 +57,9 @@ export default function OrderDetails(data: OrderDetailsProps1) {
                     <Image width={16} height={16} loading="lazy" src="/maps_arrow.svg" alt="" className="" />
                   </Link>
                 </div>
-                <div className="p-[6px] bg-amber-300 rounded-full">
+                <button onClick={props.onClose} className="p-[6px] bg-amber-300 rounded-full">
                   <Image width={16} height={16} loading="lazy" src="/vector_close.svg" alt="" className="" />
-                </div>
+                </button>
               </div>
             </div>
             <div className="mt-4 text-sm font-medium text-gray-700">Name: {customerName}</div>
@@ -72,18 +73,25 @@ export default function OrderDetails(data: OrderDetailsProps1) {
             <div className="mt-4 text-sm font-medium text-gray-700">Services :</div>
           </div>
           <div className="flex flex-col gap-2.5 justify-center mt-2 w-full">
-            {services.map((service, index) => (
-              <ServiceBlock key={index} {...service} />
+            {orderItems.map((service, index) => (
+              <ServiceBlock
+                key={`service-block-${index}`} // Changed key to be more specific
+                index={index}
+                onClose={removeOrderItem}
+                onInputChange={handleInputChange}
+                location_service_prices={location_service_prices}
+                {...service}
+              />
             ))}
             <div className="flex justify-center items-center self-center p-[8px] bg-amber-300 rounded-full">
-              <button onClick={addNewService}>
+              <button onClick={addNewOrderItem}>
                 <Image width={16} height={16} loading="lazy" src="/vector_plus.svg" alt="" />
               </button>
             </div>
           </div>
         </div>
       </div>
-      <div className="sticky bottom-[50px] flex flex-col mt-32 w-full font-medium text-center">
+      <div className="sticky bottom-0 flex flex-col mt-4 w-full font-medium text-center">
         <button className="gap-2.5 self-start text-sm text-amber-200">Issue? click here.</button>
         <button className="gap-2.5 self-stretch p-2.5 mt-1.5 w-full text-base text-gray-700 whitespace-nowrap bg-amber-300 rounded-full">Confirm</button>
       </div>

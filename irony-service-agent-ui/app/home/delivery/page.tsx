@@ -1,11 +1,11 @@
 import { cookies } from "next/headers";
 import api from "../../../utils/axios";
-import DeliveryHomeClient from "./DeliveryHomeClient";
+import DeliveryHomeClient from "./Client";
 
 export default async function Home() {
   const response = await fetchHomeData();
 
-  return <DeliveryHomeClient data={response}></DeliveryHomeClient>;
+  return <DeliveryHomeClient responses={response}></DeliveryHomeClient>;
 
   async function fetchHomeData() {
     const cookieStore = await cookies();
@@ -17,10 +17,22 @@ export default async function Home() {
     //   order_status: "FINDING_IRONMAN,PICKUP_PENDING,WORK_IN_PROGRESS,DELIVERY_PENDING",
     // }).toString();
 
-    const response = await api(`/agentOrdersByStatusGroupByDateAndTimeSlot`, {
-      method: "GET",
-      cache: "no-cache",
-    });
+    const [ordersResponse, prices_response] = await Promise.all([
+      api(`/agentOrdersByStatusGroupByDateAndTimeSlot`, {
+        method: "GET",
+        cache: "no-cache",
+      }),
+      api(`/servicePricesForServiceLocations`, {
+        method: "GET",
+        cache: "no-cache",
+      }),
+    ]);
+
+    const response = {
+      orders: ordersResponse,
+      service_location_prices: prices_response,
+    };
+
     return response;
   }
 }

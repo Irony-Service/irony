@@ -83,7 +83,7 @@ const OrderPage = () => {
     drop_agent_id: null,
     created_on: "2024-12-08T13:12:47.079000",
     updated_on: "2024-12-08T13:13:25.491000",
-    pick_up_time: {
+    pickup_date_time: {
       start: "2024-12-08T16:00:00",
       end: "2024-12-08T19:00:00",
     },

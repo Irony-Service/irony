@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import api from "../../../utils/axios";
-import HomeClient from "../HomeClient";
+import HomeClient from "./Client";
 
 export default async function Home() {
   const response = await fetchHomeData();
@@ -21,7 +21,7 @@ export default async function Home() {
       `/agentOrdersByStatusGroupByStatusAndDateAndTimeSlot`,
       {
         method: "GET",
-        cache: "force-cache",
+        cache: "no-cache",
       },
       {
         order_status: "FINDING_IRONMAN,PICKUP_PENDING,WORK_IN_PROGRESS,DELIVERY_PENDING",
