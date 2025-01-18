@@ -8,10 +8,10 @@ from irony.models.common_model import CommonModel, ModelConfig
 
 class Service(CommonModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
-    service_category: Optional[str]
-    service_type: Optional[str]
-    service_name: Optional[str]
-    call_to_action_key: Optional[str]
+    service_category: Optional[str] = None
+    service_type: Optional[str] = None
+    service_name: Optional[str] = None
+    call_to_action_key: Optional[str] = None
 
     class Config(ModelConfig):
         pass

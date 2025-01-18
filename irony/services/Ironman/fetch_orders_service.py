@@ -25,7 +25,7 @@ from irony.models.fetch_orders_vo import (
     OrderChunk,
     TimeSlotItem,
 )
-from irony.models.service_agent import ServiceAgent
+from irony.models.service_agent.service_agent import ServiceAgent
 from irony.services.whatsapp import user_whatsapp_service
 from irony.util import utils, whatsapp_utils
 import irony.services.whatsapp.interactive_message_service as interactive_message_service
@@ -111,26 +111,26 @@ async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_location
                     "order_status.0.status": {"$in": ordered_statuses},
                 }
             },
-            {"$sort": {"pick_up_time.start": -1, "time_slot": 1}},
-            {
-                "$addFields": {
-                    "pick_up_date": {
-                        "$dateToString": {
-                            "format": "%d-%m-%Y",
-                            "date": "$pick_up_time.start",
-                        }
-                    },
-                }
-            },
+            {"$sort": {"pickup_date_time.start": -1, "time_slot": 1}},
             {
                 "$group": {
                     "_id": {
-                        "pick_up_date": "$pick_up_date",
+                        "pick_up_date": "$pickup_date_time.date",
                         "time_slot": "$time_slot",
                     },
                     "orders": {"$push": "$$ROOT"},
                 }
             },
+            # {
+            #     "$group": {
+            #         "_id": {
+            #             "pick_up_date": "$_id.pick_up_date",
+            #         },
+            #         "time_slots": {
+            #             "$push": {"time_slot": "$_id.time_slot", "orders": "$orders"}
+            #         },
+            #     }
+            # },
             {
                 "$sort": {
                     "_id.pick_up_date": -1,
@@ -146,6 +146,7 @@ async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_location
             response.error = "No orders found"
             return response.model_dump()
 
+        # return bson.json_util.dumps(grouped_orders)
         # return grouped_orders
         response.body = set_group_by_response_body_delivery(
             grouped_orders, ordered_statuses, "Pickup / Delivery"
@@ -182,23 +183,13 @@ async def get_orders_group_by_status_and_date_and_time_slot_for_agent_locations(
                     "order_status.0.status": {"$in": ordered_statuses},
                 }
             },
-            {"$sort": {"pick_up_time.start": -1, "time_slot": 1}},
-            {
-                "$addFields": {
-                    "latest_status": {"$first": "$order_status"},
-                    "pick_up_date": {
-                        "$dateToString": {
-                            "format": "%d-%m-%Y",
-                            "date": "$pick_up_time.start",
-                        }
-                    },
-                }
-            },
+            {"$sort": {"pickup_date_time.start": -1, "time_slot": 1}},
+            {"$addFields": {"latest_status": {"$first": "$order_status"}}},
             {
                 "$group": {
                     "_id": {
                         "latest_status": "$latest_status.status",
-                        "pick_up_date": "$pick_up_date",
+                        "pick_up_date": "$pickup_date_time.date",
                         "time_slot": "$time_slot",
                     },
                     "orders": {"$push": "$$ROOT"},

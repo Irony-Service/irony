@@ -17,7 +17,7 @@ from irony.models.location import Location, UserLocation
 from irony.models.order import Order
 from irony.models.order_request import OrderRequest
 from irony.models.order_status import OrderStatusEnum
-from irony.models.pickup_tIme import PickupTime
+from irony.models.pickup_tIme import PickupDateTime
 from irony.services.whatsapp import user_whatsapp_service
 from irony.models.service_location import (
     DeliveryTypeEnum,
@@ -241,9 +241,9 @@ async def check_limit_and_allot_order(
             for timeslot_volume in service_location.timeslot_volumes
             if timeslot_volume
             and timeslot_volume.operation_date
-            and order.pick_up_time
-            and order.pick_up_time.start
-            and order.pick_up_time.start.strftime("%Y-%m-%d")
+            and order.pickup_date_time
+            and order.pickup_date_time.start
+            and order.pickup_date_time.start.strftime("%Y-%m-%d")
             in str(timeslot_volume.operation_date)
         ),
         None,
@@ -1042,7 +1042,7 @@ async def reassign_missed_orders():
                         OrderStatusEnum.PICKUP_PENDING,
                     ]
                 },
-                "pick_up_time.end": {"$gte": start_of_today, "$lte": current_time},
+                "pickup_date_time.end": {"$gte": start_of_today, "$lte": current_time},
             }
         },
     ]
@@ -1089,7 +1089,7 @@ async def reassign_missed_orders():
 
             order.time_slot = next_slot["key"]
             order.updated_on = now
-            order.pick_up_time = PickupTime(start=start_time, end=end_time)
+            order.pickup_date_time = PickupDateTime(start=start_time, end=end_time)
             await db.order.update_one(
                 {"_id": order.id},
                 {

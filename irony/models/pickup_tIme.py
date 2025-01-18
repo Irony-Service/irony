@@ -5,7 +5,8 @@ from typing import Optional
 from irony.models.common_model import ModelConfig
 
 
-class PickupTime(BaseModel):
+class PickupDateTime(BaseModel):
+    date: Optional[datetime] = None
     start: Optional[datetime] = None
     end: Optional[datetime] = None
 

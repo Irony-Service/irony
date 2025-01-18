@@ -7,7 +7,7 @@ from irony.models.common_model import CommonModel, ModelConfig
 from irony.models.location import UserLocation
 from irony.models.order_item import OrderItem
 from irony.models.order_status import OrderStatus
-from irony.models.pickup_tIme import PickupTime
+from irony.models.pickup_tIme import PickupDateTime
 from irony.models.service import Service
 from irony.models.service_location import ServiceLocation
 from irony.models.user import User
@@ -41,7 +41,7 @@ class Order(CommonModel):
     drop_agent_id: Optional[str] = None
     created_on: Optional[datetime] = None
     updated_on: Optional[datetime] = None
-    pick_up_time: Optional[PickupTime] = None
+    pickup_date_time: Optional[PickupDateTime] = None
     auto_alloted: Optional[bool] = None
     delivery_type: Optional[str] = None
     maps_link: Optional[str] = None

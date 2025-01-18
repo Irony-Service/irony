@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
@@ -40,7 +42,7 @@ class TimeSlotItem(BaseModel):
 
 
 class DateItem(BaseModel):
-    date: Optional[str] = None
+    date: Optional[datetime] = None
     time_slots: Optional[List[TimeSlotItem]]
 
 

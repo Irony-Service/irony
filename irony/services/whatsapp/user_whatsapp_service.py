@@ -362,7 +362,7 @@ async def set_new_order_time_slot(
             message_body,
             {
                 # TODO change this to actual chosen date
-                "{date}": order.pick_up_time.start.strftime("%d-%m-%Y"),
+                "{date}": order.pickup_date_time.start.strftime("%d-%m-%Y"),
                 "{time}": config.DB_CACHE["call_to_action"]
                 .get(order.time_slot, {})
                 .get("title", "N/A"),
@@ -415,7 +415,7 @@ async def update_order_timeslot_details(
             "$set": {
                 "time_slot": button_reply_id,
                 "updated_on": datetime.now(),
-                "pick_up_time": {"start": start_time, "end": end_time},
+                "pickup_date_time": {"start": start_time, "end": end_time},
                 **extra_set,
             },
             "$push": {

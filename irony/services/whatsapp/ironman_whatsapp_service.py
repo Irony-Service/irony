@@ -242,7 +242,7 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
         #                             {
         #                                 "$dateToString": {
         #                                     "format": "%Y-%m-%d",
-        #                                     "date": order.pick_up_time.start,
+        #                                     "date": order.pickup_date_time.start,
         #                                 }
         #                             },
         #                         ]
