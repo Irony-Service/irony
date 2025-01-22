@@ -3,7 +3,7 @@ from typing import Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from irony.models.common_model import CommonModel, ModelConfig
+from irony.models.common_model import CommonModel, shared_config
 
 
 class Service(CommonModel):
@@ -13,8 +13,7 @@ class Service(CommonModel):
     service_name: Optional[str] = None
     call_to_action_key: Optional[str] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config
 
 
 class CategoryEnum(str, Enum):

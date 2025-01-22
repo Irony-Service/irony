@@ -4,16 +4,16 @@ from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from irony.models.common_model import ModelConfig
+from irony.models.common_model import shared_config
 from irony.models.common_response import CommonReponse
 from irony.models.order import Order
+from irony.models.order_vo import OrderVo
 
 
 class FetchOrderRequest(BaseModel):
     service_location: Optional[str] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config
 
 
 class OrderChunk(BaseModel):
@@ -23,8 +23,7 @@ class OrderChunk(BaseModel):
     clothes_count: Optional[str] = None
     pickup_time: Optional[str] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config
 
 
 class FetchOrderResponseBody(BaseModel):
@@ -32,13 +31,12 @@ class FetchOrderResponseBody(BaseModel):
     work_in_progress: Optional[List[OrderChunk]] = None
     delivery_pending: Optional[List[OrderChunk]] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config
 
 
 class TimeSlotItem(BaseModel):
     time_slot: Optional[str] = None
-    orders: Optional[List[Order]] = None
+    orders: Optional[List[OrderVo]] = None
 
 
 class DateItem(BaseModel):
@@ -63,5 +61,4 @@ class FetchOrdersResponse(CommonReponse):
     # body: Optional[Dict[str, FetchOrdersResponseBodyItem]] = None
     body: Optional[List[FetchOrdersResponseBodyItem]] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config

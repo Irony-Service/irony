@@ -3,7 +3,7 @@ from fastapi import HTTPException, Response
 from irony.db import db
 from irony.models import service
 from irony.models.service_agent.service_agent import ServiceAgent, ServiceAgentRegister
-from irony.models.user_login import UserLogin
+from irony.models.service_agent.vo.user_login import UserLogin
 from irony.util import auth
 
 # Below is placeholder code

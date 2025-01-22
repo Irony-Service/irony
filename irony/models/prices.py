@@ -3,7 +3,7 @@ from pydantic import Field
 from datetime import datetime
 from bson import ObjectId
 
-from irony.models.common_model import CommonModel, ModelConfig
+from irony.models.common_model import CommonModel, shared_config
 from irony.models.order import Order
 from irony.models.service import Service
 from irony.models.service_location import DeliveryTypeEnum, ServiceLocation
@@ -29,5 +29,4 @@ class Prices(CommonModel):
     price: Optional[float] = None
     sort_order: Optional[int] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config

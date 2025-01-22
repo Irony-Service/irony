@@ -2,7 +2,7 @@ from typing import Any, Optional
 from bson import ObjectId
 from pydantic import Field
 
-from irony.models.common_model import CommonModel, ModelConfig
+from irony.models.common_model import CommonModel, shared_config
 
 
 class CallToAction(CommonModel):
@@ -10,5 +10,4 @@ class CallToAction(CommonModel):
     key: Optional[str] = None
     value: Optional[Any] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config

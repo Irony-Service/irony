@@ -2,13 +2,12 @@ from typing import Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from irony.models.common_model import CommonModel, ModelConfig
+from irony.models.common_model import CommonModel, shared_config
 
 
 class OrderItem(BaseModel):
-    service_name: Optional[str]
-    count: Optional[float]
-    price: Optional[float]
+    price_id: str
+    count: float
+    amount: float
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config

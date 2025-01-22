@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 
-from irony.models.common_model import CommonModel, ModelConfig
+from irony.models.common_model import CommonModel, shared_config
 
 
 class Location(BaseModel):
@@ -21,5 +21,4 @@ class UserLocation(CommonModel):
     created_on: Optional[datetime] = None
     last_used: Optional[datetime] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config

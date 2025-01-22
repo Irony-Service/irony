@@ -1,7 +1,7 @@
 from fastapi import Response
 
 from irony.exception.WhatsappException import WhatsappException
-from irony.models.contact_details import ContactDetails
+from irony.models.whatsapp.contact_details import ContactDetails
 from irony.config import config
 from irony.services.whatsapp import user_whatsapp_service
 from irony.util import whatsapp_utils

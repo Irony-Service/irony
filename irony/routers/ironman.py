@@ -5,20 +5,24 @@ from fastapi import APIRouter, Response
 from irony.config import config
 from irony.config.logger import logger
 from irony.db import db
-from irony.models.fetch_adaptive_route_vo import FetchAdaptiveRouteRequest
-from irony.models.fetch_order_details_vo import FetchOrderDetailsRequest
+from irony.models.service_agent.vo.fetch_adaptive_route_vo import (
+    FetchAdaptiveRouteRequest,
+)
+from irony.models.service_agent.vo.fetch_order_details_vo import (
+    FetchOrderDetailsRequest,
+)
 from irony.models.order_status import OrderStatusEnum
 from irony.models.service import Service
 from irony.models.service_agent.service_agent import ServiceAgent, ServiceAgentRegister
-from irony.models.service_agent.prices import Prices
-from irony.models.service_agent.prices_response_vo import (
+from irony.models.prices import Prices
+from irony.models.service_agent.vo.prices_response_vo import (
     PricesResponseVo,
     ServicePrices,
 )
-from irony.models.update_pickup_pending_vo import UpdateOrderRequest
+from irony.models.service_agent.vo.update_pickup_pending_vo import UpdateOrderRequest
 from fastapi import Depends
 
-from irony.models.user_login import UserLogin
+from irony.models.service_agent.vo.user_login import UserLogin
 from irony.services.Ironman import (
     fetch_order_deatils_service,
     fetch_orders_service,

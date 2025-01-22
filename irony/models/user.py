@@ -2,7 +2,7 @@ from datetime import datetime
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from irony.models.common_model import CommonModel, ModelConfig
+from irony.models.common_model import CommonModel, shared_config
 from typing import Optional
 
 
@@ -12,5 +12,4 @@ class User(CommonModel):
     wa_id: Optional[str] = None
     created_on: Optional[datetime] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config

@@ -6,7 +6,7 @@ from irony.db import db
 from irony.config import config
 from irony.config.logger import logger
 from irony.exception.WhatsappException import WhatsappException
-from irony.models.contact_details import ContactDetails
+from irony.models.whatsapp.contact_details import ContactDetails
 from irony.models.location import Location, UserLocation
 from irony.models.message import MessageConfig, MessageType
 from irony.models.order_status import OrderStatus, OrderStatusEnum

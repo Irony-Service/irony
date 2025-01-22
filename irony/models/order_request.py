@@ -3,7 +3,7 @@ from pydantic import Field
 from datetime import datetime
 from bson import ObjectId
 
-from irony.models.common_model import CommonModel, ModelConfig
+from irony.models.common_model import CommonModel, shared_config
 from irony.models.order import Order
 from irony.models.service_location import DeliveryTypeEnum, ServiceLocation
 from irony.models.timeslot_volume import TimeslotVolume
@@ -24,5 +24,4 @@ class OrderRequest(CommonModel):
     try_count: Optional[int] = None
     timeslot_volumes: Optional[List[TimeslotVolume]] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config

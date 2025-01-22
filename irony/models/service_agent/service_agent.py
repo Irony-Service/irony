@@ -4,7 +4,7 @@ from bson import ObjectId
 
 from irony.models.common_model import CommonModel
 
-# from irony.models.common_model import ModelConfig
+# from irony.models.common_model import shared_config
 
 
 class ModelConfig:

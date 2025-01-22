@@ -3,7 +3,7 @@ from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
-from irony.models.common_model import CommonModel, ModelConfig
+from irony.models.common_model import CommonModel, shared_config
 from irony.models.location import UserLocation
 from irony.models.order_item import OrderItem
 from irony.models.order_status import OrderStatus
@@ -13,7 +13,7 @@ from irony.models.service_location import ServiceLocation
 from irony.models.user import User
 
 
-class Order(CommonModel):
+class Order(BaseModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     collected_cloths: Optional[int] = None
     simple_id: Optional[str] = None
@@ -22,6 +22,7 @@ class Order(CommonModel):
     user: Optional[User] = None
     user_wa_id: Optional[str] = None
     order_item: Optional[OrderItem] = None
+    order_items: Optional[List[OrderItem]] = None
     service_location_id: Optional[ObjectId] = None
     service_location: Optional[ServiceLocation] = None
     services: Optional[List[Service]] = None
@@ -45,9 +46,10 @@ class Order(CommonModel):
     auto_alloted: Optional[bool] = None
     delivery_type: Optional[str] = None
     maps_link: Optional[str] = None
-    preferred_delivery_slot: Optional[str] = None
     picked_up_time: Optional[datetime] = None
+    notes: Optional[str] = None
 
+    model_config = shared_config
     # class Config(ModelConfig):
     #     populate_by_name = True
     #     arbitrary_types_allowed = True

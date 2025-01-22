@@ -3,7 +3,7 @@ from typing import List, Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from irony.models.common_model import CommonModel, ModelConfig
+from irony.models.common_model import CommonModel, shared_config
 from irony.models.location import Location
 from irony.models.timeslot_volume import TimeslotVolume
 
@@ -33,14 +33,14 @@ class ServiceEntry(CommonModel):
     is_active: Optional[bool] = None
     referral_discount: Optional[float] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config
+
 
 class Service(BaseModel):
-    service_id : Optional[str] = None
-    service_name : Optional[str] = None
-    class Config(ModelConfig):
-        pass
+    service_id: Optional[str] = None
+    service_name: Optional[str] = None
+    model_config = shared_config
+
 
 class ServiceLocation(BaseModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
@@ -59,5 +59,4 @@ class ServiceLocation(BaseModel):
     distance: Optional[float] = None
     timeslot_volumes: Optional[List[TimeslotVolume]] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config

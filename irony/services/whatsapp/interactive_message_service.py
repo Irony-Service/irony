@@ -3,7 +3,7 @@ from fastapi import Response
 
 from irony.config import config
 from irony.exception.WhatsappException import WhatsappException
-from irony.models.contact_details import ContactDetails
+from irony.models.whatsapp.contact_details import ContactDetails
 from irony.config.logger import logger
 from irony.models.order_status import OrderStatusEnum
 from irony.services.whatsapp import user_whatsapp_service

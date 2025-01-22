@@ -3,7 +3,7 @@ from typing import Any, List, Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from irony.models.common_model import CommonModel, ModelConfig
+from irony.models.common_model import CommonModel, shared_config
 
 
 class MessageType(str, Enum):
@@ -15,8 +15,7 @@ class ReplyMessage(BaseModel):
     type: MessageType = MessageType.TEXT
     content: Any
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config
 
 
 class MessageConfig(CommonModel):
@@ -27,5 +26,4 @@ class MessageConfig(CommonModel):
     call_to_action: Optional[List[str]] = None
     message: Optional[Any] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config

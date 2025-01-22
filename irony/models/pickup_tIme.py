@@ -2,7 +2,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional
 
-from irony.models.common_model import ModelConfig
+from irony.models.common_model import shared_config
 
 
 class PickupDateTime(BaseModel):
@@ -10,5 +10,4 @@ class PickupDateTime(BaseModel):
     start: Optional[datetime] = None
     end: Optional[datetime] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config

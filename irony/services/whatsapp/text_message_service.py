@@ -2,7 +2,7 @@ from datetime import datetime
 from fastapi import Response
 
 from irony.config import config
-from irony.models.contact_details import ContactDetails
+from irony.models.whatsapp.contact_details import ContactDetails
 from irony.util.message import Message
 from irony.config.logger import logger
 from irony.util import whatsapp_utils

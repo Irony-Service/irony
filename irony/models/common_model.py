@@ -1,10 +1,13 @@
 from bson import ObjectId
 from typing import ClassVar
-from pydantic import BaseModel, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 
 
 class ModelConfig:
     arbitrary_types_allowed = True
+
+
+shared_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class CommonModel(BaseModel):
@@ -38,5 +41,4 @@ class CommonModel(BaseModel):
             raise TypeError(f"Expected ObjectId, got {type(value)}")
         return str(value)
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config

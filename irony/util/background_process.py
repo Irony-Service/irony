@@ -12,7 +12,7 @@ from irony.config.logger import logger
 from irony.db import db, replace_documents_in_transaction
 from irony.exception.WhatsappException import WhatsappException
 from irony.models import location
-from irony.models.contact_details import ContactDetails
+from irony.models.whatsapp.contact_details import ContactDetails
 from irony.models.location import Location, UserLocation
 from irony.models.order import Order
 from irony.models.order_request import OrderRequest
@@ -25,7 +25,7 @@ from irony.models.service_location import (
     ServiceEntry,
     get_delivery_enum_from_string,
 )
-from irony.models.contact_details import ContactDetails
+from irony.models.whatsapp.contact_details import ContactDetails
 from irony.models.timeslot_volume import TimeslotVolume
 from irony.models.user import User
 from irony.util import utils

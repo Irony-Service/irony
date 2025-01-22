@@ -4,7 +4,7 @@ from bson import ObjectId
 
 from irony.config import config
 from irony.exception.WhatsappException import WhatsappException
-from irony.models.contact_details import ContactDetails
+from irony.models.whatsapp.contact_details import ContactDetails
 from irony.models.order import Order
 from irony.models.order_request import OrderRequest
 from irony.models.order_status import OrderStatus, OrderStatusEnum

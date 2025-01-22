@@ -11,11 +11,12 @@ from rich import _console
 
 from irony.db import db, replace_documents_in_transaction
 from irony.exception.WhatsappException import WhatsappException
-from irony.models.contact_details import ContactDetails
+from irony.models.order_vo import OrderVo
+from irony.models.whatsapp.contact_details import ContactDetails
 from irony.config import config
 from irony.models.order import Order
 from irony.models.order_status import OrderStatusEnum
-from irony.models.fetch_orders_vo import (
+from irony.models.service_agent.vo.fetch_orders_vo import (
     DateItem,
     FetchOrderRequest,
     FetchOrderResponseBody,
@@ -60,7 +61,7 @@ async def get_orders_by_status_for_agent_locations(
 
         if not orders:
             response.success = False
-            response.error = "No orders found"
+            response.message = "No orders found"
             return response.model_dump()
 
         response.body = set_response_body(orders, ordered_statuses)
@@ -85,7 +86,7 @@ async def get_orders_by_status_for_agent_locations(
     except Exception as e:
         logger.error(f"Error occurred in fetch orders: {e}", exc_info=True)
         response.success = False
-        response.error = "Error occured in fetch orders"
+        response.message = "Error occured in fetch orders"
         return response.model_dump()
 
 
@@ -143,7 +144,7 @@ async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_location
 
         if not grouped_orders:
             response.success = False
-            response.error = "No orders found"
+            response.message = "No orders found"
             return response.model_dump()
 
         # return bson.json_util.dumps(grouped_orders)
@@ -157,7 +158,7 @@ async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_location
     except Exception as e:
         logger.error(f"Error occurred in fetch orders: {e}", exc_info=True)
         response.success = False
-        response.error = "Error occured in fetch orders"
+        response.message = "Error occured in fetch orders"
         return response.model_dump()
 
 
@@ -241,7 +242,7 @@ async def get_orders_group_by_status_and_date_and_time_slot_for_agent_locations(
 
         if not grouped_orders:
             response.success = False
-            response.error = "No orders found"
+            response.message = "No orders found"
             return response.model_dump()
 
         # return bson.json_util.dumps(grouped_orders)
@@ -250,12 +251,13 @@ async def get_orders_group_by_status_and_date_and_time_slot_for_agent_locations(
             grouped_orders, ordered_statuses
         )
         response.success = True
+        response.message = "Done!"
         return response
 
     except Exception as e:
         logger.error(f"Error occurred in fetch orders: {e}", exc_info=True)
         response.success = False
-        response.error = "Error occured in fetch orders"
+        response.message = "Error occured in fetch orders"
         return response.model_dump()
 
 
@@ -270,7 +272,7 @@ def set_response_body(orders, ordered_statuses):
     #     "delivery_pending": FetchOrdersResponseBodyItem(value="Delivery", orders=[]),
     # }
     for order in orders:
-        order = Order(**order)
+        order = OrderVo(**order)
         order_status = order.order_status[0].status
         order.time_slot_description = (
             config.DB_CACHE.get("call_to_action", {})
@@ -332,7 +334,7 @@ def set_group_by_response_body_agent(grouped_orders, ordered_statuses):
             response_dict[status][date][time_slot] = []
 
         for order in order_group.get("orders"):
-            order = Order(**order)
+            order = OrderVo(**order)
             order.time_slot_description = (
                 config.DB_CACHE.get("call_to_action", {})
                 .get(order.time_slot, {})
@@ -407,7 +409,7 @@ def set_group_by_response_body_delivery(
             response_dict[date][time_slot] = []
 
         for order in order_group.get("orders"):
-            order = Order(**order)
+            order = OrderVo(**order)
             order.time_slot_description = (
                 config.DB_CACHE.get("call_to_action", {})
                 .get(order.time_slot, {})

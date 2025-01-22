@@ -24,6 +24,8 @@ async def fetch_data_from_db(db_cache: dict):
         doc["call_to_action_key"]: Service(**doc) for doc in service_docs
     }
 
+    db_cache["id_to_service_map"] = {doc["_id"]: Service(**doc) for doc in service_docs}
+
     # additional data fetching as needed
     message_configs = await db.get_collection("message_config").find().to_list(None)
 
@@ -72,6 +74,7 @@ def set_call_to_action_cache(call_to_action_docs, db_cache):
 
 def get_clothes_cta_count(key):
     return config.DB_CACHE["call_to_action_docs"][key]["count"]
+
 
 def get_title_timeslot(id):
     return config.DB_CACHE["call_to_action_docs"][id["key"]]["value"]

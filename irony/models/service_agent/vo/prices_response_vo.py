@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 from irony.models import service
 from irony.models.common_model import CommonModel
 from irony.models.service import Service
-from irony.models.service_agent.prices import Prices
+from irony.models.prices import Prices
 
 
 # class ServicePrices(CommonModel):

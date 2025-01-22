@@ -3,15 +3,14 @@ from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import Dict, Optional
 
-from irony.models.common_model import CommonModel, ModelConfig
+from irony.models.common_model import CommonModel, shared_config
 
 
 class TimeslotQuota(BaseModel):
     current: Optional[int] = None
     limit: Optional[int] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config
 
 
 class TimeslotVolume(CommonModel):
@@ -23,5 +22,4 @@ class TimeslotVolume(CommonModel):
     services_distribution: Optional[Dict[str, TimeslotQuota]] = None
     operation_date: Optional[datetime] = None
 
-    class Config(ModelConfig):
-        pass
+    model_config = shared_config
