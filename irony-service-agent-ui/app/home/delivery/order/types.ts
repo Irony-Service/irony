@@ -4,7 +4,7 @@ export interface ServiceBlockProps {
   dress: string;
   count: string;
   onClose: (index: number) => void;
-  onInputChange: (index: number, key: keyof OrderItem, value: string) => void;
+  onInputChange: (index: number, key: keyof OrderItemInput, value: string) => void;
   index: number; // Add this line
 }
 
@@ -34,8 +34,21 @@ export interface OrderDetailsProps {
   onClose: () => void;
 }
 
-export interface OrderItem {
-  service: string;
-  dress: string;
-  count: string;
+export interface OrderItemInput {
+  service: number;
+  dress: number;
+  count: number;
+}
+
+export interface NewOrder {
+  order_id: string;
+  current_status: string;
+  new_status: string;
+  items: {
+    price_id: string;
+    count: number;
+    amount: number;
+  }[];
+  notes: string;
+  total_price: number;
 }

@@ -107,6 +107,7 @@ export default function DeliveryHomeClient(props: HomeProps) {
               </button> */}
             </div>
             {section.dates.map((dateItem, index) => (
+              // section : Orders_for_date
               <section key={index} className={`w-full bg-gray-100 ${index != section.dates.length - 1 ? "py-4 border-b" : ""}`}>
                 <div className="w-[96%]  mx-auto">
                   <h1 className="text-2xl  text-gray-700 font-semibold mb-5 px-2">

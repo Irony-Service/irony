@@ -1,7 +1,7 @@
 from typing import List
 from irony.config.config import BUTTONS
 from irony.db import db
-from irony.models.call_to_action import CallToAction
+from irony.models.whatsapp.call_to_action import CallToAction
 
 CLOTHES_COUNT_KEY = "CLOTHES_COUNT"
 SERVICE_ID_KEY = "SERVICE_ID"

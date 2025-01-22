@@ -2,12 +2,17 @@
 import Image from "next/image";
 import Row from "./Row";
 import { useSwipeable } from "react-swipeable";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format, parse } from "date-fns";
 import Util from "../util/util";
+import OrderDetailsAgent from "./order/OrderDetailsAgent"; // Update import
+import { Service, ServicePrices } from "../delivery/order/types";
 
 interface HomeProps {
-  data: any;
+  responses: {
+    orders: any;
+    service_location_prices: any;
+  };
 }
 
 type TimeSlotItem = {
@@ -26,19 +31,22 @@ type Section = {
   dates: DateItem[];
 };
 
-// const sections: Section[] = [
-//   { title: "Section 1", data: "Data for section 1" },
-//   { title: "Section 2", data: "Data for section 2" },
-//   { title: "Section 3", data: "Data for section 3" },
-//   { title: "Section 34=", data: "Data for section 3" },
-//   { title: "Section 34=", data: "Data for section 3" },
-//   { title: "Section 34=", data: "Data for section 3" },
-// ];
-export default function HomeClient({ data }: HomeProps) {
-  const sections: Section[] = data.body;
+type ServiceLocationPrices = {
+  [key: string]: ServicePrices[];
+};
+
+export default function HomeClient(props: HomeProps) {
+  const { orders: orders_response, service_location_prices: service_location_prices_response } = props.responses;
+  console.log(orders_response, service_location_prices_response);
+  const data = orders_response;
+  const sections: Section[] = orders_response.body;
+  const service_locations_prices: ServiceLocationPrices = service_location_prices_response.body;
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [error, setError] = useState(data.success ? null : data.error);
+  const [showOrder, setShowOrder] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedServiceLocationPrices, setSelectedServiceLocationPrices] = useState<ServicePrices[]>([]);
 
   // Handlers for swiping
   const handlers = useSwipeable({
@@ -55,6 +63,36 @@ export default function HomeClient({ data }: HomeProps) {
       return newIndex;
     });
   };
+
+  const handleShowOrder = (order: any) => {
+    setSelectedOrder(order);
+    setSelectedServiceLocationPrices(service_locations_prices[order?.service_location_id] || []); // Set your service location prices here if needed
+    setShowOrder(true);
+  };
+
+  const handleCloseOrder = () => {
+    setShowOrder(false);
+    setSelectedOrder(null);
+    setSelectedServiceLocationPrices([]);
+  };
+
+  const [priceServiceMap, setPriceServiceMap] = useState<Map<string, string>>(new Map());
+  const [priceNameMap, setPriceNameMap] = useState<Map<string, string>>(new Map());
+  useEffect(() => {
+    const newServiceMap = new Map<string, string>();
+    Object.values(service_locations_prices).forEach((servicePrices) => {
+      servicePrices.forEach((price) => {
+        if (price.prices && price.service) {
+          price.prices.forEach((p) => {
+            priceNameMap.set(p.id, p.category);
+            newServiceMap.set(p.id, price.service.service_name);
+          });
+        }
+      });
+    });
+    setPriceNameMap(priceNameMap);
+    setPriceServiceMap(newServiceMap);
+  }, [priceNameMap, service_locations_prices]);
 
   return (
     <div className="">
@@ -93,8 +131,10 @@ export default function HomeClient({ data }: HomeProps) {
                         {timeSlotItem.orders.map((order, index) => (
                           <Row
                             key={index}
-                            data={{ count_range: order?.count_range_description, services: order?.services?.map((service: any) => service?.service_name), distance: order?.distance || "N/a" }}
-                            lastRow={index == timeSlotItem.orders.length - 1 ? true : false}
+                            services={order?.services?.map((service: any) => service?.service_name)}
+                            order={order} // Add this line
+                            lastRow={index == timeSlotItem.orders.length - 1}
+                            onShowOrder={handleShowOrder} // Add this line
                           />
                         ))}
                       </div>
@@ -105,6 +145,11 @@ export default function HomeClient({ data }: HomeProps) {
             ))}
           </div>
         ))}
+        {showOrder && (
+          <div className="w-full min-h-screen z-50 overflow-y-auto">
+            <OrderDetailsAgent order={selectedOrder} priceServiceMap={priceServiceMap} priceNameMap={priceNameMap} onClose={handleCloseOrder} />
+          </div>
+        )}
       </div>
       {error && <p className="text-red-500">{error}</p>}
     </div>
