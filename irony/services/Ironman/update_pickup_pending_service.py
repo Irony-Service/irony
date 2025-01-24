@@ -90,6 +90,11 @@ async def update_order(request: UpdateOrderRequest):
                 response.message = "Invalid status provided"
                 response.success = False
                 return response.model_dump()
+            
+            if(request.current_status == request.new_status):
+                response.message = "Current status and new status are same"
+                response.success = False
+                return response.model_dump()
 
             order_status = order.order_status[0].status
 
@@ -99,7 +104,8 @@ async def update_order(request: UpdateOrderRequest):
             #     )
             #     response.success = False
             #     return response.model_dump()
-
+            # Execute bulk operations outside the loop
+            bulk_operations: List[ReplaceOne | InsertOne] = []
             if order_status == OrderStatusEnum.PICKUP_PENDING:
                 if request.new_status == OrderStatusEnum.WORK_IN_PROGRESS:
                     sevice_grouped_items: Dict[str, List[OrderItem]] = {}
@@ -150,14 +156,21 @@ async def update_order(request: UpdateOrderRequest):
                     order.pickup_agent_id = request.pickup_by
                     order.picked_up_time = now
 
+                    if request.location_nickname and order.location:
+                        order.location.nickname = request.location_nickname
+                        # Update nickname for existing location document
+                        await db.location.update_one(
+                            {"_id": order.location.id},
+                            {"$set": {"nickname": request.location_nickname}}
+                        )
+                        
+                        # check if need to udpate location in user
+
                     if request.items:
                         order_list: List[Order] = []
                         order_id_list = []
                         sub_id_list = []
                         sub_id_dict = {}
-
-                        # Execute bulk operations outside the loop
-                        bulk_operations: List[ReplaceOne | InsertOne] = []
 
                         for index, entry in enumerate(sevice_grouped_items.items()):
                             order_instance = order
@@ -222,7 +235,36 @@ async def update_order(request: UpdateOrderRequest):
                         ),
                     )
                     order.updated_on = now
+                    bulk_operations.append(
+                        ReplaceOne(
+                            {"_id": ObjectId(request.order_id)},
+                            order.model_dump(exclude_unset=True, by_alias=True),
+                        )
+                    )
+                    await bulk_write_operations("order", bulk_operations)
                     response.body = map_order_to_response(order, simple_ids, [], {}, [])
+            
+            if order_status == OrderStatusEnum.WORK_IN_PROGRESS:
+                if request.new_status == OrderStatusEnum.DELIVERY_PENDING:
+                    order.order_status.insert(
+                        0,
+                        (
+                            OrderStatus(
+                                status=OrderStatusEnum(request.new_status),
+                                created_on=now,
+                                updated_on=now,
+                            )
+                        ),
+                    )
+                    order.updated_on = now
+                    bulk_operations.append(
+                        ReplaceOne(
+                            {"_id": ObjectId(request.order_id)},
+                            order.model_dump(exclude_unset=True, by_alias=True),
+                        )
+                    )
+                    await bulk_write_operations("order", bulk_operations)
+                    response.body = map_order_to_response(order)
         response.success = True
         return response.model_dump()
 
@@ -240,7 +282,7 @@ def map_oder_copies(order_list, items):
         order_list[i].order_item = items[i]
 
 
-def map_order_to_response(order: Order, simple_ids, sub_ids, sub_id_dict, order_ids):
+def map_order_to_response(order: Order, simple_ids = None , sub_ids = None, sub_id_dict = None, order_ids = None):
     try:
         responseBody = UpdateOrderResponseBody()
         responseBody.parent_order_id = str(order.id)

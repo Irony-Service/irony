@@ -13,7 +13,8 @@ class UpdateOrderRequest(BaseModel):
     order_id: str
     current_status: str
     new_status: str
-    items: List[OrderItem]
+    location_nickname: Optional[str] = None
+    items: Optional[List[OrderItem]] = None
     information: Optional[str] = None
     total_price: Optional[float] = None
     pickup_by: Optional[str] = None
