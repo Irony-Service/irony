@@ -20,6 +20,8 @@ export default function SlidingButton({
 }: SlidingButtonProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [slidePosition, setSlidePosition] = useState(0);
+  // const [completeTriggered, setCompleteTriggered] = useState(false);
+  let completeTriggered = false;
   const sliderRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +46,15 @@ export default function SlidingButton({
     setSlidePosition(position);
 
     if (position >= containerWidth - 10) {
-      onComplete();
+      if (!completeTriggered) {
+        // setCompleteTriggered(true);
+        completeTriggered = true;
+        onComplete().catch(() => {
+          setSlidePosition(0);
+          // setCompleteTriggered(false);
+          completeTriggered = false;
+        });
+      }
     }
   };
 

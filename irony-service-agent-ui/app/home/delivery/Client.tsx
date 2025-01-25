@@ -42,8 +42,8 @@ export default function DeliveryHomeClient(props: HomeProps) {
   const { orders: orders_response, service_location_prices: service_location_prices_response } = props.responses;
   console.log(orders_response, service_location_prices_response);
   const data = orders_response;
-  const sections: Section[] = orders_response.body;
-  const service_locations_prices: any = service_location_prices_response.body;
+  const [sections, setSections] = useState<Section[]>(orders_response.data);
+  const service_locations_prices: any = service_location_prices_response.data;
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [error, setError] = useState(data.success ? null : data.error);
@@ -58,7 +58,25 @@ export default function DeliveryHomeClient(props: HomeProps) {
     setShowOrder(true);
   };
 
-  const handleCloseOrder = () => {
+  const removeOrderFromSections = (orderToRemove: any) => {
+    setSections(prevSections => 
+      prevSections.map(section => ({
+        ...section,
+        dates: section.dates.map(dateItem => ({
+          ...dateItem,
+          time_slots: dateItem.time_slots.map(timeSlot => ({
+            ...timeSlot,
+            orders: timeSlot.orders.filter(order => order._id !== orderToRemove._id)
+          })).filter(timeSlot => timeSlot.orders.length > 0)
+        })).filter(dateItem => dateItem.time_slots.length > 0)
+      })).filter(section => section.dates.length > 0)
+    );
+  };
+
+  const handleCloseOrder = (deleteOnClose: boolean) => {
+    if (deleteOnClose && selectedOrder) {
+      removeOrderFromSections(selectedOrder);
+    }
     setShowOrder(false);
     setSelectedOrder(null);
     setSelectedServiceLocationPrices([]);

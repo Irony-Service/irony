@@ -39,8 +39,8 @@ export default function HomeClient(props: HomeProps) {
   const { orders: orders_response, service_location_prices: service_location_prices_response } = props.responses;
   console.log(orders_response, service_location_prices_response);
   const data = orders_response;
-  const sections: Section[] = orders_response.body;
-  const service_locations_prices: ServiceLocationPrices = service_location_prices_response.body;
+  const sections: Section[] = orders_response.data;
+  const service_locations_prices: ServiceLocationPrices = service_location_prices_response.data;
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [error, setError] = useState(data.success ? null : data.error);
@@ -84,8 +84,8 @@ export default function HomeClient(props: HomeProps) {
       servicePrices.forEach((price) => {
         if (price.prices && price.service) {
           price.prices.forEach((p) => {
-            priceNameMap.set(p.id, p.category);
-            newServiceMap.set(p.id, price.service.service_name);
+            priceNameMap.set(p._id, p.category);
+            newServiceMap.set(p._id, price.service.service_name);
           });
         }
       });

@@ -10,7 +10,7 @@ export default function ServiceBlock(props: ServiceBlockProps) {
   const [dressOptions, setDressOptions] = useState<Price[]>([]);
 
   const updateDressOptions = (serviceId: string) => {
-    const selectedServicePrice = location_service_prices.find((sp: ServicePrices) => sp.service.id === serviceId);
+    const selectedServicePrice = location_service_prices.find((sp: ServicePrices) => sp.service._id === serviceId);
     if (selectedServicePrice && selectedServicePrice.prices) {
       setDressOptions(selectedServicePrice.prices);
     } else {
@@ -33,9 +33,9 @@ export default function ServiceBlock(props: ServiceBlockProps) {
   useEffect(() => {
     // Set initial service and dress options if service_prices is not empty
     if (location_service_prices.length > 0) {
-      const initialServiceId = location_service_prices[0].service.id;
+      const initialServiceId = location_service_prices[0].service._id;
 
-      const selectedServicePrice = location_service_prices.find((sp: ServicePrices) => sp.service.id === initialServiceId);
+      const selectedServicePrice = location_service_prices.find((sp: ServicePrices) => sp.service._id === initialServiceId);
       if (selectedServicePrice && selectedServicePrice.prices) {
         setDressOptions(selectedServicePrice.prices);
       } else {

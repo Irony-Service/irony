@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import apiClient from "@/utils/axiosClient";
 import SlidingButton from "../../components/SlidingButton";
+import OrderServicesList from "../../components/OrderServicesList";
 
 interface OrderItem {
   price_id: string;
@@ -23,11 +24,17 @@ export interface OrderDetailsProps {
 export default function OrderDetailsAgent(props: OrderDetailsProps) {
   const order = props.order;
   const orderItems: OrderItem[] = order.order_items || [];
-  const orderId = order?.simple_id || order?.order_id;
+  const orderId = order?._id;
+  let simpleId = order?.simple_id || orderId
   const customerName = order.user_id;
   const phoneNumber = order.user_wa_id;
   const countRange = order.count_range_description + " clothes";
   const notes = order.notes || "";
+  const showAction = order.order_status[0]?.status === "WORK_IN_PROGRESS";
+
+  if(order?.sub_id){
+    simpleId += `-${order.sub_id}`;
+  }
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -39,11 +46,15 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
 
       const newOrder = {
         order_id: orderId,
-        current_status: order.status,
-        new_status: "IN_PROGRESS",
+        current_status: order?.order_status[0]?.status,
+        new_status: "DELIVERY_PENDING",
       };
 
       const response = await apiClient.post<{ success: boolean; message: string }>("/updateOrder", newOrder);
+
+      if (!response.success) {
+        throw new Error(response.message || "Failed to confirm order");
+      }
 
       setMessage({
         type: "success",
@@ -59,6 +70,7 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
         type: "error",
         text: error.message || "Failed to confirm order",
       });
+      return Promise.reject(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -69,7 +81,7 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
       <div className="flex flex-col w-full space-y-4">
         {/* Header */}
         <div className="flex justify-between items-center w-full bg-gray-50 p-3 rounded-lg">
-          <div className="text-sm font-semibold text-gray-700">Order #{orderId}</div>
+          <div className="text-sm font-semibold text-gray-700">Order #{simpleId}</div>
           <div className="flex gap-2">
             <Link href={`tel:+${phoneNumber}`} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
               <Image width={16} height={16} loading="lazy" src="/vector_phone.svg" alt="Call" />
@@ -102,33 +114,7 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
         </div>
 
         {/* Services List - Read Only */}
-        <div>
-          <div className="text-lg font-semibold text-gray-700 mb-4">Services</div>
-          <div className="space-y-3">
-            {orderItems.map((item, index) => (
-              <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <span className="text-gray-500 text-sm">Service:</span>
-                    <p className="font-medium">{props.priceServiceMap.get(item.price_id)}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 text-sm">Category:</span>
-                    <p className="font-medium">{props.priceNameMap.get(item.price_id)}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 text-sm">Count:</span>
-                    <p className="font-medium">{item.count}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 text-sm">Price:</span>
-                    <p className="font-medium">₹{item.amount}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <OrderServicesList orderItems={orderItems} priceServiceMap={props.priceServiceMap} priceNameMap={props.priceNameMap}></OrderServicesList>
 
         {/* Bill Details */}
         {/* <div className="mt-6">
@@ -166,7 +152,7 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
       <div className="sticky bottom-0 flex flex-col mt-4 w-full font-medium text-center bg-white p-4 border-t">
         {message && <div className={`mb-4 p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{message.text}</div>}
 
-        <SlidingButton onComplete={handleConfirm} isLoading={isSubmitting} />
+        {showAction && <SlidingButton onComplete={handleConfirm} isLoading={isSubmitting} />}
       </div>
     </div>
   );

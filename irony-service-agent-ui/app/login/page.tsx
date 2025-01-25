@@ -16,7 +16,7 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await api.post("/login", { mobile, password });
+      const response = await api.post<any>("/login", { mobile, password });
       console.log(response);
       console.log(response.data);
 

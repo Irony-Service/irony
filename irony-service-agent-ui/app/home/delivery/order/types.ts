@@ -9,14 +9,14 @@ export interface ServiceBlockProps {
 }
 
 export interface Service {
-  id: string;
+  _id: string;
   service_category: string;
   service_type: string;
   service_name: string;
   call_to_action_key: string;
 }
 export interface Price {
-  id: string;
+  _id: string;
   service_location_id: string;
   service_id: string;
   category_key: string;
@@ -31,7 +31,7 @@ export interface ServicePrices {
 export interface OrderDetailsProps {
   order: any;
   location_service_prices: ServicePrices[];
-  onClose: () => void;
+  onClose: (deleteOnClose: boolean) => void;
 }
 
 export interface OrderItemInput {
@@ -44,6 +44,7 @@ export interface NewOrder {
   order_id: string;
   current_status: string;
   new_status: string;
+  location_nickname?: string;
   items: {
     price_id: string;
     count: number;
