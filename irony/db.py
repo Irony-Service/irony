@@ -1,5 +1,5 @@
 from typing import Any, List
-from bson import ObjectId
+from irony.models.pyobjectid import PyObjectId
 from fastapi.encoders import jsonable_encoder
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ReplaceOne, InsertOne, UpdateOne, DeleteOne, UpdateMany, DeleteMany
@@ -28,7 +28,7 @@ async def replace_documents_in_transaction(
 
     for replacement in replacements:
         # Filter criteria for each document to be replaced
-        filter_criteria = {"_id": ObjectId(replacement["_id"])}
+        filter_criteria = {"_id": PyObjectId(replacement["_id"])}
 
         # Create a ReplaceOne operation and add it to the operations list
         operations.append(ReplaceOne(filter_criteria, replacement, upsert=upsert))
@@ -65,7 +65,7 @@ async def create_user(user: User):
 
 async def bulk_insert_documents(
     collection_name: str, documents: List[Any]
-) -> List[ObjectId]:
+) -> List[PyObjectId]:
     async with await client.start_session() as session:
         async with session.start_transaction():
             try:

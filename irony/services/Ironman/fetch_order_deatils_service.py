@@ -1,7 +1,6 @@
 import pprint
 from typing import List
-from bson import ObjectId
-from fastapi import Response
+from irony.models.pyobjectid import PyObjectId
 
 from irony.db import db, replace_documents_in_transaction
 from irony.exception.WhatsappException import WhatsappException
@@ -14,22 +13,15 @@ from irony.models.service_agent.vo.fetch_order_details_vo import (
 )
 from irony.models.order import Order
 from irony.models.order_status import OrderStatusEnum
-from irony.models.service_agent.vo.fetch_orders_vo import (
-    FetchOrdersResponse,
-    OrderChunk,
-)
+
 from irony.models.service_location import ServiceLocation
 from irony.models.user import User
-from irony.services.whatsapp import user_whatsapp_service
-from irony.util import whatsapp_utils
-import irony.services.whatsapp.interactive_message_service as interactive_message_service
-import irony.services.whatsapp.text_message_service as text_message_service
 from irony.config.logger import logger
 
 
 async def fetch_order_details(request: FetchOrderDetailsRequest):
     try:
-        order_data = await db.order.find_one({"_id": ObjectId(request.order_id)})
+        order_data = await db.order.find_one({"_id": PyObjectId(request.order_id)})
         if order_data is None:
             raise WhatsappException("Order not found")
         order: Order = Order(**order_data)

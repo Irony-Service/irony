@@ -1,5 +1,5 @@
 from datetime import datetime
-from bson import ObjectId
+from irony.models.pyobjectid import PyObjectId
 from pydantic import BaseModel, Field
 from typing import Dict, Optional
 
@@ -14,8 +14,8 @@ class TimeslotQuota(BaseModel):
 
 
 class TimeslotVolume(BaseModel):
-    id: Optional[ObjectId] = Field(default=None, alias="_id")
-    service_loaction_id: Optional[ObjectId] = None
+    id: Optional[PyObjectId] = Field(default=None, alias="_id")
+    service_loaction_id: Optional[PyObjectId] = None
     daily_limit: Optional[int] = None
     current_clothes: Optional[int] = None
     timeslot_distributions: Optional[Dict[str, TimeslotQuota]] = None

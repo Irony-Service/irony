@@ -1,10 +1,10 @@
 from datetime import datetime
 from enum import Enum
-from bson import ObjectId
+from irony.models.pyobjectid import PyObjectId
 
 
 class MessagesFixed:
-    id: ObjectId
+    id: PyObjectId
     message_key: str
     type: str
     message: str

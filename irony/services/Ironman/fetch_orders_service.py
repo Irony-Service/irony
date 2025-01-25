@@ -3,7 +3,6 @@ import json
 import pprint
 from typing import Any, Dict, List
 from urllib import response
-from bson import ObjectId
 import bson
 import bson.json_util
 from fastapi import HTTPException, Response
@@ -143,16 +142,14 @@ async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_location
         grouped_orders = await db.order.aggregate(pipeline).to_list(None)
 
         if not grouped_orders:
-            response.success = False
             response.message = "No orders found"
-            return response.model_dump()
+            return response
 
         # return bson.json_util.dumps(grouped_orders)
         # return grouped_orders
         response.body = set_group_by_response_body_delivery(
             grouped_orders, ordered_statuses, "Pickup / Delivery"
         )
-        response.success = True
         return response
 
     except Exception as e:

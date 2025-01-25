@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List, Optional
-from bson import ObjectId
+from irony.models.pyobjectid import PyObjectId
 from pydantic import BaseModel, Field
 
 from irony.models.common_model import shared_config
@@ -24,8 +24,8 @@ def get_delivery_enum_from_string(value: str):
 
 
 class ServiceEntry(BaseModel):
-    service_location_id: Optional[ObjectId] = None
-    service_id: Optional[ObjectId] = None
+    service_location_id: Optional[PyObjectId] = None
+    service_id: Optional[PyObjectId] = None
     rate: Optional[float] = None
     discount: Optional[float] = None
     daily_piece_limit: Optional[int] = None

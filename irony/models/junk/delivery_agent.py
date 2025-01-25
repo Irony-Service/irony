@@ -1,10 +1,10 @@
 from enum import Enum
-from bson import ObjectId
+from irony.models.pyobjectid import PyObjectId
 from pydantic import BaseModel
 
 
 class DeliveryAgent(BaseModel):
-    id: ObjectId
+    id: PyObjectId
     name: str
     phone: str
     age: str

@@ -1,5 +1,5 @@
-from bson import ObjectId
 from typing import ClassVar
+from bson import ObjectId
 from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 
 

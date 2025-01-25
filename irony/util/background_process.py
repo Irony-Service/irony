@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 import asyncio
 import copy
 
-from bson import ObjectId  # Add this import
+from irony.models.pyobjectid import PyObjectId  # Add this import
 
 import pprint
 from irony import cache
@@ -383,7 +383,7 @@ async def send_pending_order_requests():
             # if there are no delivery service locations for this order, send no ironman found as this will execute after all self pickup orders are done.
             if not order_request.delivery_service_locations_ids:
                 logger.info("No ironman found for order", order.id)
-                order_request_updates.append(ObjectId(str(order_request.id)))
+                order_request_updates.append(PyObjectId(str(order_request.id)))
                 no_ironman_message = whatsapp_utils.get_reply_message(
                     "new_order_no_ironman", message_type="text"
                 )
@@ -435,7 +435,7 @@ async def send_pending_order_requests():
                             order.model_dump(exclude_defaults=True, by_alias=True)
                         )
                         # update the order request in the database
-                        order_request_updates.append(ObjectId(str(order_request.id)))
+                        order_request_updates.append(PyObjectId(str(order_request.id)))
                         break
         else:
             # Create a copy of message_doc for each iteration
@@ -480,7 +480,7 @@ async def send_pending_order_requests():
             )
 
             tasks.append(Message(message_doc).send_message(service_location.wa_id))
-            order_request_updates.append(ObjectId(str(order_request.id)))
+            order_request_updates.append(PyObjectId(str(order_request.id)))
 
     # Send all messsages at once
     await asyncio.gather(*tasks)

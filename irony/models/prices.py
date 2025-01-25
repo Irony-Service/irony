@@ -1,13 +1,8 @@
-from typing import List, Optional, Union
+from typing import Optional
 from pydantic import BaseModel, Field
-from datetime import datetime
-from bson import ObjectId
+from irony.models.pyobjectid import PyObjectId
 
 from irony.models.common_model import shared_config
-from irony.models.order import Order
-from irony.models.service import Service
-from irony.models.service_location import DeliveryTypeEnum, ServiceLocation
-from irony.models.timeslot_volume import TimeslotVolume
 from enum import Enum
 
 
@@ -21,9 +16,9 @@ class CategoryKeyEnum(str, Enum):
 
 
 class Prices(BaseModel):
-    id: Optional[ObjectId] = Field(default=None, alias="_id")
-    service_location_id: Optional[ObjectId] = None
-    service_id: Optional[ObjectId] = None
+    id: Optional[PyObjectId] = Field(default=None, alias="_id")
+    service_location_id: Optional[PyObjectId] = None
+    service_id: Optional[PyObjectId] = None
     category_key: Optional[CategoryKeyEnum] = None
     category: Optional[str] = None
     price: Optional[float] = None

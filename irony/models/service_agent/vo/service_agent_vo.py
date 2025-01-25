@@ -1,12 +1,12 @@
 from typing import List, Optional
-from bson import ObjectId
+from irony.models.pyobjectid import PyObjectId
 from pydantic import BaseModel, field_serializer, field_validator
 
 from irony.models.service_agent.service_agent import ServiceAgent
 
 class ServiceAgentVo(ServiceAgent):
     @field_serializer("service_location_ids")
-    def serialize_service_location_ids(self, values: List[ObjectId]) -> List[str]:
+    def serialize_service_location_ids(self, values: List[PyObjectId]) -> List[str]:
         if not values:
             return []
         return [str(value) for value in values]
@@ -20,15 +20,15 @@ class ServiceAgentVo(ServiceAgent):
             for item in v:
                 if isinstance(item, str):
                     try:
-                        item = ObjectId(item)
+                        item = PyObjectId(item)
                     except Exception:
                         raise ValueError(
-                            f"Invalid ObjectId string in service_location_ids: {item}"
+                            f"Invalid PyObjectId string in service_location_ids: {item}"
                         )
-                elif not isinstance(item, ObjectId):
+                elif not isinstance(item, PyObjectId):
                     raise ValueError(
-                        f"Invalid ObjectId in service_location_ids: {item}"
+                        f"Invalid PyObjectId in service_location_ids: {item}"
                     )
                 validated_list.append(item)
             return validated_list
-        raise ValueError("service_location_ids must be a list of ObjectId or string.")
+        raise ValueError("service_location_ids must be a list of PyObjectId or string.")

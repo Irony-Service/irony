@@ -1,6 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
-from typing import List, Optional, Union
-from bson import ObjectId
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from irony.models.pyobjectid import PyObjectId
 from irony.models.common_model import shared_config
 from irony.models.pyobjectid import PyObjectId
 
@@ -24,7 +24,7 @@ class ServiceAgent(BaseModel):
     model_config = shared_config
 
     # class Config(ModelConfig):
-    #     json_encoders = {ObjectId: str}
+    #     json_encoders = {PyObjectId: str}
     #     pass
 
 

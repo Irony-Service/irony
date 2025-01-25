@@ -1,6 +1,4 @@
-from typing import Optional
-from bson import ObjectId
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from irony.models.common_model import shared_config
 

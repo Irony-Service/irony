@@ -1,5 +1,4 @@
 from typing import List, Optional
-from bson import ObjectId
 from pydantic import BaseModel, Field
 
 from irony.models.common_model import shared_config

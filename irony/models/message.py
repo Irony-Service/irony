@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Any, List, Optional
-from bson import ObjectId
+from irony.models.pyobjectid import PyObjectId
 from pydantic import BaseModel, Field
 
 from irony.models.common_model import shared_config
@@ -19,7 +19,7 @@ class ReplyMessage(BaseModel):
 
 
 class MessageConfig(BaseModel):
-    id: Optional[ObjectId] = Field(default=None, alias="_id")
+    id: Optional[PyObjectId] = Field(default=None, alias="_id")
     message_key: Optional[str] = None
     type: Optional[str] = None
     message_options: Optional[List[str]] = None

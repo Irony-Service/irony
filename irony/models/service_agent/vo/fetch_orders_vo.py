@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from typing import Any, Dict, List, Optional
-from bson import ObjectId
 from pydantic import BaseModel, Field
 
 from irony.models.common_model import shared_config

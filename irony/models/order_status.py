@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from bson import ObjectId
+from irony.models.pyobjectid import PyObjectId
 from pydantic import BaseModel, Field
 from typing import Optional
 from irony.models.common_model import shared_config

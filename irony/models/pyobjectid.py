@@ -1,7 +1,8 @@
 from typing import Any
+from bson import ObjectId
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
-from bson import ObjectId
+
 
 class PyObjectId(ObjectId):
     @classmethod

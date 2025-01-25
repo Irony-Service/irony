@@ -2,7 +2,7 @@ from datetime import datetime
 import pprint
 import copy
 from typing import Dict, List, Union
-from bson import ObjectId
+from irony.models.pyobjectid import PyObjectId
 from fastapi import Response
 from pymongo import InsertOne, ReplaceOne
 
@@ -68,7 +68,7 @@ async def update_order(request: UpdateOrderRequest):
     try:
         response = UpdateOrderResponse()
         now = datetime.now()
-        order_data = await db.order.find_one({"_id": ObjectId(request.order_id)})
+        order_data = await db.order.find_one({"_id": PyObjectId(request.order_id)})
         if order_data is None:
             logger.error(f"Order not found for order_id : {request.order_id}")
             response.message = "Order not found"
@@ -112,7 +112,7 @@ async def update_order(request: UpdateOrderRequest):
 
                     if request.items:
                         price = 0.0
-                        price_ids = [ObjectId(item.price_id) for item in request.items]
+                        price_ids = [PyObjectId(item.price_id) for item in request.items]
                         prices = await db.prices.find(
                             {"_id": {"$in": price_ids}}
                         ).to_list(None)
@@ -176,7 +176,7 @@ async def update_order(request: UpdateOrderRequest):
                             order_instance = order
                             if index != 0:
                                 order_instance = copy.deepcopy(order)
-                                order_instance.id = ObjectId()
+                                order_instance.id = PyObjectId()
                                 # order_instance.order_items = None
 
                             order_instance.order_items = entry[1]
@@ -199,7 +199,7 @@ async def update_order(request: UpdateOrderRequest):
                                 # Replace the first document
                                 bulk_operations.append(
                                     ReplaceOne(
-                                        {"_id": ObjectId(request.order_id)}, order_dict
+                                        {"_id": PyObjectId(request.order_id)}, order_dict
                                     )
                                 )
                             else:
@@ -237,7 +237,7 @@ async def update_order(request: UpdateOrderRequest):
                     order.updated_on = now
                     bulk_operations.append(
                         ReplaceOne(
-                            {"_id": ObjectId(request.order_id)},
+                            {"_id": PyObjectId(request.order_id)},
                             order.model_dump(exclude_unset=True, by_alias=True),
                         )
                     )
@@ -259,7 +259,7 @@ async def update_order(request: UpdateOrderRequest):
                     order.updated_on = now
                     bulk_operations.append(
                         ReplaceOne(
-                            {"_id": ObjectId(request.order_id)},
+                            {"_id": PyObjectId(request.order_id)},
                             order.model_dump(exclude_unset=True, by_alias=True),
                         )
                     )
@@ -278,7 +278,7 @@ async def update_order(request: UpdateOrderRequest):
 def map_oder_copies(order_list, items):
     for i in range(len(order_list)):
         if i != 0:
-            order_list[i].id = ObjectId()
+            order_list[i].id = PyObjectId()
         order_list[i].order_item = items[i]
 
 

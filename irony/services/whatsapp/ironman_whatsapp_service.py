@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any, Dict, List
-from bson import ObjectId
+from irony.models.pyobjectid import PyObjectId
 
 from irony.config import config
 from irony.exception.WhatsappException import WhatsappException
@@ -82,7 +82,7 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
     order_request_id = reply_id.split("#")[-1]
 
     pipeline: List[Dict[str, Any]] = [
-        {"$match": {"_id": ObjectId(order_request_id)}},
+        {"$match": {"_id": PyObjectId(order_request_id)}},
         {
             "$lookup": {
                 "from": "service_locations",  # the collection to join
@@ -194,7 +194,7 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
             await Message(ironman_order_alloted_message).send_message(
                 contact_details.wa_id
             )
-        # service_ids: List[ObjectId] = []
+        # service_ids: List[PyObjectId] = []
         # if order_request.service_location and order_request.service_location.services:
         #     service_ids = order_request.service_location.services
 

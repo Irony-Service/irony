@@ -158,9 +158,8 @@ async def getServicePricesForServiceLocations(
     prices_groups = await db.prices.aggregate(pipeline=pipeline).to_list(None)
 
     if not prices_groups:
-        response.success = False
-        response.error = "No orders found"
-        return response.model_dump()
+        response.message = "No orders found"
+        return response
 
     service_location_service_prices: Dict[str, Dict[str, List[Prices]]] = {}
 
@@ -192,14 +191,13 @@ async def getServicePricesForServiceLocations(
         service_prices_list.sort(key=lambda x: x.service.call_to_action_key or "")
         response_body[service_location_id] = service_prices_list
 
-    response.success = True
-    response.body = response_body
+    response.data = response_body
     # response.body = PricesResponseBody(
     #     service_locations_prices=service_location_service_prices, services=services
     # )
     # response.body = service_location_service_prices
 
-    return response.model_dump()
+    return response
 
 
 @router.post("/fetchOrderDetails")
