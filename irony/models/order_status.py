@@ -3,7 +3,8 @@ from enum import Enum
 from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import Optional
-from irony.models.common_model import CommonModel, shared_config
+from irony.models.common_model import shared_config
+from irony.models.pyobjectid import PyObjectId
 
 
 HUMAN_READABLE_LABELS = {
@@ -56,9 +57,9 @@ class OrderStatusEnum(str, Enum):
         return DELIVERY_LABELS.get(status, status)
 
 
-class OrderStatus(CommonModel):
-    id: Optional[ObjectId] = Field(default=None, alias="_id")
-    order_id: Optional[ObjectId] = None
+class OrderStatus(BaseModel):
+    id: Optional[PyObjectId] = Field(default=None, alias="_id")
+    order_id: Optional[PyObjectId] = None
     status: Optional[OrderStatusEnum] = None
     created_on: Optional[datetime] = None
     updated_on: Optional[datetime] = None

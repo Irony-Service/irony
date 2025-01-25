@@ -3,7 +3,7 @@ from typing import Any, List, Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from irony.models.common_model import CommonModel, shared_config
+from irony.models.common_model import shared_config
 
 
 class MessageType(str, Enum):
@@ -18,7 +18,7 @@ class ReplyMessage(BaseModel):
     model_config = shared_config
 
 
-class MessageConfig(CommonModel):
+class MessageConfig(BaseModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     message_key: Optional[str] = None
     type: Optional[str] = None

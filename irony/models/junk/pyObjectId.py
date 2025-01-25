@@ -2,7 +2,7 @@ from bson import ObjectId
 from typing import Any
 
 
-class PyObjectId(ObjectId):
+class PyObjectIdOld(ObjectId):
     @classmethod
     def __get_validators__(cls):
         yield cls.validate

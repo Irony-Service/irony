@@ -1,11 +1,11 @@
 from typing import Any, Optional
 from bson import ObjectId
-from pydantic import Field
+from pydantic import BaseModel, Field
 
-from irony.models.common_model import CommonModel, shared_config
+from irony.models.common_model import  shared_config
 
 
-class CallToAction(CommonModel):
+class CallToAction(BaseModel):
     id: Optional[ObjectId] = Field(None, alias="_id")
     key: Optional[str] = None
     value: Optional[Any] = None

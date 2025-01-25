@@ -3,9 +3,10 @@ from typing import List, Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from irony.models.common_model import CommonModel, shared_config
+from irony.models.common_model import shared_config
 from irony.models.location import Location
 from irony.models.timeslot_volume import TimeslotVolume
+from irony.models.pyobjectid import PyObjectId
 
 
 class LocationTypeEnum(str, Enum):
@@ -22,7 +23,7 @@ def get_delivery_enum_from_string(value: str):
     return DeliveryTypeEnum.__members__.get(value.upper(), DeliveryTypeEnum.DELIVERY)
 
 
-class ServiceEntry(CommonModel):
+class ServiceEntry(BaseModel):
     service_location_id: Optional[ObjectId] = None
     service_id: Optional[ObjectId] = None
     rate: Optional[float] = None
@@ -43,7 +44,7 @@ class Service(BaseModel):
 
 
 class ServiceLocation(BaseModel):
-    id: Optional[ObjectId] = Field(default=None, alias="_id")
+    id: Optional[PyObjectId] = Field(default=None, alias="_id")
     name: Optional[str] = None
     services: Optional[List[Service]] = None
     time_slots: Optional[List[str]] = None

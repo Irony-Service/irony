@@ -50,10 +50,10 @@ class FetchOrdersResponseBodyItem(BaseModel):
     dates: Optional[List[DateItem]] = None
 
 
-class FetchOrdersResponseBodyItem2(BaseModel):
+class FetchOrdersResponseBodyItemOld(BaseModel):
     key: Optional[str] = None
     label: Optional[str] = None
-    orders: Optional[List[Order]] = None
+    orders: Optional[List[OrderVo]] = None
 
 
 class FetchOrdersResponse(CommonReponse):

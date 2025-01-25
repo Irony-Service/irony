@@ -1,9 +1,9 @@
-from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 
-from irony.models.common_model import CommonModel, shared_config
+from irony.models.common_model import shared_config
+from irony.models.pyobjectid import PyObjectId
 
 
 class Location(BaseModel):
@@ -11,8 +11,8 @@ class Location(BaseModel):
     coordinates: List[float] = Field(..., min_items=2, max_items=2)  # type: ignore
 
 
-class UserLocation(CommonModel):
-    id: Optional[ObjectId] = Field(default=None, alias="_id")
+class UserLocation(BaseModel):
+    id: Optional[PyObjectId] = Field(default=None, alias="_id")
     user: Optional[str] = None
     nickname: Optional[str] = None
     address: Optional[str] = None

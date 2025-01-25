@@ -3,6 +3,8 @@ from fastapi import HTTPException, Response
 from irony.db import db
 from irony.models import service
 from irony.models.service_agent.service_agent import ServiceAgent, ServiceAgentRegister
+from irony.models.service_agent.vo.login_user_vo import LoginUserData, LoginUserResponse
+from irony.models.service_agent.vo.service_agent_vo import ServiceAgentVo
 from irony.models.service_agent.vo.user_login import UserLogin
 from irony.util import auth
 
@@ -10,7 +12,7 @@ from irony.util import auth
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
 
-async def register_service_agent(user: ServiceAgentRegister) -> ServiceAgent:
+async def register_service_agent(user: ServiceAgentRegister) -> ServiceAgentVo:
     # Check if passwords match
     if not user.mobile or not user.password or not user.confirm_password:
         raise HTTPException(
@@ -40,10 +42,15 @@ async def register_service_agent(user: ServiceAgentRegister) -> ServiceAgent:
 
     service_agent.id = result.inserted_id
 
-    return service_agent
+    return ServiceAgentVo(**service_agent.model_dump())
 
 
-async def login_service_agent(response: Response, user: UserLogin):
+async def login_service_agent(response: Response, user: UserLogin) -> LoginUserResponse:
+    if not user.mobile or not user.password:
+        raise HTTPException(
+            status_code=400, detail="Mobile or Password not provided"
+        )
+    
     db_user = await db.service_agent.find_one({"mobile": user.mobile})
     if not db_user:
         raise HTTPException(status_code=401, detail="Invalid mobile or password")
@@ -68,5 +75,5 @@ async def login_service_agent(response: Response, user: UserLogin):
         expires=datetime.now(timezone.utc)
         + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
-
-    return [token, db_user]
+    return LoginUserResponse(data = LoginUserData(access_token=token, token_type="bearer", user=db_user))
+    

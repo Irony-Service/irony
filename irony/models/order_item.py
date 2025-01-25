@@ -2,7 +2,7 @@ from typing import Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from irony.models.common_model import CommonModel, shared_config
+from irony.models.common_model import shared_config
 
 
 class OrderItem(BaseModel):

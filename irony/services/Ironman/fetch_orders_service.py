@@ -6,7 +6,7 @@ from urllib import response
 from bson import ObjectId
 import bson
 import bson.json_util
-from fastapi import Response
+from fastapi import HTTPException, Response
 from rich import _console
 
 from irony.db import db, replace_documents_in_transaction
@@ -21,7 +21,7 @@ from irony.models.service_agent.vo.fetch_orders_vo import (
     FetchOrderRequest,
     FetchOrderResponseBody,
     FetchOrdersResponse,
-    FetchOrdersResponseBodyItem2,
+    FetchOrdersResponseBodyItemOld,
     FetchOrdersResponseBodyItem,
     OrderChunk,
     TimeSlotItem,
@@ -170,12 +170,12 @@ async def get_orders_group_by_status_and_date_and_time_slot_for_agent_locations(
     try:
         agent_data = await db.service_agent.find_one({"mobile": agent_mobile})
         if agent_data is None:
-            raise Exception("Service agent not found")
+            raise HTTPException(status_code=400, detail="Agent not registered.")
 
         agent: ServiceAgent = ServiceAgent(**agent_data)
 
         if agent.service_location_ids is None:
-            raise Exception("Service agent has no service locations")
+            raise HTTPException(status_code=400, detail="Service agent has no service locations")
 
         pipeline: List[Dict[str, Any]] = [
             {
@@ -203,67 +203,30 @@ async def get_orders_group_by_status_and_date_and_time_slot_for_agent_locations(
                     "_id.time_slot": 1,
                 }
             },
-            # {
-            #     "$group": {
-            #         "_id": {
-            #             "order_status": "$latest_status.status",
-            #             "pick_up_date": "$pick_up_date",
-            #             "time_slot": "$time_slot",
-            #         },
-            #         "orders": {"$push": "$$ROOT"},
-            #     }
-            # },
-            # {
-            #     "$group": {
-            #         "_id": {
-            #             "order_status": "$_id.order_status",
-            #             "pick_up_date": "$_id.pick_up_date",
-            #         },
-            #         "time_slots": {
-            #             "$push": {"time_slot": "$_id.time_slot", "orders": "$orders"}
-            #         },
-            #     }
-            # },
-            # {
-            #     "$group": {
-            #         "_id": "$_id.order_status",
-            #         "pick_up_dates": {
-            #             "$push": {
-            #                 "pick_up_date": "$_id.pick_up_date",
-            #                 "time_slots": "$time_slots",
-            #             }
-            #         },
-            #     }
-            # },
-            # {"$project": {"_id": 0, "order_status": "$_id", "pick_up_dates": 1}},
         ]
 
         grouped_orders = await db.order.aggregate(pipeline).to_list(None)
 
         if not grouped_orders:
-            response.success = False
-            response.message = "No orders found"
-            return response.model_dump()
+            response.message = "No orders founrd"
+            return response
 
-        # return bson.json_util.dumps(grouped_orders)
-        # return grouped_orders
         response.body = set_group_by_response_body_agent(
             grouped_orders, ordered_statuses
         )
-        response.success = True
-        response.message = "Done!"
         return response
 
+    except HTTPException as he:
+        logger.error(f"Error occurred in fetch orders: {he}", exc_info=True)
+        raise he
     except Exception as e:
-        logger.error(f"Error occurred in fetch orders: {e}", exc_info=True)
-        response.success = False
-        response.message = "Error occured in fetch orders"
-        return response.model_dump()
+        logger.error(f"Unknown Error occurred in fetch orders: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error occurred in fetch orders")
 
 
 def set_response_body(orders, ordered_statuses):
     logger.info(f"Orders: {orders}")
-    response_dict: Dict[OrderStatusEnum, FetchOrdersResponseBodyItem2] = {}
+    response_dict: Dict[OrderStatusEnum, FetchOrdersResponseBodyItemOld] = {}
     # {
     #     "pending_pick_up": FetchOrdersResponseBodyItem(value="Pickup", orders=[]),
     #     "work_in_progress": FetchOrdersResponseBodyItem(
@@ -286,17 +249,17 @@ def set_response_body(orders, ordered_statuses):
         )
         if response_dict.get(order_status) is None:
             home_section_label = OrderStatusEnum.getHomeSectionLabel(order_status)
-            response_dict[order_status] = FetchOrdersResponseBodyItem2(
+            response_dict[order_status] = FetchOrdersResponseBodyItemOld(
                 key=order_status, label=home_section_label, orders=[order]
             )
         else:
             # TODO when i put model_dump() here, service_location_id = None is changing to service_location_id = 'None'. Why?
             response_dict[order_status].orders.append(order)
 
-    respnse_body = [
+    response_body = [
         response_dict[status] for status in ordered_statuses if status in response_dict
     ]
-    return respnse_body
+    return response_body
 
 
 def set_group_by_response_body_agent(grouped_orders, ordered_statuses):

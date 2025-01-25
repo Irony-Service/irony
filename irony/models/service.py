@@ -3,11 +3,12 @@ from typing import Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from irony.models.common_model import CommonModel, shared_config
+from irony.models.common_model import shared_config
+from irony.models.pyobjectid import PyObjectId
 
 
-class Service(CommonModel):
-    id: Optional[ObjectId] = Field(default=None, alias="_id")
+class Service(BaseModel):
+    id: Optional[PyObjectId] = Field(default=None, alias="_id")
     service_category: Optional[str] = None
     service_type: Optional[str] = None
     service_name: Optional[str] = None

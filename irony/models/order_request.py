@@ -1,15 +1,15 @@
 from typing import List, Optional, Union
-from pydantic import Field
+from pydantic import BaseModel, Field
 from datetime import datetime
 from bson import ObjectId
 
-from irony.models.common_model import CommonModel, shared_config
+from irony.models.common_model import shared_config
 from irony.models.order import Order
 from irony.models.service_location import DeliveryTypeEnum, ServiceLocation
 from irony.models.timeslot_volume import TimeslotVolume
 
 
-class OrderRequest(CommonModel):
+class OrderRequest(BaseModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     order_id: Optional[ObjectId] = None
     order: Optional[Order] = None

@@ -1,9 +1,9 @@
 from typing import List, Optional, Union
-from pydantic import Field
+from pydantic import BaseModel, Field
 from datetime import datetime
 from bson import ObjectId
 
-from irony.models.common_model import CommonModel, shared_config
+from irony.models.common_model import shared_config
 from irony.models.order import Order
 from irony.models.service import Service
 from irony.models.service_location import DeliveryTypeEnum, ServiceLocation
@@ -20,7 +20,7 @@ class CategoryKeyEnum(str, Enum):
     SPECIAL = "Special"
 
 
-class Prices(CommonModel):
+class Prices(BaseModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     service_location_id: Optional[ObjectId] = None
     service_id: Optional[ObjectId] = None

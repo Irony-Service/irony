@@ -15,6 +15,7 @@ from irony.models.order_status import OrderStatusEnum
 from irony.models.service import Service
 from irony.models.service_agent.service_agent import ServiceAgent, ServiceAgentRegister
 from irony.models.prices import Prices
+from irony.models.service_agent.vo.login_user_vo import LoginUserResponse
 from irony.models.service_agent.vo.prices_response_vo import (
     PricesResponseVo,
     ServicePrices,
@@ -34,17 +35,18 @@ from irony.util import auth
 router = APIRouter()
 
 
-@router.post("/login")
+@router.post("/login", response_model=LoginUserResponse)
 async def login(response: Response, user: UserLogin):
-    [token, db_user] = await service_agent_auth_service.login_service_agent(
+
+    return await service_agent_auth_service.login_service_agent(
         response, user
     )
 
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": db_user.model_dump(exclude={"password"}),
-    }
+    # return {
+    #     "access_token": token,
+    #     "token_type": "bearer",
+    #     "user": db_user.model_dump(exclude={"password"}),
+    # }
 
 
 @router.post("/register")
@@ -55,7 +57,6 @@ async def register(user: ServiceAgentRegister):
         "message": "User registered successfully",
         "user": service_agent.model_dump(exclude={"password"}),
     }
-
 
 @router.get("/protected-route")
 async def protected_route(current_user: str = Depends(auth.get_current_user)):

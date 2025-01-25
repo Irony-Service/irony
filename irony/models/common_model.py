@@ -7,7 +7,7 @@ class ModelConfig:
     arbitrary_types_allowed = True
 
 
-shared_config = ConfigDict(arbitrary_types_allowed=True)
+shared_config = ConfigDict(arbitrary_types_allowed=True, json_encoders = {ObjectId: str})
 
 
 class CommonModel(BaseModel):

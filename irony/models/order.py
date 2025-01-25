@@ -1,29 +1,29 @@
 from datetime import datetime
-from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
-from irony.models.common_model import CommonModel, shared_config
+from irony.models.common_model import shared_config
 from irony.models.location import UserLocation
 from irony.models.order_item import OrderItem
 from irony.models.order_status import OrderStatus
 from irony.models.pickup_tIme import PickupDateTime
+from irony.models.pyobjectid import PyObjectId
 from irony.models.service import Service
 from irony.models.service_location import ServiceLocation
 from irony.models.user import User
 
 
 class Order(BaseModel):
-    id: Optional[ObjectId] = Field(default=None, alias="_id")
+    id: Optional[PyObjectId] = Field(default=None, alias="_id")
     collected_cloths: Optional[int] = None
     simple_id: Optional[str] = None
     sub_id: Optional[str] = None
-    user_id: Optional[ObjectId] = None
+    user_id: Optional[PyObjectId] = None
     user: Optional[User] = None
     user_wa_id: Optional[str] = None
     order_item: Optional[OrderItem] = None
     order_items: Optional[List[OrderItem]] = None
-    service_location_id: Optional[ObjectId] = None
+    service_location_id: Optional[PyObjectId] = None
     service_location: Optional[ServiceLocation] = None
     services: Optional[List[Service]] = None
     count_range: Optional[str] = None
