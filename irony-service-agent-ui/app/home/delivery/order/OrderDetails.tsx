@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useState } from "react";
 import apiClient from "@/utils/axiosClient";
 import BillDetails from "../../components/BillDetails";
+import AddOrderServices from "../../components/AddOrderServices";
 
 export default function OrderDetails(props: OrderDetailsProps) {
   console.log("OrderDetails", props);
@@ -19,15 +20,8 @@ export default function OrderDetails(props: OrderDetailsProps) {
   const customerName = order.user_id;
   const phoneNumber = order.user_wa_id;
   const countRange = order.count_range_description + " clothes";
-  const totalPrice = 0;
 
-  const emptyOrderItem = {
-    service: 0,
-    dress: 0,
-    count: 0,
-  };
-
-  const [orderItems, setOrderItems] = useState<OrderItemInput[]>([emptyOrderItem]);
+  const [orderItems, setOrderItems] = useState<OrderItemInput[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [notes, setNotes] = useState("");
@@ -35,18 +29,8 @@ export default function OrderDetails(props: OrderDetailsProps) {
   const [nickname, setNickname] = useState(locationNickname);
   const [deleteOnClose, setDeleteOnClose] = useState(false);
 
-  const addNewOrderItem = () => {
-    setOrderItems([...orderItems, emptyOrderItem]);
-  };
-
-  const handleInputChange = (index: number, field: keyof OrderItemInput, value: string) => {
-    const updatedOrderItems = [...orderItems];
-    updatedOrderItems[index][field] = Number(value);
-    setOrderItems(updatedOrderItems);
-  };
-
-  const removeOrderItem = (indexToRemove: number) => {
-    setOrderItems((currentOrderItems) => currentOrderItems.filter((_, index) => index !== indexToRemove));
+  const handleOrderItemsChange = (items: OrderItemInput[]) => {
+    setOrderItems(items);
   };
 
   const handleConfirm = async () => {
@@ -161,26 +145,11 @@ export default function OrderDetails(props: OrderDetailsProps) {
           <div className="text-lg font-semibold text-gray-700">Services</div>
         </div>
         
-        
-        <div className="flex flex-col gap-2.5 justify-center mt-2 w-full">
-          {orderItems.map((service, index) => (
-            <ServiceBlock
-              key={`service-block-${index}`} // Changed key to be more specific
-              index={index}
-              onClose={removeOrderItem}
-              onInputChange={handleInputChange}
-              location_service_prices={location_service_prices}
-              service={service.service.toString()}
-              dress={service.dress.toString()}
-              count={service.count.toString()}
-            />
-          ))}
-          <div className="flex justify-center items-center self-center p-[8px] bg-amber-300 rounded-full">
-            <button onClick={addNewOrderItem}>
-              <Image width={16} height={16} loading="lazy" src="/vector_plus.svg" alt="" />
-            </button>
-          </div>
-        </div>
+        <AddOrderServices 
+          location_service_prices={location_service_prices}
+          onOrderItemsChange={handleOrderItemsChange}
+        />
+
         <div className="flex flex-col">
           <div className="mt-4"></div>
           {/* Bill Details */}
