@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import ServiceBlock from "./ServiceBlock";
-import { OrderDetailsProps, OrderItemInput, NewOrder } from "./types";
+import { OrderDetailsProps, OrderItemInput, NewOrder } from "../../types/types";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -16,7 +16,7 @@ export default function OrderDetails(props: OrderDetailsProps) {
   const { location_service_prices } = props;
   // console.log(order);
   const orderId = order?._id;
-  const simpleId = order?.simple_id || orderId
+  const simpleId = order?.simple_id || orderId;
   const customerName = order.user_id;
   const phoneNumber = order.user_wa_id;
   const countRange = order.count_range_description + " clothes";
@@ -47,9 +47,12 @@ export default function OrderDetails(props: OrderDetailsProps) {
           count: item.count,
           amount: item.count * location_service_prices[item.service].prices[item.dress].price,
         })),
-        total_price: orderItems.reduce((sum, item) => sum + item.count * location_service_prices[item.service].prices[item.dress].price, 0),
+        total_price: orderItems.reduce(
+          (sum, item) => sum + item.count * location_service_prices[item.service].prices[item.dress].price,
+          0
+        ),
         notes: notes.trim(), // Add notes to the request
-        location_nickname: locationNickname != nickname ? nickname.trim(): null, // Add location nickname to the request
+        location_nickname: locationNickname != nickname ? nickname.trim() : null, // Add location nickname to the request
       };
 
       const response = await apiClient.post<{ success: boolean; message: string; data: any }>("/updateOrder", newOrder);
@@ -65,7 +68,7 @@ export default function OrderDetails(props: OrderDetailsProps) {
 
       setMessage({
         type: "success",
-        text: `${response.message || 'Order Confirmed!'}<br/>Order No's:<br/>${subIdMessage}`,
+        text: `${response.message || "Order Confirmed!"}<br/>Order No's:<br/>${subIdMessage}`,
       });
 
       setDeleteOnClose(true);
@@ -92,13 +95,22 @@ export default function OrderDetails(props: OrderDetailsProps) {
           <div className="flex justify-between items-center w-full bg-gray-50 p-3 rounded-lg">
             <div className="text-sm font-semibold text-gray-700">Order #{simpleId}</div>
             <div className="flex gap-2">
-              <Link href={`tel:+${phoneNumber}`} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
+              <Link
+                href={`tel:+${phoneNumber}`}
+                className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
+              >
                 <Image width={16} height={16} loading="lazy" src="/vector_phone.svg" alt="Call" />
               </Link>
-              <Link href={order.maps_link || ""} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
+              <Link
+                href={order.maps_link || ""}
+                className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
+              >
                 <Image width={16} height={16} loading="lazy" src="/maps_arrow.svg" alt="Maps" />
               </Link>
-              <button onClick={() => props.onClose(deleteOnClose)} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
+              <button
+                onClick={() => props.onClose(deleteOnClose)}
+                className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
+              >
                 <Image width={16} height={16} loading="lazy" src="/vector_close.svg" alt="Close" />
               </button>
             </div>
@@ -124,11 +136,11 @@ export default function OrderDetails(props: OrderDetailsProps) {
               <span className="text-gray-500">Location Nickname:</span>
               {locationNickname ? (
                 <input
-                type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                className="h-9 px-2 sm:px-3 text-center rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:border-amber-300 text-sm"
-              />
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  className="h-9 px-2 sm:px-3 text-center rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:border-amber-300 text-sm"
+                />
               ) : (
                 <input
                   type="text"
@@ -144,8 +156,8 @@ export default function OrderDetails(props: OrderDetailsProps) {
           {/* Services Header */}
           <div className="text-lg font-semibold text-gray-700">Services</div>
         </div>
-        
-        <AddOrderServices 
+
+        <AddOrderServices
           location_service_prices={location_service_prices}
           onOrderItemsChange={handleOrderItemsChange}
         />
@@ -153,10 +165,7 @@ export default function OrderDetails(props: OrderDetailsProps) {
         <div className="flex flex-col">
           <div className="mt-4"></div>
           {/* Bill Details */}
-          <BillDetails 
-            orderItems={orderItems}
-            location_service_prices={location_service_prices}
-          />
+          <BillDetails orderItems={orderItems} location_service_prices={location_service_prices} />
 
           {/* Notes Section */}
           <div className="mt-6">
@@ -171,19 +180,28 @@ export default function OrderDetails(props: OrderDetailsProps) {
         </div>
       </div>
       <div className="sticky bottom-0 flex flex-col mt-4 w-full font-medium text-center bg-white p-4 border-t">
-        {message && <div className={`mb-4 p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`} dangerouslySetInnerHTML={{ __html: message.text }}></div>}
+        {message && (
+          <div
+            className={`mb-4 p-3 rounded-lg text-sm ${
+              message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+            }`}
+            dangerouslySetInnerHTML={{ __html: message.text }}
+          ></div>
+        )}
         {!(message?.type === "success") && (
           <>
-          <button className="gap-2.5 self-start text-sm text-amber-200">Issue? click here.</button>
-          <button
-            onClick={handleConfirm}
-            disabled={isSubmitting || orderItems.length === 0}
-            className={`gap-2.5 self-stretch p-2.5 mt-1.5 w-full text-base text-gray-700 whitespace-nowrap rounded-full transition-colors ${
-              isSubmitting || orderItems.length === 0 ? "bg-gray-300 cursor-not-allowed" : "bg-amber-300 hover:bg-amber-400"
-            }`}
-          >
-            {isSubmitting ? "Confirming..." : "Confirm"}
-          </button>
+            <button className="gap-2.5 self-start text-sm text-amber-200">Issue? click here.</button>
+            <button
+              onClick={handleConfirm}
+              disabled={isSubmitting || orderItems.length === 0}
+              className={`gap-2.5 self-stretch p-2.5 mt-1.5 w-full text-base text-gray-700 whitespace-nowrap rounded-full transition-colors ${
+                isSubmitting || orderItems.length === 0
+                  ? "bg-gray-300 cursor-not-allowed"
+                  : "bg-amber-300 hover:bg-amber-400"
+              }`}
+            >
+              {isSubmitting ? "Confirming..." : "Confirm"}
+            </button>
           </>
         )}
       </div>

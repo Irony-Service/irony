@@ -5,18 +5,22 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import apiClient from "@/utils/axiosClient";
-import SlidingButton from "../../components/SlidingButton";
-import OrderServicesList from "../../components/OrderServicesList";
-import { OrderItem } from "../../types/types";
+import SlidingButton from "./SlidingButton";
+import OrderServicesList from "./OrderServicesList";
+import { OrderItem, OrderItemInput, OrderItemWithValues, OrderStatus } from "../types/types";
+import BillDetails from "./BillDetails";
+import BillDetailsWithValues from "./BillDetailsWithValues";
 
 export interface OrderDetailsProps {
   order: any;
   priceServiceMap: Map<string, string>;
   priceNameMap: Map<string, string>;
-  onClose: () => void;
+  actionStatusMap: Map<OrderStatus, OrderStatus>;
+  showBillDetailsStatusList: OrderStatus[];
+  onClose: (deleteOnClose: boolean) => void;
 }
 
-export default function OrderDetailsAgent(props: OrderDetailsProps) {
+export default function OrderDetailsView(props: OrderDetailsProps) {
   const order = props.order;
   const orderItems: OrderItem[] = order.order_items || [];
   const orderId = order?._id;
@@ -25,11 +29,20 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
   const phoneNumber = order.user_wa_id;
   const countRange = order.count_range_description + " clothes";
   const notes = order.notes || "";
-  const showAction = order.order_status[0]?.status === "WORK_IN_PROGRESS";
+  const currentOrderStatus = order.order_status[0]?.status;
+  const showAction = props.actionStatusMap.has(currentOrderStatus);
+  const showBillDetails = props.showBillDetailsStatusList.includes(currentOrderStatus);
 
   if (order?.sub_id) {
     simpleId += `-${order.sub_id}`;
   }
+
+  const orderItemsBill: OrderItemWithValues[] = orderItems.map((item) => ({
+    service_name: props.priceServiceMap.get(item.price_id) || "",
+    dress_category: props.priceNameMap.get(item.price_id) || "",
+    count: item.count,
+    amount: item.amount,
+  }));
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -41,8 +54,8 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
 
       const newOrder = {
         order_id: orderId,
-        current_status: order?.order_status[0]?.status,
-        new_status: "DELIVERY_PENDING",
+        current_status: currentOrderStatus,
+        new_status: props.actionStatusMap.get(currentOrderStatus),
       };
 
       const response = await apiClient.post<{ success: boolean; message: string }>("/updateOrder", newOrder);
@@ -53,12 +66,12 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
 
       setMessage({
         type: "success",
-        text: response.message || "Order confirmed successfully!",
+        text: response.message || "Order updated successfully!",
       });
 
       // Close the order details after 2 seconds on success
       setTimeout(() => {
-        props.onClose();
+        props.onClose(true);
       }, 2000);
     } catch (error: any) {
       setMessage({
@@ -91,7 +104,7 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
               <Image width={16} height={16} loading="lazy" src="/maps_arrow.svg" alt="Maps" />
             </Link>
             <button
-              onClick={props.onClose}
+              onClick={() => props.onClose(false)}
               className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
             >
               <Image width={16} height={16} loading="lazy" src="/vector_close.svg" alt="Close" />
@@ -125,28 +138,7 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
         ></OrderServicesList>
 
         {/* Bill Details */}
-        {/* <div className="mt-6">
-          <div className="text-sm font-medium text-gray-700 mb-2">Bill Details:</div>
-          <div className="border rounded-lg p-4 bg-gray-50">
-            <div className="space-y-3">
-              {orderItems.map((item, index) => (
-                <div key={index} className="flex justify-between text-sm">
-                  <div>
-                    <p className="font-medium">{item.service.service.service_name}</p>
-                    <p className="text-gray-500">
-                      {item.count} items • ₹{item.amount / item.count} each
-                    </p>
-                  </div>
-                  <p className="font-medium">₹{item.amount}</p>
-                </div>
-              ))}
-              <div className="border-t pt-3 mt-3 flex justify-between font-medium">
-                <span>Total Amount</span>
-                <span>₹{orderItems.reduce((sum, item) => sum + item.amount, 0)}</span>
-              </div>
-            </div>
-          </div>
-        </div> */}
+        {showBillDetails && <BillDetailsWithValues orderItems={orderItemsBill} />}
 
         {/* Notes Section - Read Only */}
         {notes && (

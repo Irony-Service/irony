@@ -6,40 +6,14 @@ import { useEffect, useState } from "react";
 import { format, parse } from "date-fns";
 import Util from "../util/util";
 import OrderDetailsAgent from "./order/OrderDetailsAgent"; // Update import
-import { Service, ServicePrices } from "../delivery/order/types";
-
-interface HomeProps {
-  responses: {
-    orders: any;
-    service_location_prices: any;
-  };
-}
-
-type TimeSlotItem = {
-  slot: string;
-  orders: any[];
-};
-
-type DateItem = {
-  date: string;
-  time_slots: TimeSlotItem[];
-};
-
-type Section = {
-  key: string;
-  label: string;
-  dates: DateItem[];
-};
-
-type ServiceLocationPrices = {
-  [key: string]: ServicePrices[];
-};
+import { HomeProps, Section, ServicePrices, ServiceLocationPrices, OrderStatus } from "../types/types";
+import OrderDetailsView from "../components/OrderDetailsView";
 
 export default function HomeClient(props: HomeProps) {
   const { orders: orders_response, service_location_prices: service_location_prices_response } = props.responses;
   console.log(orders_response, service_location_prices_response);
   const data = orders_response;
-  const sections: Section[] = orders_response.data;
+  const [sections, setSections] = useState<Section[]>(orders_response.data);
   const service_locations_prices: ServiceLocationPrices = service_location_prices_response.data;
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -70,7 +44,31 @@ export default function HomeClient(props: HomeProps) {
     setShowOrder(true);
   };
 
-  const handleCloseOrder = () => {
+  const removeOrderFromSections = (orderToRemove: any) => {
+    setSections((prevSections) =>
+      prevSections
+        .map((section) => ({
+          ...section,
+          dates: section.dates
+            .map((dateItem) => ({
+              ...dateItem,
+              time_slots: dateItem.time_slots
+                .map((timeSlot) => ({
+                  ...timeSlot,
+                  orders: timeSlot.orders.filter((order) => order._id !== orderToRemove._id),
+                }))
+                .filter((timeSlot) => timeSlot.orders.length > 0),
+            }))
+            .filter((dateItem) => dateItem.time_slots.length > 0),
+        }))
+        .filter((section) => section.dates.length > 0)
+    );
+  };
+
+  const handleCloseOrder = (deleteOnClose: boolean) => {
+    if (deleteOnClose) {
+      removeOrderFromSections(selectedOrder);
+    }
     setShowOrder(false);
     setSelectedOrder(null);
     setSelectedServiceLocationPrices([]);
@@ -79,20 +77,11 @@ export default function HomeClient(props: HomeProps) {
   const [priceServiceMap, setPriceServiceMap] = useState<Map<string, string>>(new Map());
   const [priceNameMap, setPriceNameMap] = useState<Map<string, string>>(new Map());
   useEffect(() => {
-    const newServiceMap = new Map<string, string>();
-    Object.values(service_locations_prices).forEach((servicePrices) => {
-      servicePrices.forEach((price) => {
-        if (price.prices && price.service) {
-          price.prices.forEach((p) => {
-            priceNameMap.set(p._id, p.category);
-            newServiceMap.set(p._id, price.service.service_name);
-          });
-        }
-      });
-    });
-    setPriceNameMap(priceNameMap);
-    setPriceServiceMap(newServiceMap);
-  }, [priceNameMap, service_locations_prices]);
+    const { priceServiceMap: localPriceServiceMap, priceNameMap: localPriceNameMap } =
+      Util.getPriceServiceNameMaps(service_locations_prices);
+    setPriceNameMap(localPriceNameMap);
+    setPriceServiceMap(localPriceServiceMap);
+  }, [service_locations_prices]);
 
   return (
     <div className="">
@@ -106,15 +95,30 @@ export default function HomeClient(props: HomeProps) {
           >
             <div className="flex w-full justify-between content-center py-3 my-2">
               <button onClick={() => handleSwipe(-1)}>
-                <Image className="object-contain text-gray-700" src="/mingcute_left-line_black.svg" alt="Previous" width={28} height={28} />
+                <Image
+                  className="object-contain text-gray-700"
+                  src="/mingcute_left-line_black.svg"
+                  alt="Previous"
+                  width={28}
+                  height={28}
+                />
               </button>
               <h1 className="text-3xl font-bold text-amber-300">{section.label}</h1>
               <button onClick={() => handleSwipe(1)}>
-                <Image className="object-contain text-gray-700" src="/mingcute_right-line_black.svg" alt="Next" width={28} height={28} />
+                <Image
+                  className="object-contain text-gray-700"
+                  src="/mingcute_right-line_black.svg"
+                  alt="Next"
+                  width={28}
+                  height={28}
+                />
               </button>
             </div>
             {section.dates.map((dateItem, index) => (
-              <section key={index} className={`w-full bg-gray-100 ${index != section.dates.length - 1 ? "py-4 border-b" : ""}`}>
+              <section
+                key={index}
+                className={`w-full bg-gray-100 ${index != section.dates.length - 1 ? "py-4 border-b" : ""}`}
+              >
                 <div className="w-[96%]  mx-auto">
                   <h1 className="text-2xl  text-gray-700 font-semibold mb-5 px-2">
                     {Util.formatDate(dateItem.date)} ({Util.getOrdersInDate(dateItem.time_slots)} Orders)
@@ -147,7 +151,19 @@ export default function HomeClient(props: HomeProps) {
         ))}
         {showOrder && (
           <div className="w-full min-h-screen z-50 overflow-y-auto">
-            <OrderDetailsAgent order={selectedOrder} priceServiceMap={priceServiceMap} priceNameMap={priceNameMap} onClose={handleCloseOrder} />
+            <OrderDetailsView
+              order={selectedOrder}
+              priceServiceMap={priceServiceMap}
+              priceNameMap={priceNameMap}
+              onClose={handleCloseOrder}
+              actionStatusMap={
+                new Map([
+                  [OrderStatus.WORK_IN_PROGRESS, OrderStatus.DELIVERY_PENDING],
+                  [OrderStatus.DELIVERY_PENDING, OrderStatus.PICKUP_PENDING],
+                ])
+              }
+              showBillDetailsStatusList={[OrderStatus.DELIVERY_PENDING]}
+            />
           </div>
         )}
       </div>

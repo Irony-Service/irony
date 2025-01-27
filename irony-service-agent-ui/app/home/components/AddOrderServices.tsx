@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import ServiceBlock from "../delivery/order/ServiceBlock";
-import { OrderItemInput } from "../delivery/order/types";
+import { OrderItemInput } from "../types/types";
 
 interface AddOrderServicesProps {
   location_service_prices: any;

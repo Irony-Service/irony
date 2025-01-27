@@ -1,43 +1,13 @@
 "use client";
 import Image from "next/image";
 import { useSwipeable } from "react-swipeable";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DeliveryRow from "./Row";
 import Util from "../util/util";
 import OrderDetails from "./order/OrderDetails";
-import { ServicePrices } from "./order/types";
+import { HomeProps, OrderStatus, Section, ServicePrices } from "../types/types";
+import OrderDetailsView from "../components/OrderDetailsView";
 
-interface HomeProps {
-  responses: {
-    orders: any;
-    service_location_prices: any;
-  };
-}
-
-type TimeSlotItem = {
-  slot: string;
-  orders: any[];
-};
-
-type DateItem = {
-  date: string;
-  time_slots: TimeSlotItem[];
-};
-
-type Section = {
-  key: string;
-  label: string;
-  dates: DateItem[];
-};
-
-// const sections: Section[] = [
-//   { title: "Section 1", data: "Data for section 1" },
-//   { title: "Section 2", data: "Data for section 2" },
-//   { title: "Section 3", data: "Data for section 3" },
-//   { title: "Section 34=", data: "Data for section 3" },
-//   { title: "Section 34=", data: "Data for section 3" },
-//   { title: "Section 34=", data: "Data for section 3" },
-// ];
 export default function DeliveryHomeClient(props: HomeProps) {
   const { orders: orders_response, service_location_prices: service_location_prices_response } = props.responses;
   console.log(orders_response, service_location_prices_response);
@@ -49,8 +19,19 @@ export default function DeliveryHomeClient(props: HomeProps) {
   const [error, setError] = useState(data.success ? null : data.error);
 
   const [showOrder, setShowOrder] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [selectedServiceLocationPrices, setSelectedServiceLocationPrices] = useState<ServicePrices[]>([]);
+
+  const [priceServiceMap, setPriceServiceMap] = useState<Map<string, string>>(new Map());
+  const [priceNameMap, setPriceNameMap] = useState<Map<string, string>>(new Map());
+  const [showView, setShowView] = useState(false);
+
+  useEffect(() => {
+    const { priceServiceMap: localPriceServiceMap, priceNameMap: localPriceNameMap } =
+      Util.getPriceServiceNameMaps(service_locations_prices);
+    setPriceNameMap(localPriceNameMap);
+    setPriceServiceMap(localPriceServiceMap);
+  }, [service_locations_prices]);
 
   const handleShowOrder = (order: any) => {
     setSelectedOrder(order);
@@ -58,18 +39,31 @@ export default function DeliveryHomeClient(props: HomeProps) {
     setShowOrder(true);
   };
 
+  useEffect(() => {
+    if (selectedOrder) {
+      const viewableStatuses = [OrderStatus.DELIVERY_PENDING];
+      setShowView(viewableStatuses.includes(selectedOrder.order_status[0].status));
+    }
+  }, [selectedOrder]);
+
   const removeOrderFromSections = (orderToRemove: any) => {
-    setSections(prevSections => 
-      prevSections.map(section => ({
-        ...section,
-        dates: section.dates.map(dateItem => ({
-          ...dateItem,
-          time_slots: dateItem.time_slots.map(timeSlot => ({
-            ...timeSlot,
-            orders: timeSlot.orders.filter(order => order._id !== orderToRemove._id)
-          })).filter(timeSlot => timeSlot.orders.length > 0)
-        })).filter(dateItem => dateItem.time_slots.length > 0)
-      })).filter(section => section.dates.length > 0)
+    setSections((prevSections) =>
+      prevSections
+        .map((section) => ({
+          ...section,
+          dates: section.dates
+            .map((dateItem) => ({
+              ...dateItem,
+              time_slots: dateItem.time_slots
+                .map((timeSlot) => ({
+                  ...timeSlot,
+                  orders: timeSlot.orders.filter((order) => order._id !== orderToRemove._id),
+                }))
+                .filter((timeSlot) => timeSlot.orders.length > 0),
+            }))
+            .filter((dateItem) => dateItem.time_slots.length > 0),
+        }))
+        .filter((section) => section.dates.length > 0)
     );
   };
 
@@ -110,11 +104,23 @@ export default function DeliveryHomeClient(props: HomeProps) {
           >
             <div className="flex w-full justify-between content-center py-3 my-2">
               <button onClick={() => handleSwipe(-1)}>
-                <Image className="object-contain text-gray-700" src="/mingcute_left-line_black.svg" alt="Previous" width={28} height={28} />
+                <Image
+                  className="object-contain text-gray-700"
+                  src="/mingcute_left-line_black.svg"
+                  alt="Previous"
+                  width={28}
+                  height={28}
+                />
               </button>
               <h1 className="text-3xl font-bold text-amber-300">{section.label}</h1>
               <button onClick={() => handleSwipe(1)}>
-                <Image className="object-contain text-gray-700" src="/mingcute_right-line_black.svg" alt="Next" width={28} height={28} />
+                <Image
+                  className="object-contain text-gray-700"
+                  src="/mingcute_right-line_black.svg"
+                  alt="Next"
+                  width={28}
+                  height={28}
+                />
               </button>
               {/* <button onClick={() => handleSwipe(-1)}>
                 <Image className="object-contain text-amber-300" src="/mingcute_left-line.svg" alt="Previous" width={28} height={28} />
@@ -126,7 +132,10 @@ export default function DeliveryHomeClient(props: HomeProps) {
             </div>
             {section.dates.map((dateItem, index) => (
               // section : Orders_for_date
-              <section key={index} className={`w-full bg-gray-100 ${index != section.dates.length - 1 ? "py-4 border-b" : ""}`}>
+              <section
+                key={index}
+                className={`w-full bg-gray-100 ${index != section.dates.length - 1 ? "py-4 border-b" : ""}`}
+              >
                 <div className="w-[96%]  mx-auto">
                   <h1 className="text-2xl  text-gray-700 font-semibold mb-5 px-2">
                     {Util.formatDate(dateItem.date)} ({Util.getOrdersInDate(dateItem.time_slots)} Orders)
@@ -157,9 +166,29 @@ export default function DeliveryHomeClient(props: HomeProps) {
             ))}
           </div>
         ))}
-        {showOrder && (
+        {/* OrderDetailsView */}
+        {showOrder && showView && (
           <div className="w-full min-h-screen z-50 overflow-y-auto">
-            <OrderDetails order={selectedOrder} location_service_prices={selectedServiceLocationPrices} onClose={handleCloseOrder}></OrderDetails>
+            <OrderDetailsView
+              order={selectedOrder}
+              priceServiceMap={priceServiceMap}
+              priceNameMap={priceNameMap}
+              onClose={handleCloseOrder}
+              actionStatusMap={new Map([[OrderStatus.DELIVERY_PENDING, OrderStatus.DELIVERED]])}
+              showBillDetailsStatusList={[OrderStatus.DELIVERY_PENDING]}
+            />
+          </div>
+        )}
+
+        {showOrder && !showView && (
+          <div className="w-full min-h-screen z-50 overflow-y-auto">
+            <OrderDetails
+              order={selectedOrder}
+              location_service_prices={selectedServiceLocationPrices}
+              onClose={handleCloseOrder}
+              priceServiceMap={priceServiceMap}
+              priceNameMap={priceNameMap}
+            ></OrderDetails>
           </div>
         )}
       </div>

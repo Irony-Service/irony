@@ -1,6 +1,6 @@
 import React from "react";
 import OrderDetails from "./OrderDetails";
-import { ServiceBlockProps } from "./types";
+import { ServiceBlockProps } from "../../types/types";
 const OrderPage = () => {
   const order = {
     _id: "67554df7197512caeb39d079",

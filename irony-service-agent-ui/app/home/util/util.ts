@@ -1,4 +1,9 @@
 import { format, parse } from "date-fns";
+import { ServicePrices } from "../types/types";
+
+type ServiceLocationPrices = {
+  [key: string]: ServicePrices[];
+};
 
 export function greet(name: string): string {
   return `Hello, ${name}!`;
@@ -13,6 +18,22 @@ export function formatDate(inputDate: string): string {
   return format(date, "eee, d MMM");
 }
 
+export function getPriceServiceNameMaps(service_locations_prices: ServiceLocationPrices): { priceServiceMap: Map<string, string>; priceNameMap: Map<string, string> } {
+    const localPriceServiceMap = new Map<string, string>();
+    const localPriceNameMap = new Map<string, string>();
+    Object.values(service_locations_prices).forEach((servicePrices) => {
+      servicePrices.forEach((price) => {
+        if (price.prices && price.service) {
+          price.prices.forEach((p) => {
+            localPriceNameMap.set(p._id, p.category);
+            localPriceServiceMap.set(p._id, price.service.service_name);
+          });
+        }
+      });
+    });
+    return {priceServiceMap: localPriceServiceMap, priceNameMap: localPriceNameMap};
+}
+
 export default class Util {
   static greet(name: string): string {
     return greet(name);
@@ -24,5 +45,9 @@ export default class Util {
 
   static formatDate(inputDate: string): string {
     return formatDate(inputDate);
+  }
+
+  static getPriceServiceNameMaps(service_locations_prices: ServiceLocationPrices): { priceServiceMap: Map<string, string>; priceNameMap: Map<string, string> } {
+    return getPriceServiceNameMaps(service_locations_prices);
   }
 }

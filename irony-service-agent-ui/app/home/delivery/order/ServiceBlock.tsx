@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { Price, ServiceBlockProps, ServicePrices } from "./types";
+import { Price, ServiceBlockProps, ServicePrices } from "../../types/types";
 import Image from "next/image";
 
 export default function ServiceBlock(props: ServiceBlockProps) {
@@ -35,7 +35,9 @@ export default function ServiceBlock(props: ServiceBlockProps) {
     if (location_service_prices.length > 0) {
       const initialServiceId = location_service_prices[0].service._id;
 
-      const selectedServicePrice = location_service_prices.find((sp: ServicePrices) => sp.service._id === initialServiceId);
+      const selectedServicePrice = location_service_prices.find(
+        (sp: ServicePrices) => sp.service._id === initialServiceId
+      );
       if (selectedServicePrice && selectedServicePrice.prices) {
         setDressOptions(selectedServicePrice.prices);
       } else {
