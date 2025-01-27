@@ -185,7 +185,7 @@ async def handle_no_location_order_update(
             },
             "$push": {
                 "order_status": {
-                    "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
+                    "$each": [order_status.model_dump(exclude_unset=True)],
                     "$position": 0,
                 }
             },
@@ -318,10 +318,11 @@ async def set_new_order_time_slot(
 
     buton_reply_length = len(button_reply_obj["id"])
     pickup_datetime = datetime.now()
+    button_reply_id = button_reply_obj["id"]
+
     if button_reply_obj["id"][buton_reply_length - 1] == "T":
         pickup_datetime = pickup_datetime + timedelta(days=1)
-
-    button_reply_id = button_reply_obj["id"][: buton_reply_length - 1]
+        button_reply_id = button_reply_obj["id"][: buton_reply_length - 1]
     # check if last location exists, update timeslot and send message to user saying that last location will be used.
     if "existing_location" in last_message:
         order = await update_order_timeslot_details(
@@ -408,18 +409,19 @@ async def update_order_timeslot_details(
     he, me = get_time_from_stamp(slot_end[button_reply_id])
     start_time = pickup_datetime.replace(hour=h, minute=m, second=0, microsecond=0)
     end_time = pickup_datetime.replace(hour=he, minute=me, second=0, microsecond=0)
+    date_time = pickup_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
     order = await db.order.find_one_and_update(
         {"_id": last_message["order_id"]},
         {
             "$set": {
                 "time_slot": button_reply_id,
                 "updated_on": datetime.now(),
-                "pickup_date_time": {"start": start_time, "end": end_time},
+                "pickup_date_time": {"date": date_time , "start": start_time, "end": end_time},
                 **extra_set,
             },
             "$push": {
                 "order_status": {
-                    "$each": [order_status.model_dump(exclude={"_id", "order_id"})],
+                    "$each": [order_status.model_dump(exclude_unset=True)],
                     "$position": 0,
                 }
             },

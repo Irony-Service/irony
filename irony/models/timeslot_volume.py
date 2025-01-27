@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from irony.models.common_model import shared_config
 
 
-class TimeslotQuota(BaseModel):
+class Quota(BaseModel):
     current: Optional[int] = None
     limit: Optional[int] = None
 
@@ -15,11 +15,11 @@ class TimeslotQuota(BaseModel):
 
 class TimeslotVolume(BaseModel):
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
-    service_loaction_id: Optional[PyObjectId] = None
+    service_location_id: Optional[PyObjectId] = None
     daily_limit: Optional[int] = None
     current_clothes: Optional[int] = None
-    timeslot_distributions: Optional[Dict[str, TimeslotQuota]] = None
-    services_distribution: Optional[Dict[str, TimeslotQuota]] = None
+    timeslot_distributions: Optional[Dict[str, Quota]] = None
+    services_distribution: Optional[Dict[str, Quota]] = None
     operation_date: Optional[datetime] = None
 
     model_config = shared_config

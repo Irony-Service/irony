@@ -41,12 +41,12 @@ async def get_orders_by_status_for_agent_locations(
     try:
         agent_data = await db.service_agent.find_one({"mobile": agent_mobile})
         if agent_data is None:
-            raise Exception("Service agent not found")
+            raise HTTPException(status_code=404, detail="Service agent not found")
 
         agent: ServiceAgent = ServiceAgent(**agent_data)
 
         if agent.service_location_ids is None:
-            raise Exception("Service agent is not linked to any service location")
+            raise HTTPException(status_code=400, detail="Service agent is not linked to any service location")
 
         pipeline: List[Dict[str, Any]] = [
             {
@@ -63,7 +63,7 @@ async def get_orders_by_status_for_agent_locations(
             response.message = "No orders found"
             return response.model_dump()
 
-        response.body = set_response_body(orders, ordered_statuses)
+        response.data = set_response_body(orders, ordered_statuses)
         response.success = True
         return response.model_dump(
             exclude={
@@ -82,11 +82,11 @@ async def get_orders_by_status_for_agent_locations(
                 }
             }
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error occurred in fetch orders: {e}", exc_info=True)
-        response.success = False
-        response.message = "Error occured in fetch orders"
-        return response.model_dump()
+        logger.error(f"Error in get_orders_by_status_for_agent_locations: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while fetching orders")
 
 
 async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_locations(
@@ -97,12 +97,12 @@ async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_location
     try:
         agent_data = await db.service_agent.find_one({"mobile": agent_mobile})
         if agent_data is None:
-            raise Exception("Service agent not found")
+            raise HTTPException(status_code=404, detail="Service agent not found")
 
         agent: ServiceAgent = ServiceAgent(**agent_data)
 
         if agent.service_location_ids is None:
-            raise Exception("Service agent has no service locations")
+            raise HTTPException(status_code=400, detail="Service agent has no service locations")
 
         pipeline: List[Dict[str, Any]] = [
             {
@@ -147,16 +147,16 @@ async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_location
 
         # return bson.json_util.dumps(grouped_orders)
         # return grouped_orders
-        response.body = set_group_by_response_body_delivery(
+        response.data = set_group_by_response_body_delivery(
             grouped_orders, ordered_statuses, "Pickup / Delivery"
         )
         return response
 
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error occurred in fetch orders: {e}", exc_info=True)
-        response.success = False
-        response.message = "Error occured in fetch orders"
-        return response.model_dump()
+        logger.error(f"Error in get_orders_for_statuses_group_by_date_and_time_slot_for_agent_locations: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while fetching grouped orders")
 
 
 async def get_orders_group_by_status_and_date_and_time_slot_for_agent_locations(
@@ -208,14 +208,13 @@ async def get_orders_group_by_status_and_date_and_time_slot_for_agent_locations(
             response.message = "No orders founrd"
             return response
 
-        response.body = set_group_by_response_body_agent(
+        response.data = set_group_by_response_body_agent(
             grouped_orders, ordered_statuses
         )
         return response
 
-    except HTTPException as he:
-        logger.error(f"Error occurred in fetch orders: {he}", exc_info=True)
-        raise he
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Unknown Error occurred in fetch orders: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error occurred in fetch orders")

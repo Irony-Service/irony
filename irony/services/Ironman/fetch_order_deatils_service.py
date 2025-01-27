@@ -1,6 +1,7 @@
 import pprint
 from typing import List
 from irony.models.pyobjectid import PyObjectId
+from fastapi import HTTPException
 
 from irony.db import db, replace_documents_in_transaction
 from irony.exception.WhatsappException import WhatsappException
@@ -23,7 +24,7 @@ async def fetch_order_details(request: FetchOrderDetailsRequest):
     try:
         order_data = await db.order.find_one({"_id": PyObjectId(request.order_id)})
         if order_data is None:
-            raise WhatsappException("Order not found")
+            raise HTTPException(status_code=404, detail="Order not found")
         order: Order = Order(**order_data)
         user_data = await db.user.find_one({"wa_id": order.user_wa_id})
         service_loc = await db.service_locations.find_one(
@@ -36,18 +37,14 @@ async def fetch_order_details(request: FetchOrderDetailsRequest):
             )
             response.success = True
         else:
-            response.body = None
-            response.error = "Service Location not found"
-            response.success = False
+            raise HTTPException(status_code=404, detail="Service Location not found")
+            
         return response.model_dump()
-
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error occured in fetch order details : {e}")
-        response = FetchOrderDetailsResponse()
-        response.body = None
-        response.error = "Error occured in fetch order details"
-        response.success = False
-        return response.model_dump()
+        logger.error(f"Error in fetch_order_details: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while fetching order details")
 
 
 def map_order_to_response(order: Order, user, service_location: ServiceLocation):

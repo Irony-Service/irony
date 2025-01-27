@@ -58,6 +58,6 @@ class FetchOrdersResponseBodyItemOld(BaseModel):
 class FetchOrdersResponse(CommonReponse):
     # {"pending_pick_up": {"value":"Pickup", orders:[]}, "work_in_progress":  {"value":"Work In Progress", orders:[]}, "delivery_pending":  {"value":"Delivery", orders:[]}}
     # body: Optional[Dict[str, FetchOrdersResponseBodyItem]] = None
-    body: Optional[List[FetchOrdersResponseBodyItem]] = None
+    data: Optional[List[FetchOrdersResponseBodyItem]] = None
 
     model_config = shared_config

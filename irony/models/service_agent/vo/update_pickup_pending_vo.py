@@ -22,20 +22,13 @@ class UpdateOrderRequest(BaseModel):
 
 
 class UpdateOrderResponseBody(BaseModel):
-    parent_order_id: Optional[str] = None
-    sub_ids: Optional[List[str]] = None
     sub_id_dict: Optional[dict] = None
     order_ids: Optional[List[str]] = None
-    service_name: Optional[str] = None
-    status: Optional[str] = None
-    expected_delivery_date: Optional[str] = None
-    price: Optional[float] = None
-    location: Optional[str] = None
 
     model_config = shared_config
 
 
 class UpdateOrderResponse(CommonReponse):
-    body: Optional[UpdateOrderResponseBody] = None
+    data: Optional[UpdateOrderResponseBody] = None
 
     model_config = shared_config
