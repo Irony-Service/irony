@@ -18,29 +18,30 @@ scheduler = AsyncIOScheduler()
 # TODO add this back when you want to send ironman_request
 scheduler.add_job(background_process.reset_daily_config, CronTrigger(hour="*/1"))
 
-# scheduler.add_job(
-#     background_process.send_pending_order_requests, CronTrigger(minute="*/1")
-# )
+scheduler.add_job(
+    background_process.send_pending_order_requests, CronTrigger(minute="*/1")
+)
 
 scheduler.add_job(
     background_process.send_ironman_delivery_schedule, CronTrigger(minute="*/1")
 )
 
 scheduler.add_job(
-    background_process.send_ironman_work_schedule, CronTrigger(minute="*/2")
+    background_process.send_ironman_work_schedule, CronTrigger(minute="*/1")
 )
 
-# scheduler.add_job(
-#     background_process.send_ironman_pending_work_schedule, CronTrigger(minute="*/1")
-# )
+scheduler.add_job(
+    background_process.send_ironman_pending_work_schedule, CronTrigger(minute="*/1")
+)
+
 scheduler.add_job(
     background_process.create_timeslot_volume_record,
     CronTrigger(minute="*/1")
 )
 
-# scheduler.add_job(background_process.create_order_requests, CronTrigger(minute="*/1"))
+scheduler.add_job(background_process.create_order_requests, CronTrigger(minute="*/1"))
 
-# scheduler.add_job(background_process.reassign_missed_orders, CronTrigger(minute="*/1"))
+scheduler.add_job(background_process.reassign_missed_orders, CronTrigger(minute="*/1"))
 
 
 # Runs every 1 minute
