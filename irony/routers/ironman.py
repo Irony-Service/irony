@@ -1,5 +1,5 @@
 from typing import Any, Dict, List
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, HTTPException, Depends
 
 
 from irony.config import config
@@ -20,6 +20,7 @@ from irony.models.service_agent.vo.prices_response_vo import (
     PricesResponseVo,
     ServicePrices,
 )
+from irony.models.service_agent.vo.register_agent_response import RegisterAgentResponse
 from irony.models.service_agent.vo.update_pickup_pending_vo import UpdateOrderRequest
 from fastapi import Depends
 
@@ -28,7 +29,8 @@ from irony.services.Ironman import (
     fetch_order_deatils_service,
     fetch_orders_service,
     service_agent_auth_service,
-    update_pickup_pending_service,
+    update_order_service,
+    service_prices_service,
 )
 from irony.util import auth
 
@@ -37,26 +39,13 @@ router = APIRouter()
 
 @router.post("/login", response_model=LoginUserResponse)
 async def login(response: Response, user: UserLogin):
-
     return await service_agent_auth_service.login_service_agent(
         response, user
     )
 
-    # return {
-    #     "access_token": token,
-    #     "token_type": "bearer",
-    #     "user": db_user.model_dump(exclude={"password"}),
-    # }
-
-
-@router.post("/register")
+@router.post("/register", response_model=RegisterAgentResponse)
 async def register(user: ServiceAgentRegister):
-    service_agent = await service_agent_auth_service.register_service_agent(user)
-
-    return {
-        "message": "User registered successfully",
-        "user": service_agent.model_dump(exclude={"password"}),
-    }
+    return await service_agent_auth_service.register_service_agent(user)
 
 @router.get("/protected-route")
 async def protected_route(current_user: str = Depends(auth.get_current_user)):
@@ -123,81 +112,7 @@ async def getAgentOrdersByStatusGroupByDateAndTimeSlot(
 async def getServicePricesForServiceLocations(
     current_user: str = Depends(auth.get_current_user),
 ):
-    response = PricesResponseVo()
-    services: Dict[str, Service] = {
-        str(service.id): service
-        for service in config.DB_CACHE.get("services", {}).values()
-    }
-    agent_data = await db.service_agent.find_one({"mobile": current_user})
-    if agent_data is None:
-        raise Exception("Service agent not found")
-
-    agent: ServiceAgent = ServiceAgent(**agent_data)
-
-    if agent.service_location_ids is None:
-        raise Exception("Service agent has no service locations")
-
-    pipeline: List[Dict[str, Any]] = [
-        {
-            "$match": {
-                "service_location_id": {"$in": agent.service_location_ids},
-            }
-        },
-        {"$sort": {"sort_order": 1}},
-        {
-            "$group": {
-                "_id": {
-                    "service_location_id": "$service_location_id",
-                    "service_id": "$service_id",
-                },
-                "prices": {"$push": "$$ROOT"},
-            }
-        },
-    ]
-
-    prices_groups = await db.prices.aggregate(pipeline=pipeline).to_list(None)
-
-    if not prices_groups:
-        response.message = "No orders found"
-        return response
-
-    service_location_service_prices: Dict[str, Dict[str, List[Prices]]] = {}
-
-    for price_group in prices_groups:
-        service_location_id = str(price_group.get("_id", {}).get("service_location_id"))
-        service_id = str(price_group.get("_id", {}).get("service_id"))
-
-        if service_location_id not in service_location_service_prices:
-            service_location_service_prices[service_location_id] = {}
-        service_location_service_prices[service_location_id][service_id] = [
-            Prices(**price_item) for price_item in price_group.get("prices", [])
-        ]
-
-    response_body: Dict[str, List[ServicePrices]] = {}
-    for (
-        service_location_id,
-        service_prices,
-    ) in service_location_service_prices.items():
-        service_prices_list: List[ServicePrices] = []
-        for service_id, prices in service_prices.items():
-            service = services.get(service_id)
-            if service:
-                service_prices_list.append(
-                    ServicePrices(
-                        service=service,
-                        prices=prices,
-                    )
-                )
-        service_prices_list.sort(key=lambda x: x.service.call_to_action_key or "")
-        response_body[service_location_id] = service_prices_list
-
-    response.data = response_body
-    # response.body = PricesResponseBody(
-    #     service_locations_prices=service_location_service_prices, services=services
-    # )
-    # response.body = service_location_service_prices
-
-    return response
+    return await service_prices_service.get_service_prices_for_locations(current_user)
 
 
 @router.post("/fetchOrderDetails")
@@ -207,7 +122,7 @@ async def fetchOrderDetails(request: FetchOrderDetailsRequest):
 
 @router.post("/updateOrder")
 async def updateOrder(request: UpdateOrderRequest):
-    return await update_pickup_pending_service.update_order(request)
+    return await update_order_service.update_order(request)
 
 
 @router.post("/fetchAdaptiveRoute")

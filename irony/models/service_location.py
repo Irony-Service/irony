@@ -1,11 +1,11 @@
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Literal, Optional
 from irony.models.pyobjectid import PyObjectId
 from pydantic import BaseModel, Field
 
 from irony.models.common_model import shared_config
 from irony.models.location import Location
-from irony.models.timeslot_volume import TimeslotVolume
+from irony.models.timeslot_volume import Quota, TimeslotVolume
 from irony.models.pyobjectid import PyObjectId
 
 
@@ -42,12 +42,18 @@ class Service(BaseModel):
     service_name: Optional[str] = None
     model_config = shared_config
 
+class QuotaConst(Quota):
+    current: Literal[0] = 0
+
+    model_config = shared_config
 
 class ServiceLocation(BaseModel):
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
     name: Optional[str] = None
-    services: Optional[List[Service]] = None
+    service_ids: Optional[List[PyObjectId]] = None
     time_slots: Optional[List[str]] = None
+    timeslot_distributions: Optional[Dict[str, QuotaConst]] = None
+    services_distribution: Optional[Dict[str, QuotaConst]] = None
     coords: Optional[Location] = None
     range: Optional[float] = None
     location_type: Optional[LocationTypeEnum] = None
@@ -58,6 +64,7 @@ class ServiceLocation(BaseModel):
     wa_id: Optional[str] = None
     auto_accept: Optional[bool] = None
     distance: Optional[float] = None
+    daily_limit: Optional[int] = None
     timeslot_volumes: Optional[List[TimeslotVolume]] = None
 
     model_config = shared_config

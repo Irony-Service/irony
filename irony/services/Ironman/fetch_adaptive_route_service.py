@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import Response
+from fastapi import Response, HTTPException
 
 from irony.db import db, replace_documents_in_transaction
 from irony.exception.WhatsappException import WhatsappException
@@ -18,14 +18,11 @@ from irony.config.logger import logger
 async def fetch_route(request: FetchAdaptiveRouteRequest):
     try:
         response = FetchAdaptiveRouteResponse()
-
         response.success = True
         return response.model_dump()
 
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error occured in fetch adaptive route : {e}")
-        response = FetchAdaptiveRouteResponse()
-        response.body = None
-        response.error = "Error occured in fetch adaptive route service"
-        response.success = False
-        return response.model_dump()
+        logger.error(f"Error in fetch_route: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while fetching adaptive route")

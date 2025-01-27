@@ -3,6 +3,8 @@ from typing import Any, Dict, List
 import asyncio
 import copy
 
+from bson import ObjectId
+
 from irony.models.pyobjectid import PyObjectId  # Add this import
 
 import pprint
@@ -12,6 +14,7 @@ from irony.config.logger import logger
 from irony.db import db, replace_documents_in_transaction
 from irony.exception.WhatsappException import WhatsappException
 from irony.models import location
+from irony.models.timeslot_volume_plus import TimeslotVolumePlus
 from irony.models.whatsapp.contact_details import ContactDetails
 from irony.models.location import Location, UserLocation
 from irony.models.order import Order
@@ -26,7 +29,7 @@ from irony.models.service_location import (
     get_delivery_enum_from_string,
 )
 from irony.models.whatsapp.contact_details import ContactDetails
-from irony.models.timeslot_volume import TimeslotVolume
+from irony.models.timeslot_volume import Quota, TimeslotVolume
 from irony.models.user import User
 from irony.util import utils
 from irony.util.message import Message
@@ -73,7 +76,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                             "$distance",
                         ]  # Filter where range is greater or equal to distance
                     },
-                    "services": {"$all": [service.id for service in order.services]},
+                    "service_ids": {"$all": [service.id for service in order.services]},
                     "time_slots": {"$in": [order.time_slot]},
                 }
             },
@@ -157,7 +160,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
 
         order_requests: List[OrderRequest] = []
         trigger_time = datetime.now()
-        temp_name = ""
+        # temp_name = ""
 
         for delivery_type_service_locations in delivery_type_service_locations_list:
             if delivery_type_service_locations["_id"] == DeliveryTypeEnum.SELF_PICKUP:
@@ -206,17 +209,18 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                 )
                 order_requests.append(order_request)
 
-        result = await db.order_request.insert_many(
-            [
-                order_request.model_dump(exclude_defaults=True)
-                for order_request in order_requests
-            ]
-        )
+        if order_requests:
+            result = await db.order_request.insert_many(
+                [
+                    order_request.model_dump(exclude_defaults=True)
+                    for order_request in order_requests
+                ]
+            )
 
-        logger.info(
-            f"Inserted {len(result.inserted_ids)} rows. Into order_request collection. ids : {result.inserted_ids}"
-        )
-        logger.info(f"Order assigned to ServiceLocation {temp_name}.")
+            logger.info(
+                f"Inserted {len(result.inserted_ids)} rows. Into order_request collection. ids : {result.inserted_ids}"
+            )
+        # logger.info(f"Order assigned to ServiceLocation {temp_name}.")
     except Exception as e:
         logger.error("Exception in find_ironman", exc_info=True)
         pass
@@ -407,7 +411,7 @@ async def send_pending_order_requests():
             # ).to_list(None)
 
             for service_location in order_request.delivery_service_locations:
-                service_entries = service_location.services
+                service_entries = service_location.service_ids
                 for i, service_entry in enumerate(service_entries):
                     order_clothes_count = cache.get_clothes_cta_count(order.count_range)
                     if (
@@ -935,8 +939,7 @@ async def send_ironman_pending_work_schedule():
     logger.info("Completed send_ironman_schedule")
 
 
-async def create_timeslot_volume_record():
-
+async def create_timeslot_volume_record_old():
     source_collection = db["timeslot_volume"]
     archive_collection = db["timeslot_volume_arch"]
 
@@ -949,7 +952,7 @@ async def create_timeslot_volume_record():
     tomorrow_date = today + timedelta(days=1)
 
     pipeline = [
-        {"$match": {"operation_date": {"$gte": start_of_day, "$lt": end_of_day}}}
+        {"$match": {"operation_date": {"$lt": end_of_day}}}
     ]
     records_to_archive = await source_collection.aggregate(pipeline).to_list(
         length=None
@@ -977,6 +980,84 @@ async def create_timeslot_volume_record():
         )
     else:
         logger.info("No records found for the specified date range.")
+
+
+async def create_timeslot_volume_record():
+    is_timeslot_volumene_archive_pending_key = "is_timeslot_volume_archive_pending"
+    archive_status_doc = await db.config.find_one({"key":is_timeslot_volumene_archive_pending_key , "value": True})
+
+    if not archive_status_doc:
+        logger.info("Timeslot volume records already archived.")
+        return
+
+    source_collection = db["timeslot_volume"]
+    archive_collection = db["timeslot_volume_arch"]
+
+    today = datetime.now()
+    day_before_yesterday = today - timedelta(days=1)
+    start_of_day = datetime(
+        day_before_yesterday.year, day_before_yesterday.month, day_before_yesterday.day
+    )
+    end_of_day = start_of_day + timedelta(days=1)
+    tomorrow_date = today + timedelta(days=1)
+
+    # Get all active service locations and store in a dictionary
+    # active_service_locations: Dict[str, ServiceLocation] = {}
+    # active_service_locations = await db.service_locations.find({"is_active": True}).to_list(None)
+    # for service_location in found_active:
+    #     active_service_locations[service_location["_id"]] = ServiceLocation(**service_location)
+
+    active_service_locations: List[ServiceLocation] = []
+    async for service_location in db.service_locations.find({"is_active": True}):
+        active_service_locations.append(ServiceLocation(**service_location))
+
+    pipeline = [
+        {"$match": {"operation_date": {"$lt": end_of_day}}},
+        # {"$lookup": {"from": "service_locations", "localField": "service_location_id", "foreignField": "_id", "as": "service_location"}},
+    ]
+    records_found = await source_collection.aggregate(pipeline).to_list(
+        length=None
+    )
+    records_to_archive: List[TimeslotVolume] = [TimeslotVolume(**record) for record in records_found]
+    # records_to_archive_timeslot_volume: List[TimeslotVolume] = []
+
+    tomorrow_records : List[TimeslotVolume] = []
+    # Create records for tomorrow for all active service locations
+    for service_location in active_service_locations:
+        new_timeslot_volume = TimeslotVolume()
+        new_timeslot_volume.operation_date = tomorrow_date 
+        new_timeslot_volume.service_location_id = service_location.id
+        new_timeslot_volume.daily_limit = service_location.daily_limit
+        new_timeslot_volume.current_clothes = 0
+        new_timeslot_volume.timeslot_distributions = service_location.timeslot_distributions
+        new_timeslot_volume.services_distribution = service_location.services_distribution
+        tomorrow_records.append(new_timeslot_volume)
+
+    if records_to_archive:
+        archive_result = await archive_collection.insert_many([records_to_archive_timeslot_volume.model_dump(exclude_unset=True) for records_to_archive_timeslot_volume in records_to_archive])
+        result = await source_collection.delete_many(
+            {"operation_date": {"$lt": end_of_day}}
+        )
+
+        logger.info(
+            f"Archived {len(archive_result.inserted_ids)}records to the archive collection and deleted them from the source collection."
+        )
+        logger.info(
+            f"Deleted {result.deleted_count} records from the source collection."
+        )
+
+    if tomorrow_records:
+        result = await source_collection.insert_many([tomorrow_record.model_dump(exclude_unset=True) for tomorrow_record in tomorrow_records])
+
+        logger.info(
+            f"Inserted {len(result.inserted_ids)} records for tomorrow in the source collection."
+        )
+
+    else:
+        logger.info("No records found for the specified date range.")
+
+    await db.config.update_one({"key": is_timeslot_volumene_archive_pending_key}, {"$set": {"value": False}})
+    logger.info("Completed create_timeslot_volume_record and archived the records.")
 
 
 async def create_order_requests():
@@ -1105,3 +1186,36 @@ async def reassign_missed_orders():
             await create_ironman_order_requests(order, order.user_wa_id)
     else:
         logger.info("No missed orders found")
+
+
+async def reset_daily_config():
+    logger.info("Started reset_daily_config")
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Get daily config reset record
+    daily_reset = await db.config.find_one({"key": "daily_config_reset"})
+
+    if not daily_reset or daily_reset.get("date").replace(hour=0, minute=0, second=0, microsecond=0) != today:
+        # Update the daily reset record with today's date
+        await db.config.update_one(
+            {"key": "daily_config_reset"},
+            {"$set": {"date": datetime.now()}},
+            upsert=True
+        )
+        
+        # Update timeslot volume archive pending flag
+        await db.config.update_one(
+            {"key": "is_timeslot_volume_archive_pending"},
+            {"$set": {"value": True}},
+            upsert=True
+        )
+
+        # Update all timeslot configs 
+        result = await db.config.update_many(
+            {"key": {"$in": ["TIME_SLOT_ID_1", "TIME_SLOT_ID_2", "TIME_SLOT_ID_3", "TIME_SLOT_ID_4"]}},
+            {"$set": {"is_pending_schedule_pending": True, "is_work_schedule_pending": True, "is_delivery_schedule_pending": True, "is_reassign_pending": True}}
+        )
+
+        logger.info(f"Reset {result.modified_count} timeslot configs")
+    else:
+        logger.info("Daily config already reset for today")
