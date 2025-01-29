@@ -590,7 +590,7 @@ async def send_ironman_delivery_schedule():
 
         for service_location_order in service_location_orders:
             tasks = []
-            orders = service_location_order.documents
+            orders = service_location_order["documents"]
 
             for i, order in enumerate(orders):
                 order = Order(**order)
@@ -737,7 +737,7 @@ async def send_ironman_work_schedule():
 
         for service_location_order in service_location_orders:
             tasks = []
-            orders = service_location_order.documents
+            orders = service_location_order['documents']
 
             for i, order in enumerate(orders):
                 order = Order(**order)
@@ -884,7 +884,7 @@ async def send_ironman_pending_work_schedule():
 
         for service_location_order in service_location_orders:
             tasks = []
-            orders = service_location_order.documents
+            orders = service_location_order["documents"]
 
             for i, order in enumerate(orders):
                 order = Order(**order)
