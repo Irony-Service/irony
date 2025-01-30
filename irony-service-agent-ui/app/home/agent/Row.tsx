@@ -1,7 +1,7 @@
 "use client";
+import clsx from "clsx";
 import Image from "next/image";
 import { useState } from "react";
-import clsx from "clsx";
 
 interface RowProps {
   services: string[];
@@ -24,7 +24,11 @@ export default function Row(props: RowProps) {
 
   return (
     <div>
-      <div className={clsx("flex justify-between items-center bg-white h-10 px-4", { "border-b border-gray-300": !props.lastRow })}>
+      <div
+        className={clsx("flex justify-between items-center bg-white h-10 px-4", {
+          "border-b border-gray-300": !props.lastRow,
+        })}
+      >
         <div className="w-[95%] flex justify-between">
           <div className="w-1/3 flex items-center gap-1">
             <Image src="/fluent-mdl2_shirt.svg" alt="Login" width={18} height={18} />
@@ -40,7 +44,13 @@ export default function Row(props: RowProps) {
           </div>
         </div>
         <button onClick={showOrder}>
-          <Image className="rounded-full bg-amber-300" src="/mingcute_right-line_black.svg" alt="Login" width={28} height={28} />
+          <Image
+            className="rounded-full bg-amber-300"
+            src="/mingcute_right-line_black.svg"
+            alt="Login"
+            width={28}
+            height={28}
+          />
         </button>
       </div>
       {error && <p>{error}</p>}

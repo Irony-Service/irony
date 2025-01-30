@@ -1,11 +1,10 @@
 // pages/login.tsx
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import api from "../../utils/axiosClient";
 import { LoginButton } from "./components/LoginButton";
-import Link from "next/link";
 
 export default function Login() {
   const router = useRouter();

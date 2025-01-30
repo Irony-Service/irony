@@ -1,12 +1,12 @@
 "use client";
 import Image from "next/image";
-import { useSwipeable } from "react-swipeable";
 import { useEffect, useState } from "react";
-import DeliveryRow from "./Row";
+import { useSwipeable } from "react-swipeable";
+import OrderDetailsView from "../components/OrderDetailsView";
+import { HomeProps, OrderStatus, Section, ServicePrices } from "../types/types";
 import Util from "../util/util";
 import OrderDetails from "./order/OrderDetails";
-import { HomeProps, OrderStatus, Section, ServicePrices } from "../types/types";
-import OrderDetailsView from "../components/OrderDetailsView";
+import DeliveryRow from "./Row";
 
 export default function DeliveryHomeClient(props: HomeProps) {
   const { orders: orders_response, service_location_prices: service_location_prices_response } = props.responses;
