@@ -1,6 +1,3 @@
-import React from "react";
-import OrderDetails from "./OrderDetails";
-import { ServiceBlockProps } from "../../types/types";
 const OrderPage = () => {
   const order = {
     _id: "67554df7197512caeb39d079",
@@ -92,7 +89,18 @@ const OrderPage = () => {
     maps_link: "https://www.google.com/maps/search/?api=1&query=17.4401319,78.3304159",
   };
 
-  return <OrderDetails order={order}></OrderDetails>;
+  return (
+    // <OrderDetails
+    //   order={order}
+    //   location_service_prices={[]}
+    //   priceServiceMap={new Map<string, string>()}
+    //   priceNameMap={new Map<string, string>()}
+    //   onClose={function (_deleteOnClose: boolean): void {
+    //     throw new Error("Function not implemented.");
+    //   }}
+    // ></OrderDetails>
+    <></>
+  );
 };
 
 export default OrderPage;

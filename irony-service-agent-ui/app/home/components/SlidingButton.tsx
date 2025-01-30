@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import React, { useEffect, useRef, useState } from "react";
 
 interface SlidingButtonProps {
   onComplete: () => Promise<void>;
@@ -25,7 +25,7 @@ export default function SlidingButton({
   const sliderRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
+  const handleTouchStart = () => {
     if (!isLoading) setIsDragging(true);
   };
 
@@ -81,7 +81,7 @@ export default function SlidingButton({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging]);
+  }, [isDragging, handleTouchEnd, handleTouchMove]);
 
   return (
     <div ref={containerRef} className="relative h-14 bg-gray-100 rounded-full overflow-hidden">

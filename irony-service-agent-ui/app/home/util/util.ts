@@ -18,20 +18,23 @@ export function formatDate(inputDate: string): string {
   return format(date, "eee, d MMM");
 }
 
-export function getPriceServiceNameMaps(service_locations_prices: ServiceLocationPrices): { priceServiceMap: Map<string, string>; priceNameMap: Map<string, string> } {
-    const localPriceServiceMap = new Map<string, string>();
-    const localPriceNameMap = new Map<string, string>();
-    Object.values(service_locations_prices).forEach((servicePrices) => {
-      servicePrices.forEach((price) => {
-        if (price.prices && price.service) {
-          price.prices.forEach((p) => {
-            localPriceNameMap.set(p._id, p.category);
-            localPriceServiceMap.set(p._id, price.service.service_name);
-          });
-        }
-      });
+export function getPriceServiceNameMaps(service_locations_prices: ServiceLocationPrices): {
+  priceServiceMap: Map<string, string>;
+  priceNameMap: Map<string, string>;
+} {
+  const localPriceServiceMap = new Map<string, string>();
+  const localPriceNameMap = new Map<string, string>();
+  Object.values(service_locations_prices).forEach((servicePrices) => {
+    servicePrices.forEach((price) => {
+      if (price.prices && price.service) {
+        price.prices.forEach((p) => {
+          localPriceNameMap.set(p._id, p.category);
+          localPriceServiceMap.set(p._id, price.service.service_name);
+        });
+      }
     });
-    return {priceServiceMap: localPriceServiceMap, priceNameMap: localPriceNameMap};
+  });
+  return { priceServiceMap: localPriceServiceMap, priceNameMap: localPriceNameMap };
 }
 
 export default class Util {
@@ -47,7 +50,10 @@ export default class Util {
     return formatDate(inputDate);
   }
 
-  static getPriceServiceNameMaps(service_locations_prices: ServiceLocationPrices): { priceServiceMap: Map<string, string>; priceNameMap: Map<string, string> } {
+  static getPriceServiceNameMaps(service_locations_prices: ServiceLocationPrices): {
+    priceServiceMap: Map<string, string>;
+    priceNameMap: Map<string, string>;
+  } {
     return getPriceServiceNameMaps(service_locations_prices);
   }
 }

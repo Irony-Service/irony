@@ -1,14 +1,12 @@
 "use client";
 
-import * as React from "react";
-import ServiceBlock from "./ServiceBlock";
-import { OrderDetailsProps, OrderItemInput, NewOrder } from "../../types/types";
+import apiClient from "@/utils/axiosClient";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import apiClient from "@/utils/axiosClient";
-import BillDetails from "../../components/BillDetails";
 import AddOrderServices from "../../components/AddOrderServices";
+import BillDetails from "../../components/BillDetails";
+import { NewOrder, OrderDetailsProps, OrderItemInput } from "../../types/types";
 
 export default function OrderDetails(props: OrderDetailsProps) {
   console.log("OrderDetails", props);

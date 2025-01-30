@@ -1,8 +1,8 @@
 "use client";
-import Image from "next/image";
-import { useState } from "react";
 import clsx from "clsx";
+import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 
 interface RowProps {
   order: any;
@@ -26,10 +26,19 @@ export default function DeliveryRow(props: RowProps) {
 
   return (
     <div>
-      <div className={clsx("flex justify-between items-center bg-white h-10 px-4", { "border-b border-gray-300": !props.lastRow })}>
+      <div
+        className={clsx("flex justify-between items-center bg-white h-10 px-4", {
+          "border-b border-gray-300": !props.lastRow,
+        })}
+      >
         <div className="w-[80%] flex justify-between items-center">
           <div className="flex items-center gap-1">
-            <Image src={`/carbon_delivery-${props.order?.delivery_type?.includes("pickup") ? "add" : "minus"}.svg`} alt="Login" width={18} height={18} />
+            <Image
+              src={`/carbon_delivery-${props.order?.delivery_type?.includes("pickup") ? "add" : "minus"}.svg`}
+              alt="Login"
+              width={18}
+              height={18}
+            />
             <span>{props.order?.delivery_type}</span>
           </div>
           <div className="flex items-center gap-1">
@@ -49,7 +58,13 @@ export default function DeliveryRow(props: RowProps) {
           <Image src="/maps_arrow.svg" alt="Login" width={16} height={16} />
         </Link>
         <button onClick={showOrderDetails}>
-          <Image className="rounded-full bg-amber-300" src="/mingcute_right-line_black.svg" alt="Login" width={28} height={28} />
+          <Image
+            className="rounded-full bg-amber-300"
+            src="/mingcute_right-line_black.svg"
+            alt="Login"
+            width={28}
+            height={28}
+          />
         </button>
       </div>
       {error && <p>{error}</p>}

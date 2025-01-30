@@ -1,12 +1,11 @@
 "use client";
 
-import * as React from "react";
-import { useState, useRef, useEffect } from "react";
+import apiClient from "@/utils/axiosClient";
 import Image from "next/image";
 import Link from "next/link";
-import apiClient from "@/utils/axiosClient";
-import SlidingButton from "../../components/SlidingButton";
+import { useState } from "react";
 import OrderServicesList from "../../components/OrderServicesList";
+import SlidingButton from "../../components/SlidingButton";
 import { OrderItem } from "../../types/types";
 
 export interface OrderDetailsProps {
