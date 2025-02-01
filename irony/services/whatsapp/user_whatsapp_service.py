@@ -431,63 +431,62 @@ async def update_order_timeslot_details(
 
     return order
 
+def generate_time_slot_title(config_slot, tomorrow=False):
+    if tomorrow:
+        return f"Tomorrow {get_neat_time_description(config_slot["start_time"])} - {get_neat_time_description(config_slot["end_time"])}"
+    return f"Today {get_neat_time_description(config_slot['start_time'])} - {get_neat_time_description(config_slot['end_time'])}"
+
+
+def get_neat_time_description(time_str):
+    hour = int(time_str[:2])
+    minute = int(time_str[3:])
+    am_pm = 'AM' if hour < 12 else 'PM'
+    if hour == 0:
+        hour = 12
+    elif hour > 12:
+        hour -= 12
+    return f"{hour}{':' + str(minute) if minute > 0 else ''}{am_pm}"
 
 async def get_time_slot_message():
     message_body = whatsapp_utils.get_reply_message(
         message_key="time_slots_message",
         message_sub_type="radio",
     )
-    # Teja start
-    current_time = datetime.now().time()
-
-    hours = current_time.hour
-    minutes = current_time.minute
-
-    total_min = hours * 60 + minutes
-
-    call_action_config = await db.config.find({"group": "TIME_SLOT_ID"}).to_list(None)
-
+    
     delivery_schedule_time_gap = config.DB_CACHE["config"][
         "delivery_schedule_time_gap"
     ]["value"]
 
-    total_min += delivery_schedule_time_gap
+    current_time_plus_delay = datetime.now() + timedelta(minutes=delivery_schedule_time_gap)
+    current_time_plus_delay_str = current_time_plus_delay.strftime("%H:%M")
 
-    slot_start = {}
-    slot_end = {}
-    for i in call_action_config:
-        h = int(i["start_time"][0:2])
-        m = int(i["start_time"][3:5])
-        tot = h * 60 + m
-        slot_start[i["key"]] = tot
-        he = int(i["end_time"][0:2])
-        me = int(i["end_time"][3:5])
-        te = he * 60 + me
-        slot_end[i["key"]] = te
 
-    body = message_body["interactive"]["action"]["sections"][0]["rows"]
+    config_time_slots = config.DB_CACHE['ordered_time_slots']
+    config_time_slots = [slot for slot in config_time_slots if slot.get('is_active', False)]
+    config_time_slots_dict = {slot['key'] : slot for slot in config_time_slots}
+
+
+    time_slots_in_message = message_body["interactive"]["action"]["sections"][0]["rows"]
+    time_slots_in_message = [slot for slot in time_slots_in_message if slot["id"] in config_time_slots_dict]
+
+    
+    final_slots = []
+    for slot in time_slots_in_message:
+        if config_time_slots_dict[slot["id"]]["start_time"] > current_time_plus_delay_str:
+            slot["title"] = generate_time_slot_title(config_time_slots_dict[slot["id"]])
+            final_slots.append(slot)
+    
     if (
-        total_min
-        > slot_start[
-            message_body["interactive"]["action"]["sections"][0]["rows"][0]["id"]
-        ]
+        current_time_plus_delay_str
+        > config_time_slots[0]["start_time"]
     ):
+        for slot in time_slots_in_message:
+            slot["title"] = generate_time_slot_title(config_time_slots_dict[slot["id"]], True)
+            slot["id"] = slot["id"] + "T"
+            final_slots.append(slot)
 
-        filtered_today_slots = [
-            slot for slot in body if slot_start[slot["id"]] > total_min
-        ]
-        filtered_tom_slots = body
-        filtered_tom_slots = [slot.copy() for slot in body]
-        for slot1 in filtered_tom_slots:
-            slot1["title"] = "Tomorrow " + " ".join(slot1["title"].split(" ")[1:])
-            slot1["id"] = slot1["id"] + "T"
-        body = filtered_today_slots + filtered_tom_slots
-
-    message_body["interactive"]["action"]["sections"][0]["rows"] = body
-    # Teja end
-
+    message_body["interactive"]["action"]["sections"][0]["rows"] = final_slots
     return message_body
-
 
 def get_time_from_stamp(timstr):
     h = int(timstr[:2])
