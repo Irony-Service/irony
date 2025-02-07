@@ -47,7 +47,10 @@ async def get_orders_by_status_for_agent_locations(
         agent: ServiceAgent = ServiceAgent(**agent_data)
 
         if agent.service_location_ids is None:
-            raise HTTPException(status_code=400, detail="Service agent is not linked to any service location")
+            raise HTTPException(
+                status_code=400,
+                detail="Service agent is not linked to any service location",
+            )
 
         pipeline: List[Dict[str, Any]] = [
             {
@@ -86,8 +89,12 @@ async def get_orders_by_status_for_agent_locations(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in get_orders_by_status_for_agent_locations: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error while fetching orders")
+        logger.error(
+            f"Error in get_orders_by_status_for_agent_locations: {e}", exc_info=True
+        )
+        raise HTTPException(
+            status_code=500, detail="Internal server error while fetching orders"
+        )
 
 
 async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_locations(
@@ -103,7 +110,9 @@ async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_location
         agent: ServiceAgent = ServiceAgent(**agent_data)
 
         if agent.service_location_ids is None:
-            raise HTTPException(status_code=400, detail="Service agent has no service locations")
+            raise HTTPException(
+                status_code=400, detail="Service agent has no service locations"
+            )
 
         pipeline: List[Dict[str, Any]] = [
             {
@@ -156,8 +165,14 @@ async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_location
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in get_orders_for_statuses_group_by_date_and_time_slot_for_agent_locations: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error while fetching grouped orders")
+        logger.error(
+            f"Error in get_orders_for_statuses_group_by_date_and_time_slot_for_agent_locations: {e}",
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while fetching grouped orders",
+        )
 
 
 async def get_orders_group_by_status_and_date_and_time_slot_for_agent_locations(
@@ -173,7 +188,9 @@ async def get_orders_group_by_status_and_date_and_time_slot_for_agent_locations(
         agent: ServiceAgent = ServiceAgent(**agent_data)
 
         if agent.service_location_ids is None:
-            raise HTTPException(status_code=400, detail="Service agent has no service locations")
+            raise HTTPException(
+                status_code=400, detail="Service agent has no service locations"
+            )
 
         pipeline: List[Dict[str, Any]] = [
             {
@@ -369,17 +386,25 @@ async def set_group_by_response_body_delivery(
             response_dict[date][time_slot] = []
         orders_for_date_and_slot = order_group.get("orders")
 
-        delivery_time_gap = config.DB_CACHE.get("config", {}).get("delivery_schedule_time_gap", {}).get("value", 60)
+        delivery_time_gap = (
+            config.DB_CACHE.get("config", {})
+            .get("delivery_schedule_time_gap", {})
+            .get("value", 60)
+        )
         cuttoff_time = datetime.now() + timedelta(minutes=delivery_time_gap)
-        
+
         pickup_time_start = None
         order_list_for_date_and_slot: List[Order] = []
         for order in orders_for_date_and_slot:
             order = OrderVo(**order)
 
-            if not pickup_time_start and order.pickup_date_time.start and order.pickup_date_time.start < cuttoff_time:
+            if (
+                not pickup_time_start
+                and order.pickup_date_time.start
+                and order.pickup_date_time.start < cuttoff_time
+            ):
                 pickup_time_start = order.pickup_date_time.start
-            
+
             order.time_slot_description = (
                 config.DB_CACHE.get("call_to_action", {})
                 .get(order.time_slot, {})
@@ -396,14 +421,16 @@ async def set_group_by_response_body_delivery(
             order.maps_link = utils.get_maps_link(order.location)
 
             order_list_for_date_and_slot.append(order)
-        
+
         if pickup_time_start:
             try:
-                order_list_for_date_and_slot = route.route_sort_orders(order_list_for_date_and_slot)
+                order_list_for_date_and_slot = await route.route_sort_orders(
+                    order_list_for_date_and_slot
+                )
                 logger.info(f"Route sorted orders: {order_list_for_date_and_slot}")
             except HTTPException as e:
                 handle_route_error(order_list_for_date_and_slot, e)
-    
+
         response_dict[date][time_slot] = order_list_for_date_and_slot
 
     response_body = []
@@ -441,15 +468,20 @@ async def set_group_by_response_body_delivery(
     ]
     return response_dict
 
+
 def handle_route_error(order_list_for_date_and_slot, e):
     if e.status_code == 400:
         if e.detail == "No route found":
             asyncio.create_task(
-                            db.route_exceptions.insert_one({
-                                "status_code": e.status_code,
-                                "order_ids": [order.id for order in order_list_for_date_and_slot],
-                                "details": e.detail,
-                                "created_at": datetime.now()
-                            })
-                        )
+                db.route_exceptions.insert_one(
+                    {
+                        "status_code": e.status_code,
+                        "order_ids": [
+                            order.id for order in order_list_for_date_and_slot
+                        ],
+                        "details": e.detail,
+                        "created_at": datetime.now(),
+                    }
+                )
+            )
             logger.error(f"No route found for orders: {order_list_for_date_and_slot}")

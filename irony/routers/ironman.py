@@ -28,7 +28,7 @@ from irony.services.Ironman import (
     fetch_order_deatils_service,
     fetch_orders_service,
     service_agent_auth_service,
-    update_pickup_pending_service,
+    update_order_service,
 )
 from irony.util import auth
 
@@ -38,9 +38,7 @@ router = APIRouter()
 @router.post("/login", response_model=LoginUserResponse)
 async def login(response: Response, user: UserLogin):
 
-    return await service_agent_auth_service.login_service_agent(
-        response, user
-    )
+    return await service_agent_auth_service.login_service_agent(response, user)
 
     # return {
     #     "access_token": token,
@@ -57,6 +55,7 @@ async def register(user: ServiceAgentRegister):
         "message": "User registered successfully",
         "user": service_agent.model_dump(exclude={"password"}),
     }
+
 
 @router.get("/protected-route")
 async def protected_route(current_user: str = Depends(auth.get_current_user)):
@@ -207,7 +206,7 @@ async def fetchOrderDetails(request: FetchOrderDetailsRequest):
 
 @router.post("/updateOrder")
 async def updateOrder(request: UpdateOrderRequest):
-    return await update_pickup_pending_service.update_order(request)
+    return await update_order_service.update_order(request)
 
 
 @router.post("/fetchAdaptiveRoute")
