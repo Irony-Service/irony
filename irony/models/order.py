@@ -17,10 +17,11 @@ class Order(CommonModel):
     id: Optional[ObjectId] = Field(default=None, alias="_id")
     collected_cloths: Optional[int] = None
     simple_id: Optional[str] = None
+    sub_id: Optional[str] = None
     user_id: Optional[ObjectId] = None
     user: Optional[User] = None
     user_wa_id: Optional[str] = None
-    order_items: Optional[List[OrderItem]] = None
+    order_item: Optional[OrderItem] = None
     service_location_id: Optional[ObjectId] = None
     service_location: Optional[ServiceLocation] = None
     services: Optional[List[Service]] = None
@@ -36,12 +37,14 @@ class Order(CommonModel):
     # TODO: wheter to use status_id of embedded object, or make it a list of embedded status objects
     order_status: Optional[List[OrderStatus]] = None
     is_active: Optional[bool] = None
-    pickup_agent_id: Optional[ObjectId] = None
-    drop_agent_id: Optional[ObjectId] = None
+    pickup_agent_id: Optional[str] = None
+    drop_agent_id: Optional[str] = None
     created_on: Optional[datetime] = None
     updated_on: Optional[datetime] = None
     pick_up_time: Optional[PickupTime] = None
     auto_alloted: Optional[bool] = None
+    preferred_delivery_slot: Optional[str] = None
+    picked_up_time: Optional[datetime] = None
 
     class Config(ModelConfig):
         populate_by_name = True

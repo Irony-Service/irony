@@ -9,7 +9,7 @@ from irony.models.fetch_order_details_vo import FetchOrderDetailsRequest
 from irony.models.fetch_orders_vo import FetchOrderRequest
 from irony.models.order_status import OrderStatusEnum
 from irony.models.service_agent import ServiceAgent, ServiceAgentRegister
-from irony.models.update_order_vo import UpdateOrderRequest
+from irony.models.update_pickup_pending_vo import UpdateOrderRequest
 from irony.models.user import User
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
@@ -20,7 +20,7 @@ from irony.services.Ironman import (
     fetch_adaptive_route_service,
     fetch_order_deatils_service,
     fetch_orders_service,
-    update_order_service,
+    update_pickup_pending_service,
 )
 from irony.util import auth
 
@@ -153,7 +153,7 @@ async def fetchOrderDetails(request: FetchOrderDetailsRequest):
 
 @router.post("/updateOrder")
 async def updateOrder(request: UpdateOrderRequest):
-    return await update_order_service.update_order(request)
+    return await update_pickup_pending_service.update_order(request)
 
 
 @router.post("/fetchAdaptiveRoute")
