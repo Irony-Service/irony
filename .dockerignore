@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+.venv
+.venv.bak
+.git
+.gitignore
+Dockerfile*
+docker-compose*
+.dockerignore
+README.md
+.vscode
+irony-service-agent-ui

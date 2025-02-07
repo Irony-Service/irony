@@ -33,14 +33,14 @@ async function fetchApiClient<T>(endpoint: string, options: RequestInit = {}, qu
       "Content-Type": "application/json",
     },
     credentials: "include", // This ensures cookies are sent with requests
-    cache: options.cache || "no-store",  // Add default cache option
+    cache: options.cache || "no-store", // Add default cache option
   };
 
   const response = await fetch(url.toString(), fetchOptions);
 
   if (!response.ok) {
     const error = await response.json();
-    const errorMessage = typeof error.detail === 'object' ? JSON.stringify(error.detail) : error.detail;
+    const errorMessage = typeof error.detail === "object" ? JSON.stringify(error.detail) : error.detail;
     throw new Error(errorMessage || "An error occurred");
   }
 
@@ -49,8 +49,7 @@ async function fetchApiClient<T>(endpoint: string, options: RequestInit = {}, qu
 
 // Helper methods for common HTTP methods with cache option
 const apiClient = {
-  get: <T>(endpoint: string, queryParams?: Record<string, string | number | boolean>, options?: RequestInit) => 
-    fetchApiClient<T>(endpoint, { method: "GET", ...options }, queryParams),
+  get: <T>(endpoint: string, queryParams?: Record<string, string | number | boolean>, options?: RequestInit) => fetchApiClient<T>(endpoint, { method: "GET", ...options }, queryParams),
 
   post: <T>(endpoint: string, data?: any, options?: RequestInit) =>
     fetchApiClient<T>(endpoint, {
@@ -66,8 +65,7 @@ const apiClient = {
       ...options,
     }),
 
-  delete: <T>(endpoint: string, options?: RequestInit) => 
-    fetchApiClient<T>(endpoint, { method: "DELETE", ...options }),
+  delete: <T>(endpoint: string, options?: RequestInit) => fetchApiClient<T>(endpoint, { method: "DELETE", ...options }),
 };
 
 export default apiClient;

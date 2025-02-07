@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
+const config = {
+  output: "standalone",
+  // Add other Next.js config options here
+} satisfies NextConfig;
 
-export default nextConfig;
+export default config;
