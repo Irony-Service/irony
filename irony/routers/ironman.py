@@ -63,7 +63,7 @@ async def protected_route(current_user: str = Depends(auth.get_current_user)):
     return {"message": f"Welcome, {current_user}!"}
 
 
-@router.get("/agentOrdersByStatus")
+@router.get("/agentOrdersByStatusOld")
 async def getAgentOrdersByStatus(
     current_user: str = Depends(auth.get_current_user), order_status: str = ""
 ):
@@ -114,6 +114,23 @@ async def getAgentOrdersByStatusGroupByDateAndTimeSlot(
             OrderStatusEnum.DELIVERY_PENDING,
         ]
     return await fetch_orders_service.get_orders_for_statuses_group_by_date_and_time_slot_for_agent_locations(
+        current_user,
+        ordered_statuses=ordered_statuses,
+    )
+
+@router.get("/agentOrdersByStatus")
+async def getAgentOrdersByStatus(
+    current_user: str = Depends(auth.get_current_user), order_status: str = ""
+):
+    ordered_statuses: List[OrderStatusEnum] = [
+        OrderStatusEnum(status) for status in order_status.split(",") if status
+    ]
+    if not ordered_statuses:
+        ordered_statuses = [
+            OrderStatusEnum.PICKUP_PENDING,
+            OrderStatusEnum.DELIVERY_PENDING,
+        ]
+    return await fetch_orders_service.get_orders_for_statuses(
         current_user,
         ordered_statuses=ordered_statuses,
     )

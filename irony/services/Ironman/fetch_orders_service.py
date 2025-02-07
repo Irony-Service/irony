@@ -552,7 +552,9 @@ async def set_response_body_delivery(
 ):
     # logger.info(f"Orders: {grouped_orders}")
     # response_dict: Dict[OrderStatusEnum, FetchOrdersResponseBodyItem] = {}
-    response_dict: dict = {}
+    now = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    response_dict: dict = {now: {}}
     delivery_time_gap = (
         config.DB_CACHE.get("config", {})
         .get("delivery_schedule_time_gap", {})
@@ -598,7 +600,7 @@ async def set_response_body_delivery(
         except HTTPException as e:
             handle_route_error(order_list_for_date_and_slot, e)
 
-    response_dict[datetime.now()]["Routes"] = order_list_for_date_and_slot
+    response_dict[now]["Routes"] = order_list_for_date_and_slot
 
     response_body = []
     key = "_AND_".join([order_status for order_status in ordered_statuses])
