@@ -71,7 +71,24 @@ app = FastAPI()
 
 app.router.lifespan_context = lifespan
 
-origins = ["http://localhost:3000"]
+
+# origins = [
+#     "http://localhost:3000",
+#     "http://0.0.0.0:3000",
+#     "http://127.0.0.1:3000",
+#     "http://localhost:3001",
+#     "http://0.0.0.0:3001",
+#     "http://127.0.0.1:3001",
+#     "http://localhost:8000",
+#     "http://0.0.0.0:8000",
+#     "http://127.0.0.1:8000",
+#     "::1:8000",
+#     "http://frontend:3000",
+#     "http://172.18.0.0/16",  # Allow all IPs in the Docker network (adjust subnet if needed)
+#     "http://192.168.1.47:3000",
+#     "http://78446487bed8:3000",
+# ]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -85,16 +102,41 @@ app.add_middleware(
 @app.middleware("http")
 async def log_request_time(request: Request, call_next):
     start_time = time.perf_counter()
+    client_ip = request.client.host if request.client else "Unknown"
+    user_agent = request.headers.get("User-Agent", "Unknown")
+    request_url = request.url.path
+    origin = request.headers.get("Origin", "No Origin Header")
+    logger.info(
+        f"Incoming request from IP: {client_ip}, User-Agent: {user_agent}, URL: {request_url}, Origin: {origin}"
+    )
     response = await call_next(request)
     end_time = time.perf_counter()
     process_time = (end_time - start_time) * 1000
     logger.info(
-        f"Requst Time : Request: {request.method} {request.url.path} completed in {process_time:.4f} milliseconds"
+        f"Request Time : Request: {request.method} {request.url.path} completed in {process_time:.4f} milliseconds"
     )
-    # response.headers["X-Process-Time"] = str(
-    #     process_time
-    # )  # Optional: Add timing info to the response
     return response
+
+
+# @app.middleware("http")
+# async def log_request_time(request: Request, call_next):
+#     start_time = time.perf_counter()
+#     client_ip = request.client.host if request.client else "Unknown"
+#     user_agent = request.headers.get("User-Agent", "Unknown")
+#     request_url = request.url.path
+#     logger.info(
+#         f"Incoming request from IP: {client_ip}, User-Agent: {user_agent}, URL: {request_url}"
+#     )
+#     response = await call_next(request)
+#     end_time = time.perf_counter()
+#     process_time = (end_time - start_time) * 1000
+#     logger.info(
+#         f"Requst Time : Request: {request.method} {request.url.path} completed in {process_time:.4f} milliseconds"
+#     )
+#     # response.headers["X-Process-Time"] = str(
+#     #     process_time
+#     # )  # Optional: Add timing info to the response
+#     return response
 
 
 @app.get("/")
