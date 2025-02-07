@@ -66,6 +66,8 @@ async def update_order(request: UpdateOrderRequest):
             
             if order_status == OrderStatusEnum.WORK_IN_PROGRESS:
                 if request.new_status == OrderStatusEnum.DELIVERY_PENDING:
+                    if order.order_status is None:
+                        order.order_status = []
                     order.order_status.insert(
                         0,
                         (

@@ -54,6 +54,8 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                 order.id,
             )
             raise WhatsappException(config.DEFAULT_ERROR_REPLY_MESSAGE)
+        
+        geo_near_radius = config.DB_CACHE.get("config", {}).get("geo_near_radius", {}).get("value", 2000)
 
         pipeline: List[Dict[str, Any]] = [
             {
@@ -64,7 +66,7 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                         "coordinates": order.location.location.coordinates,
                     },
                     "distanceField": "distance",
-                    "maxDistance": 10000,
+                    "maxDistance": geo_near_radius,
                     "spherical": True,
                 }
             },
@@ -394,7 +396,7 @@ async def send_pending_order_requests():
                 # send message to user
                 tasks.append(
                     Message(no_ironman_message).send_message(
-                        db.user.find_one({"_id": order.user_id})
+                        db.user.find_one({"wa_id": order.user_wa_id})
                     )
                 )
                 continue
@@ -789,7 +791,7 @@ async def send_ironman_work_schedule():
             {"$set": {"is_work_schedule_pending": False}},
         )
 
-    assign_missed_pickup_to_other_ironmans(pending_schedule)
+    await assign_missed_pickup_to_other_ironmans(pending_schedule)
     logger.info("Completed send_ironman_schedule")
 
 
@@ -994,12 +996,12 @@ async def create_timeslot_volume_record():
     archive_collection = db["timeslot_volume_arch"]
 
     today = datetime.now()
-    day_before_yesterday = today - timedelta(days=1)
-    start_of_day = datetime(
-        day_before_yesterday.year, day_before_yesterday.month, day_before_yesterday.day
+    yesterday = today - timedelta(days=1)
+    start_of_yesterday = datetime(
+        yesterday.year, yesterday.month, yesterday.day
     )
-    end_of_day = start_of_day + timedelta(days=1)
-    tomorrow_date = today + timedelta(days=1)
+    end_of_yesterday = start_of_yesterday + timedelta(days=1)
+    tomorrow = today + timedelta(days=1)
 
     # Get all active service locations and store in a dictionary
     # active_service_locations: Dict[str, ServiceLocation] = {}
@@ -1012,7 +1014,7 @@ async def create_timeslot_volume_record():
         active_service_locations.append(ServiceLocation(**service_location))
 
     pipeline = [
-        {"$match": {"operation_date": {"$lt": end_of_day}}},
+        {"$match": {"operation_date": {"$lt": end_of_yesterday}}},
         # {"$lookup": {"from": "service_locations", "localField": "service_location_id", "foreignField": "_id", "as": "service_location"}},
     ]
     records_found = await source_collection.aggregate(pipeline).to_list(
@@ -1025,7 +1027,7 @@ async def create_timeslot_volume_record():
     # Create records for tomorrow for all active service locations
     for service_location in active_service_locations:
         new_timeslot_volume = TimeslotVolume()
-        new_timeslot_volume.operation_date = tomorrow_date 
+        new_timeslot_volume.operation_date = tomorrow 
         new_timeslot_volume.service_location_id = service_location.id
         new_timeslot_volume.daily_limit = service_location.daily_limit
         new_timeslot_volume.current_clothes = 0
@@ -1036,7 +1038,7 @@ async def create_timeslot_volume_record():
     if records_to_archive:
         archive_result = await archive_collection.insert_many([records_to_archive_timeslot_volume.model_dump(exclude_unset=True) for records_to_archive_timeslot_volume in records_to_archive])
         result = await source_collection.delete_many(
-            {"operation_date": {"$lt": end_of_day}}
+            {"operation_date": {"$lt": end_of_yesterday}}
         )
 
         logger.info(
@@ -1052,9 +1054,6 @@ async def create_timeslot_volume_record():
         logger.info(
             f"Inserted {len(result.inserted_ids)} records for tomorrow in the source collection."
         )
-
-    else:
-        logger.info("No records found for the specified date range.")
 
     await db.config.update_one({"key": is_timeslot_volumene_archive_pending_key}, {"$set": {"value": False}})
     logger.info("Completed create_timeslot_volume_record and archived the records.")

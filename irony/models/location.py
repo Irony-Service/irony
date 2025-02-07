@@ -9,6 +9,9 @@ from irony.models.pyobjectid import PyObjectId
 class Location(BaseModel):
     type: Optional[str] = "Point"
     coordinates: List[float] = Field(..., min_items=2, max_items=2)  # type: ignore
+    
+    def to_coordinates_string(self) -> str:
+        return f"{self.coordinates[0]:.5f},{self.coordinates[1]:.5f}"
 
 
 class UserLocation(BaseModel):

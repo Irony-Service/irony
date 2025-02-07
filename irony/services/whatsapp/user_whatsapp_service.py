@@ -19,29 +19,40 @@ from irony.db import db
 
 # Start new order message reply
 async def start_new_order(contact_details: ContactDetails):
+    start_time = datetime.now()
+    logger.info(f"Starting new order at: {start_time}")
     # Run a daily job to delete all pending orders which are not completed in 24 hours.
     last_message_update = None
-
+    
     # 1: get step 1 message body.
     message_body = whatsapp_utils.get_reply_message(
         message_key="new_order_step_1",
         message_sub_type="reply",
     )
 
+    logger.info(f"Get message body time taken, {(datetime.now() - start_time).total_seconds() * 1000:.2f} ms")
+    start_time = datetime.now()
+
     # 2: update last_message doc for
     last_message_update = {"type": config.MAKE_NEW_ORDER}
 
     # 3: send message to user
-    logger.info(f"Sending message to user : {message_body}")
+    # logger.info(f"Sending message to user : {message_body}")
     await Message(message_body).send_message(contact_details.wa_id, last_message_update)
+
+    logger.info(f"Message sent to time taken: {(datetime.now() - start_time).total_seconds() * 1000:.2f} ms")
+    start_time = datetime.now()
 
     # 4: create user if not exists
     await create_user_if_not_exists(contact_details)
+    logger.info(f"Create user time taken: {(datetime.now() - start_time).total_seconds() * 1000:.2f} ms")
 
 
-async def create_user_if_not_exists(contact_details):
+async def create_user_if_not_exists(contact_details: ContactDetails):
+    start_time = datetime.now()
     # 1: check if user exists
-    user = await db.user.find_one({"_id": contact_details.wa_id})
+    user = await db.user.find_one({"wa_id": contact_details.wa_id})
+    logger.info(f"Get user time taken: {(datetime.now() - start_time).total_seconds() * 1000:.2f} ms")
     if not user:
         new_user = User(
             wa_id=contact_details.wa_id,
@@ -457,31 +468,38 @@ async def get_time_slot_message():
         "delivery_schedule_time_gap"
     ]["value"]
 
-    current_time_plus_delay = datetime.now() + timedelta(minutes=delivery_schedule_time_gap)
+    current_time_plus_delay = datetime.now() + timedelta(minutes=delivery_schedule_time_gap + 560)
     current_time_plus_delay_str = current_time_plus_delay.strftime("%H:%M")
 
 
-    config_time_slots = config.DB_CACHE['ordered_time_slots']
-    config_time_slots = [slot for slot in config_time_slots if slot.get('is_active', False)]
-    config_time_slots_dict = {slot['key'] : slot for slot in config_time_slots}
+    config_ordered_time_slots = config.DB_CACHE['ordered_time_slots']
+
+    config_time_slots_today = [slot for slot in config_ordered_time_slots if slot.get('is_active', False)]
+    config_time_slots_today_dict = {slot['key'] : slot for slot in config_time_slots_today}
+    
+    config_time_slots_tommrrow = [slot for slot in config_ordered_time_slots if slot.get('is_tomorrow_active', False)]
+    config_time_slots_tommrrow_dict = {slot['key'] : slot for slot in config_time_slots_tommrrow}
 
 
     time_slots_in_message = message_body["interactive"]["action"]["sections"][0]["rows"]
-    time_slots_in_message = [slot for slot in time_slots_in_message if slot["id"] in config_time_slots_dict]
+
+    today_time_slots_in_message = [slot for slot in time_slots_in_message if slot["id"] in config_time_slots_today_dict]
+    tomorrow_time_slots_in_message = [slot for slot in time_slots_in_message if slot["id"] in config_time_slots_tommrrow_dict]
 
     
     final_slots = []
-    for slot in time_slots_in_message:
-        if config_time_slots_dict[slot["id"]]["start_time"] > current_time_plus_delay_str:
-            slot["title"] = generate_time_slot_title(config_time_slots_dict[slot["id"]])
+    for slot in today_time_slots_in_message:
+        if config_time_slots_today_dict[slot["id"]]["start_time"] > current_time_plus_delay_str:
+            slot["title"] = generate_time_slot_title(config_time_slots_today_dict[slot["id"]])
             final_slots.append(slot)
     
     if (
+        len(config_time_slots_tommrrow) and 
         current_time_plus_delay_str
-        > config_time_slots[0]["start_time"]
+        > config_time_slots_tommrrow[0]["start_time"]
     ):
-        for slot in time_slots_in_message:
-            slot["title"] = generate_time_slot_title(config_time_slots_dict[slot["id"]], True)
+        for slot in tomorrow_time_slots_in_message:
+            slot["title"] = generate_time_slot_title(config_time_slots_tommrrow_dict[slot["id"]], True)
             slot["id"] = slot["id"] + "T"
             final_slots.append(slot)
 

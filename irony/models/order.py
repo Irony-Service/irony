@@ -48,6 +48,7 @@ class Order(BaseModel):
     maps_link: Optional[str] = None
     picked_up_time: Optional[datetime] = None
     notes: Optional[str] = None
+    distance_from_previous_stop: Optional[float] = None
 
     model_config = shared_config
     # class Config(ModelConfig):

@@ -127,8 +127,8 @@ def get_reply_message(message_key, message_type="interactive", message_sub_type=
             message_body["interactive"]["action"]["sections"][0][
                 "rows"
             ] = call_to_actions
-    logger.info("message body bitch : ", message_body)
-    logger.info(message_body)
+    # logger.info("message body bitch : ", message_body)
+    # logger.info(message_body)
     return message_body
 
 

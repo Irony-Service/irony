@@ -3,6 +3,7 @@ from fastapi import Response
 
 from irony.config import config
 from irony.models.whatsapp.contact_details import ContactDetails
+from irony.services.whatsapp import user_whatsapp_service 
 from irony.util.message import Message
 from irony.config.logger import logger
 from irony.util import whatsapp_utils
@@ -13,32 +14,34 @@ make_prediction = None
 
 
 async def handle_message(message_details, contact_details: ContactDetails):
-    logger.info(f"message type text")
-    message_body = None
-    # user_message = str(message_details["text"]["body"])
-    last_message = await db.last_messages.find_one({"user": contact_details.wa_id})
-    logger.info(f"last message: {last_message}")
-    # pred = make_prediction([message])
-    # logger.info("Smash prediction : ",pred)
-    # logger.info("Smash prediction type : ", pred[0])
-    # prediction_type = pred[0]
-    prediction_type = "start_convo"
+    await user_whatsapp_service.start_new_order(contact_details)
+    
+    # logger.info(f"message type text")
+    # message_body = None
+    # # user_message = str(message_details["text"]["body"])
+    # last_message = await db.last_messages.find_one({"user": contact_details.wa_id})
+    # logger.info(f"last message: {last_message}")
+    # # pred = make_prediction([message])
+    # # logger.info("Smash prediction : ",pred)
+    # # logger.info("Smash prediction type : ", pred[0])
+    # # prediction_type = pred[0]
+    # prediction_type = "start_convo"
 
-    if prediction_type == "start_convo":
-        # Create new user if does not exist
-        user = await db.user.find_one({"wa_id": contact_details.wa_id})
-        if user is None:
-            await db.user.insert_one(
-                {
-                    "wa_id": contact_details.wa_id,
-                    "name": contact_details.name,
-                    "created_at": datetime.now(),
-                }
-            )
-        message_body = await start_convo(contact_details)
-    else:
-        # start convo
-        message_body = await start_convo(contact_details)
+    # if prediction_type == "start_convo":
+    #     # Create new user if does not exist
+    #     user = await db.user.find_one({"wa_id": contact_details.wa_id})
+    #     if user is None:
+    #         await db.user.insert_one(
+    #             {
+    #                 "wa_id": contact_details.wa_id,
+    #                 "name": contact_details.name,
+    #                 "created_at": datetime.now(),
+    #             }
+    #         )
+    #     message_body = await start_convo(contact_details)
+    # else:
+    #     # start convo
+    #     message_body = await start_convo(contact_details)
 
     # if bool(message_body):
     #     logger.info(f"Sending message to user : {message_body}")
