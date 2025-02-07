@@ -175,6 +175,84 @@ async def get_orders_for_statuses_group_by_date_and_time_slot_for_agent_location
         )
 
 
+async def get_orders_for_statuses(
+    agent_mobile: str,
+    ordered_statuses: List[OrderStatusEnum],
+):
+    response = FetchOrdersResponse()
+    try:
+        agent_data = await db.service_agent.find_one({"mobile": agent_mobile})
+        if agent_data is None:
+            raise HTTPException(status_code=404, detail="Service agent not found")
+
+        agent: ServiceAgent = ServiceAgent(**agent_data)
+
+        if agent.service_location_ids is None:
+            raise HTTPException(
+                status_code=400, detail="Service agent has no service locations"
+            )
+
+        pipeline: List[Dict[str, Any]] = [
+            {
+                "$match": {
+                    "service_location_id": {"$in": agent.service_location_ids},
+                    "order_status.0.status": {"$in": ordered_statuses},
+                }
+            },
+            {"$sort": {"pickup_date_time.start": -1, "time_slot": 1}},
+            # {
+            #     "$group": {
+            #         "_id": {
+            #             "pick_up_date": "$pickup_date_time.date",
+            #             "time_slot": "$time_slot",
+            #         },
+            #         "orders": {"$push": "$$ROOT"},
+            #     }
+            # },
+            # {
+            #     "$group": {
+            #         "_id": {
+            #             "pick_up_date": "$_id.pick_up_date",
+            #         },
+            #         "time_slots": {
+            #             "$push": {"time_slot": "$_id.time_slot", "orders": "$orders"}
+            #         },
+            #     }
+            # },
+            # {
+            #     "$sort": {
+            #         "_id.pick_up_date": -1,
+            #         "_id.time_slot": 1,
+            #     }
+            # },
+        ]
+
+        delivery_orders = await db.order.aggregate(pipeline).to_list(None)
+
+        if not delivery_orders:
+            response.message = "No orders found"
+            return response
+
+        # return bson.json_util.dumps(grouped_orders)
+        # return grouped_orders
+        response.data = await set_response_body_delivery(
+            delivery_orders, ordered_statuses, "Pickup / Delivery"
+        )
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error in get_orders_for_statuses_group_by_date_and_time_slot_for_agent_locations: {e}",
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while fetching grouped orders",
+        )
+
+
 async def get_orders_group_by_status_and_date_and_time_slot_for_agent_locations(
     agent_mobile: str,
     ordered_statuses: List[OrderStatusEnum],
@@ -432,6 +510,95 @@ async def set_group_by_response_body_delivery(
                 handle_route_error(order_list_for_date_and_slot, e)
 
         response_dict[date][time_slot] = order_list_for_date_and_slot
+
+    response_body = []
+    key = "_AND_".join([order_status for order_status in ordered_statuses])
+    if not label:
+        label = "/".join(
+            [
+                OrderStatusEnum.getHomeSectionLabel(order_status)
+                for order_status in ordered_statuses
+            ]
+        )
+
+    # for order_status in ordered_statuses:
+    #     if order_status not in response_dict:
+    #         continue
+    #     status_obj = response_dict[order_status]
+    date_item_list: List[DateItem] = []
+    for date in response_dict:
+        date_obj = response_dict[date]
+        time_slot_item_list: List[TimeSlotItem] = []
+        for time_slot in date_obj:
+            time_slot_item_list.append(
+                TimeSlotItem(time_slot=time_slot, orders=date_obj[time_slot])
+            )
+        date_item_list.append(DateItem(date=date, time_slots=time_slot_item_list))
+
+    response_body.append(
+        FetchOrdersResponseBodyItem(key=key, label=label, dates=date_item_list)
+    )
+
+    return response_body
+
+    respnse_body = [
+        response_dict[date] for date in ordered_statuses if date in response_dict
+    ]
+    return response_dict
+
+
+async def set_response_body_delivery(
+    orders, ordered_statuses: List[OrderStatusEnum], label=None
+):
+    # logger.info(f"Orders: {grouped_orders}")
+    # response_dict: Dict[OrderStatusEnum, FetchOrdersResponseBodyItem] = {}
+    response_dict: dict = {}
+    delivery_time_gap = (
+        config.DB_CACHE.get("config", {})
+        .get("delivery_schedule_time_gap", {})
+        .get("value", 60)
+    )
+    cuttoff_time = datetime.now() + timedelta(minutes=delivery_time_gap)
+    pickup_time_start = None
+
+    order_list_for_date_and_slot: List[Order] = []
+    for order in orders:
+        order = OrderVo(**order)
+
+        if (
+            not pickup_time_start
+            and order.pickup_date_time.start
+            and order.pickup_date_time.start < cuttoff_time
+        ):
+            pickup_time_start = order.pickup_date_time.start
+
+        order.time_slot_description = (
+            config.DB_CACHE.get("call_to_action", {})
+            .get(order.time_slot, {})
+            .get("title", None)
+        )
+        order.count_range_description = (
+            config.DB_CACHE.get("call_to_action", {})
+            .get(order.count_range, {})
+            .get("title", None)
+        )
+        order.delivery_type = OrderStatusEnum.getDeliveryType(
+            order.order_status[0].status
+        )
+        order.maps_link = utils.get_maps_link(order.location)
+
+        order_list_for_date_and_slot.append(order)
+
+    if pickup_time_start:
+        try:
+            order_list_for_date_and_slot = await route.route_sort_orders(
+                order_list_for_date_and_slot
+            )
+            logger.info(f"Route sorted orders: {order_list_for_date_and_slot}")
+        except HTTPException as e:
+            handle_route_error(order_list_for_date_and_slot, e)
+
+    response_dict[datetime.now()]["Routes"] = order_list_for_date_and_slot
 
     response_body = []
     key = "_AND_".join([order_status for order_status in ordered_statuses])
