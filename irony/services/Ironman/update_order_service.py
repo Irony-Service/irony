@@ -68,26 +68,21 @@ async def update_order(request: UpdateOrderRequest):
 
             if order_status == OrderStatusEnum.WORK_IN_PROGRESS:
                 if request.new_status == OrderStatusEnum.DELIVERY_PENDING:
-                    if order.order_status is None:
-                        order.order_status = []
-                    order.order_status.insert(
-                        0,
-                        (
-                            OrderStatus(
-                                status=OrderStatusEnum(request.new_status),
-                                created_on=now,
-                                updated_on=now,
-                            )
-                        ),
+                    await update_order_status(request, now, order, bulk_operations)
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Invalid status transition from WORK_IN_PROGRESS",
                     )
-                    order.updated_on = now
-                    bulk_operations.append(
-                        ReplaceOne(
-                            {"_id": PyObjectId(request.order_id)},
-                            order.model_dump(exclude_unset=True, by_alias=True),
-                        )
+            
+            elif order_status == OrderStatusEnum.DELIVERY_PENDING:
+                if request.new_status == OrderStatusEnum.DELIVERED:
+                    await update_order_status(request, now, order, bulk_operations)
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Invalid status transition from DELIVERY_PENDING",
                     )
-                    await bulk_write_operations("order", bulk_operations)
         return response
 
     except HTTPException:
@@ -97,6 +92,28 @@ async def update_order(request: UpdateOrderRequest):
         raise HTTPException(
             status_code=500, detail="Internal server error while updating order"
         )
+
+async def update_order_status(request, now, order, bulk_operations):
+    if order.order_status is None:
+        order.order_status = []
+    order.order_status.insert(
+                        0,
+                        (
+                            OrderStatus(
+                                status=OrderStatusEnum(request.new_status),
+                                created_on=now,
+                                updated_on=now,
+                            )
+                        ),
+                    )
+    order.updated_on = now
+    bulk_operations.append(
+                        ReplaceOne(
+                            {"_id": PyObjectId(request.order_id)},
+                            order.model_dump(exclude_unset=True, by_alias=True),
+                        )
+                    )
+    await bulk_write_operations("order", bulk_operations)
 
 
 async def process_pending_pickup_order_update(
