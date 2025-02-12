@@ -73,11 +73,11 @@ app = FastAPI()
 
 app.router.lifespan_context = lifespan
 
-origins = ["http://localhost:3000", "http://192.168.1.47:3000"]
+# origins = ["http://localhost:3000"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
