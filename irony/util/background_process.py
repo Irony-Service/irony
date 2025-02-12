@@ -54,8 +54,12 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
                 order.id,
             )
             raise WhatsappException(config.DEFAULT_ERROR_REPLY_MESSAGE)
-        
-        geo_near_radius = config.DB_CACHE.get("config", {}).get("geo_near_radius", {}).get("value", 2000)
+
+        geo_near_radius = (
+            config.DB_CACHE.get("config", {})
+            .get("geo_near_radius", {})
+            .get("value", 2000)
+        )
 
         pipeline: List[Dict[str, Any]] = [
             {
@@ -739,7 +743,7 @@ async def send_ironman_work_schedule():
 
         for service_location_order in service_location_orders:
             tasks = []
-            orders = service_location_order['documents']
+            orders = service_location_order["documents"]
 
             for i, order in enumerate(orders):
                 order = Order(**order)
@@ -953,9 +957,7 @@ async def create_timeslot_volume_record_old():
     end_of_day = start_of_day + timedelta(days=1)
     tomorrow_date = today + timedelta(days=1)
 
-    pipeline = [
-        {"$match": {"operation_date": {"$lt": end_of_day}}}
-    ]
+    pipeline = [{"$match": {"operation_date": {"$lt": end_of_day}}}]
     records_to_archive = await source_collection.aggregate(pipeline).to_list(
         length=None
     )
@@ -986,7 +988,9 @@ async def create_timeslot_volume_record_old():
 
 async def create_timeslot_volume_record():
     is_timeslot_volumene_archive_pending_key = "is_timeslot_volume_archive_pending"
-    archive_status_doc = await db.config.find_one({"key":is_timeslot_volumene_archive_pending_key , "value": True})
+    archive_status_doc = await db.config.find_one(
+        {"key": is_timeslot_volumene_archive_pending_key, "value": True}
+    )
 
     if not archive_status_doc:
         logger.info("Timeslot volume records already archived.")
@@ -997,9 +1001,7 @@ async def create_timeslot_volume_record():
 
     today = datetime.now()
     yesterday = today - timedelta(days=1)
-    start_of_yesterday = datetime(
-        yesterday.year, yesterday.month, yesterday.day
-    )
+    start_of_yesterday = datetime(yesterday.year, yesterday.month, yesterday.day)
     end_of_yesterday = start_of_yesterday + timedelta(days=1)
     tomorrow = today + timedelta(days=1)
 
@@ -1017,26 +1019,35 @@ async def create_timeslot_volume_record():
         {"$match": {"operation_date": {"$lt": end_of_yesterday}}},
         # {"$lookup": {"from": "service_locations", "localField": "service_location_id", "foreignField": "_id", "as": "service_location"}},
     ]
-    records_found = await source_collection.aggregate(pipeline).to_list(
-        length=None
-    )
-    records_to_archive: List[TimeslotVolume] = [TimeslotVolume(**record) for record in records_found]
+    records_found = await source_collection.aggregate(pipeline).to_list(length=None)
+    records_to_archive: List[TimeslotVolume] = [
+        TimeslotVolume(**record) for record in records_found
+    ]
     # records_to_archive_timeslot_volume: List[TimeslotVolume] = []
 
-    tomorrow_records : List[TimeslotVolume] = []
+    tomorrow_records: List[TimeslotVolume] = []
     # Create records for tomorrow for all active service locations
     for service_location in active_service_locations:
         new_timeslot_volume = TimeslotVolume()
-        new_timeslot_volume.operation_date = tomorrow 
+        new_timeslot_volume.operation_date = tomorrow
         new_timeslot_volume.service_location_id = service_location.id
         new_timeslot_volume.daily_limit = service_location.daily_limit
         new_timeslot_volume.current_clothes = 0
-        new_timeslot_volume.timeslot_distributions = service_location.timeslot_distributions
-        new_timeslot_volume.services_distribution = service_location.services_distribution
+        new_timeslot_volume.timeslot_distributions = (
+            service_location.timeslot_distributions
+        )
+        new_timeslot_volume.services_distribution = (
+            service_location.services_distribution
+        )
         tomorrow_records.append(new_timeslot_volume)
 
     if records_to_archive:
-        archive_result = await archive_collection.insert_many([records_to_archive_timeslot_volume.model_dump(exclude_unset=True) for records_to_archive_timeslot_volume in records_to_archive])
+        archive_result = await archive_collection.insert_many(
+            [
+                records_to_archive_timeslot_volume.model_dump(exclude_unset=True)
+                for records_to_archive_timeslot_volume in records_to_archive
+            ]
+        )
         result = await source_collection.delete_many(
             {"operation_date": {"$lt": end_of_yesterday}}
         )
@@ -1049,13 +1060,20 @@ async def create_timeslot_volume_record():
         )
 
     if tomorrow_records:
-        result = await source_collection.insert_many([tomorrow_record.model_dump(exclude_unset=True) for tomorrow_record in tomorrow_records])
+        result = await source_collection.insert_many(
+            [
+                tomorrow_record.model_dump(exclude_unset=True)
+                for tomorrow_record in tomorrow_records
+            ]
+        )
 
         logger.info(
             f"Inserted {len(result.inserted_ids)} records for tomorrow in the source collection."
         )
 
-    await db.config.update_one({"key": is_timeslot_volumene_archive_pending_key}, {"$set": {"value": False}})
+    await db.config.update_one(
+        {"key": is_timeslot_volumene_archive_pending_key}, {"$set": {"value": False}}
+    )
     logger.info("Completed create_timeslot_volume_record and archived the records.")
 
 
@@ -1194,25 +1212,45 @@ async def reset_daily_config():
     # Get daily config reset record
     daily_reset = await db.config.find_one({"key": "daily_config_reset"})
 
-    if not daily_reset or daily_reset.get("date").replace(hour=0, minute=0, second=0, microsecond=0) != today:
+    if (
+        not daily_reset
+        or daily_reset.get("date").replace(hour=0, minute=0, second=0, microsecond=0)
+        != today
+    ):
         # Update the daily reset record with today's date
         await db.config.update_one(
             {"key": "daily_config_reset"},
             {"$set": {"date": datetime.now()}},
-            upsert=True
+            upsert=True,
         )
-        
+
         # Update timeslot volume archive pending flag
         await db.config.update_one(
             {"key": "is_timeslot_volume_archive_pending"},
             {"$set": {"value": True}},
-            upsert=True
+            upsert=True,
         )
 
-        # Update all timeslot configs 
+        # Update all timeslot configs
         result = await db.config.update_many(
-            {"key": {"$in": ["TIME_SLOT_ID_1", "TIME_SLOT_ID_2", "TIME_SLOT_ID_3", "TIME_SLOT_ID_4"]}},
-            {"$set": {"is_pending_schedule_pending": True, "is_work_schedule_pending": True, "is_delivery_schedule_pending": True, "is_reassign_pending": True}}
+            {
+                "key": {
+                    "$in": [
+                        "TIME_SLOT_ID_1",
+                        "TIME_SLOT_ID_2",
+                        "TIME_SLOT_ID_3",
+                        "TIME_SLOT_ID_4",
+                    ]
+                }
+            },
+            {
+                "$set": {
+                    "is_pending_schedule_pending": True,
+                    "is_work_schedule_pending": True,
+                    "is_delivery_schedule_pending": True,
+                    "is_reassign_pending": True,
+                }
+            },
         )
 
         logger.info(f"Reset {result.modified_count} timeslot configs")

@@ -1,4 +1,4 @@
-from typing import ClassVar
+from typing import ClassVar, Optional
 from bson import ObjectId
 from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 
@@ -7,7 +7,7 @@ class ModelConfig:
     arbitrary_types_allowed = True
 
 
-shared_config = ConfigDict(arbitrary_types_allowed=True, json_encoders = {ObjectId: str})
+shared_config = ConfigDict(arbitrary_types_allowed=True, json_encoders={ObjectId: str})
 
 
 class CommonModel(BaseModel):
@@ -34,7 +34,7 @@ class CommonModel(BaseModel):
         return v
 
     @field_serializer(*OBJECT_ID_FIELDS, when_used="unless-none", check_fields=False)
-    def serialize_id(self, value: ObjectId | None) -> str | None:
+    def serialize_id(self, value: Optional[ObjectId]) -> Optional[str]:
         if value is None:
             return None
         if not isinstance(value, ObjectId):
