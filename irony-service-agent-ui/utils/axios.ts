@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const apiBaseUrl: string = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_UR}/api/ironman` : "";
+const apiBaseUrl: string = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api/ironman` : "";
 
 if (!apiBaseUrl) {
   throw new Error("NEXT_PUBLIC_API_URL is not defined in the environment variables");

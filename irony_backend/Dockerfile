@@ -33,4 +33,4 @@ EXPOSE 8000
 # CMD ["sh", "-c", "if [ \"$SSL_ENABLED\" = \"true\" ]; then uvicorn irony.main:app --host 0.0.0.0 --port 8000 --ssl-keyfile /app/ssl/key.pem --ssl-certfile /app/ssl/cert.pem; else uvicorn irony.main:app --host 0.0.0.0 --port 8000; fi"]
 
 # Start FastAPI with UVicorn in production mode
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["uvicorn", "irony.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

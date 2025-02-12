@@ -3,7 +3,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import api from "../../utils/axiosClient";
+import apiClient from "../../utils/axiosClient";
 import { LoginButton } from "./components/LoginButton";
 
 export default function Login() {
@@ -15,7 +15,7 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await api.post<any>("/login", { mobile, password });
+      const response = await apiClient.post<any>("/login", { mobile, password }, { cache: "no-store" });
       console.log(response);
       console.log(response.data);
 
