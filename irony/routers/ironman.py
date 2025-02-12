@@ -64,7 +64,7 @@ async def protected_route(current_user: str = Depends(auth.get_current_user)):
 
 
 @router.get("/agentOrdersByStatusOld")
-async def getAgentOrdersByStatus(
+async def getAgentOrdersByStatusOld(
     current_user: str = Depends(auth.get_current_user), order_status: str = ""
 ):
     ordered_statuses = [
@@ -117,6 +117,7 @@ async def getAgentOrdersByStatusGroupByDateAndTimeSlot(
         current_user,
         ordered_statuses=ordered_statuses,
     )
+
 
 @router.get("/agentOrdersByStatus")
 async def getAgentOrdersByStatus(

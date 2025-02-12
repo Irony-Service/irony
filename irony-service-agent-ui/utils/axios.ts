@@ -1,17 +1,13 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const apiBaseUrl: string = "http://localhost:8000/api/ironman";
+const apiBaseUrl: string = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_UR}/api/ironman` : "";
 
 if (!apiBaseUrl) {
   throw new Error("NEXT_PUBLIC_API_URL is not defined in the environment variables");
 }
 
-async function fetchApi<T>(
-  endpoint: string,
-  options: RequestInit = {},
-  queryParams?: Record<string, string | number | boolean>
-): Promise<T> {
+async function fetchApi<T>(endpoint: string, options: RequestInit = {}, queryParams?: Record<string, string | number | boolean>): Promise<T> {
   const url = new URL(`${apiBaseUrl}${endpoint}`);
   if (queryParams) {
     Object.entries(queryParams).forEach(([key, value]) => {
@@ -48,8 +44,7 @@ async function fetchApi<T>(
 
 // Helper methods for common HTTP methods, similar to axiosClient
 const axios = {
-  get: <T>(endpoint: string, queryParams?: Record<string, string | number | boolean>, options?: RequestInit) =>
-    fetchApi<T>(endpoint, { method: "GET", ...options }, queryParams),
+  get: <T>(endpoint: string, queryParams?: Record<string, string | number | boolean>, options?: RequestInit) => fetchApi<T>(endpoint, { method: "GET", ...options }, queryParams),
 
   post: <T>(endpoint: string, data?: any, options?: RequestInit) =>
     fetchApi<T>(endpoint, {

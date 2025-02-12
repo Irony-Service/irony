@@ -1,5 +1,6 @@
 // Get the API base URL from the environment variable
-const apiBaseUrl: string = "http://irony.store:8000/api/ironman";
+// const apiBaseUrl: string = "http://irony.store:8000/api/ironman";
+const apiBaseUrl: string = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_UR}/api/ironman` : "";
 
 if (!apiBaseUrl) {
   throw new Error("NEXT_PUBLIC_API_URL is not defined in the environment variables");
