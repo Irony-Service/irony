@@ -129,6 +129,6 @@ async def root():
     return {"message": "Hello World"}
 
 
-app.include_router(whatsapp.router, prefix="/whatsapp")
-app.include_router(users.router)
+app.include_router(whatsapp.router, prefix="/api/whatsapp")
+app.include_router(users.router, prefix="/api/users")
 app.include_router(ironman.router, prefix="/api/ironman")
