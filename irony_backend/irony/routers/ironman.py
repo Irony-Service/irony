@@ -29,9 +29,14 @@ from irony.services.Ironman import (
     fetch_orders_service,
     service_agent_auth_service,
     service_prices_service,
-    update_order_service,
+    create_update_order_service,
 )
 from irony.util import auth
+
+from irony.models.service_agent.vo.create_order_vo import (
+    CreateOrderRequest,
+    CreateOrderResponse,
+)
 
 router = APIRouter()
 
@@ -149,9 +154,14 @@ async def fetchOrderDetails(request: FetchOrderDetailsRequest):
     return await fetch_order_deatils_service.fetch_order_details(request)
 
 
+@router.post("/createOrder", response_model=CreateOrderResponse)
+async def createOrder(request: CreateOrderRequest):
+    return await create_update_order_service.create_order(request)
+
+
 @router.post("/updateOrder")
 async def updateOrder(request: UpdateOrderRequest):
-    return await update_order_service.update_order(request)
+    return await create_update_order_service.update_order(request)
 
 
 @router.post("/fetchAdaptiveRoute")

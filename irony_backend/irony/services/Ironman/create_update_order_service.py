@@ -2,6 +2,7 @@ from datetime import datetime
 import pprint
 import copy
 from typing import Dict, List, Optional, Union
+from irony.models.pickup_tIme import PickupDateTime
 from irony.models.pyobjectid import PyObjectId
 from fastapi import Response, HTTPException
 from pymongo import InsertOne, ReplaceOne
@@ -33,6 +34,10 @@ from irony.util import whatsapp_utils
 import irony.services.whatsapp.interactive_message_service as interactive_message_service
 import irony.services.whatsapp.text_message_service as text_message_service
 from irony.config.logger import logger
+from irony.models.service_agent.vo.create_order_vo import (
+    CreateOrderRequest,
+    CreateOrderResponse,
+)
 
 
 async def update_order(request: UpdateOrderRequest):
@@ -74,7 +79,7 @@ async def update_order(request: UpdateOrderRequest):
                         status_code=400,
                         detail="Invalid status transition from WORK_IN_PROGRESS",
                     )
-            
+
             elif order_status == OrderStatusEnum.DELIVERY_PENDING:
                 if request.new_status == OrderStatusEnum.DELIVERED:
                     await update_order_status(request, now, order, bulk_operations)
@@ -93,26 +98,27 @@ async def update_order(request: UpdateOrderRequest):
             status_code=500, detail="Internal server error while updating order"
         )
 
+
 async def update_order_status(request, now, order, bulk_operations):
     if order.order_status is None:
         order.order_status = []
     order.order_status.insert(
-                        0,
-                        (
-                            OrderStatus(
-                                status=OrderStatusEnum(request.new_status),
-                                created_on=now,
-                                updated_on=now,
-                            )
-                        ),
-                    )
+        0,
+        (
+            OrderStatus(
+                status=OrderStatusEnum(request.new_status),
+                created_on=now,
+                updated_on=now,
+            )
+        ),
+    )
     order.updated_on = now
     bulk_operations.append(
-                        ReplaceOne(
-                            {"_id": PyObjectId(request.order_id)},
-                            order.model_dump(exclude_unset=True, by_alias=True),
-                        )
-                    )
+        ReplaceOne(
+            {"_id": PyObjectId(request.order_id)},
+            order.model_dump(exclude_unset=True, by_alias=True),
+        )
+    )
     await bulk_write_operations("order", bulk_operations)
 
 
@@ -269,4 +275,117 @@ def validate_request_status(request):
     if request.current_status == request.new_status:
         raise HTTPException(
             status_code=400, detail="Current status and new status are same"
+        )
+
+
+async def create_order(request: CreateOrderRequest):
+    try:
+        response = CreateOrderResponse()
+        now = datetime.now()
+        # Check if user exists, create if not
+        user_data = await db.user.find_one({"wa_id": request.user_wa_id})
+        user_id: str | PyObjectId | None = None
+        if not user_data:
+            new_user = User(wa_id=request.user_wa_id, created_on=now)
+            result = await db.user.insert_one(
+                new_user.model_dump(exclude_unset=True, by_alias=True)
+            )
+            user_id = result.inserted_id
+        else:
+            user_id = User(**user_data).id
+
+        # timeslot, pickup_time
+        pickup_datetime = datetime.now()
+        current_time_str = pickup_datetime.strftime("%H:%M")
+
+        ordered_time_slots = config.DB_CACHE["ordered_time_slots"]
+        h, m, he, me = None, None, None, None
+        time_slot_id = None
+        if current_time_str < ordered_time_slots[0]["start_time"]:
+            time_slot_id = ordered_time_slots[0]["key"]
+            h, m = map(int, ordered_time_slots[0]["start_time"].split(":"))
+            he, me = map(int, ordered_time_slots[0]["end_time"].split(":"))
+        else:
+            for i in ordered_time_slots:
+                time_slot_id = ordered_time_slots[0]["key"]
+                h, m = map(int, i["start_time"].split(":"))
+                he, me = map(int, i["end_time"].split(":"))
+                if i["start_time"] <= current_time_str <= i["end_time"]:
+                    break
+
+        if h is None or m is None or he is None or me is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Unable to create order (pickup_datetime issue). Please try again later",
+            )
+
+        start_time = pickup_datetime.replace(hour=h, minute=m, second=0, microsecond=0)
+        end_time = pickup_datetime.replace(hour=he, minute=me, second=0, microsecond=0)
+        date_time = pickup_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if not time_slot_id:
+            raise HTTPException(
+                status_code=500,
+                detail="Unable to create order (time_slot_id issue). Please try again later",
+            )
+
+        # Create new order
+        new_order = Order(
+            user_id=PyObjectId(user_id),
+            user_wa_id=request.user_wa_id,
+            service_location_id=request.service_location_id,
+            notes=request.notes,
+            order_items=request.items,
+            total_price=request.total_price,
+            order_status=[
+                OrderStatus(
+                    status=OrderStatusEnum.WORK_IN_PROGRESS,
+                    created_on=now,
+                    updated_on=now,
+                )
+            ],
+            time_slot=time_slot_id,
+            pickup_date_time=PickupDateTime(
+                date=date_time,
+                start=start_time,
+                end=end_time,
+            ),
+            created_on=now,
+            is_active=True,
+        )
+
+        # Calculate total count
+        total_count = sum(item.count for item in request.items)
+        new_order.total_count = total_count
+
+        # # Set count range based on total count
+        # if total_count <= 5:
+        #     new_order.count_range = "1-5"
+        #     new_order.count_range_description = "1-5"
+        # elif total_count <= 10:
+        #     new_order.count_range = "6-10"
+        #     new_order.count_range_description = "6-10"
+        # else:
+        #     new_order.count_range = "10+"
+        #     new_order.count_range_description = "10+"
+
+        # Insert order
+        result = await db.order.insert_one(
+            new_order.model_dump(exclude_unset=True, by_alias=True)
+        )
+
+        # Set response
+        response.success = True
+        response.message = "Order created successfully"
+        response.data = {"order_id": str(result.inserted_id)}
+
+        return response
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        logger.error(f"Error in create_order: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail="Internal server error while creating order"
         )

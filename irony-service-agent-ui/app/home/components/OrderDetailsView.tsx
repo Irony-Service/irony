@@ -25,7 +25,7 @@ export default function OrderDetailsView(props: OrderDetailsProps) {
   let simpleId = order?.simple_id || orderId;
   const customerName = order.user_id;
   const phoneNumber = order.user_wa_id;
-  const countRange = order.count_range_description + " clothes";
+  const countRange = (order.total_count ? order.total_count : order.count_range_description) + " clothes";
   const notes = order.notes || "";
   const currentOrderStatus = order.order_status[0]?.status;
   const showAction = props.actionStatusMap.has(currentOrderStatus);
@@ -89,22 +89,13 @@ export default function OrderDetailsView(props: OrderDetailsProps) {
         <div className="flex justify-between items-center w-full bg-gray-50 p-3 rounded-lg">
           <div className="text-sm font-semibold text-gray-700">Order #{simpleId}</div>
           <div className="flex gap-2">
-            <Link
-              href={`tel:+${phoneNumber}`}
-              className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
-            >
+            <Link href={`tel:+${phoneNumber}`} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
               <Image width={16} height={16} loading="lazy" src="/vector_phone.svg" alt="Call" />
             </Link>
-            <Link
-              href={order.maps_link || ""}
-              className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
-            >
+            <Link href={order.maps_link || ""} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
               <Image width={16} height={16} loading="lazy" src="/maps_arrow.svg" alt="Maps" />
             </Link>
-            <button
-              onClick={() => props.onClose(false)}
-              className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
-            >
+            <button onClick={() => props.onClose(false)} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
               <Image width={16} height={16} loading="lazy" src="/vector_close.svg" alt="Close" />
             </button>
           </div>
@@ -123,17 +114,13 @@ export default function OrderDetailsView(props: OrderDetailsProps) {
             </Link>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-500">Count Range:</span>
+            <span className="text-gray-500">Count:</span>
             <span className="font-medium">{countRange}</span>
           </div>
         </div>
 
         {/* Services List - Read Only */}
-        <OrderServicesList
-          orderItems={orderItems}
-          priceServiceMap={props.priceServiceMap}
-          priceNameMap={props.priceNameMap}
-        ></OrderServicesList>
+        <OrderServicesList orderItems={orderItems} priceServiceMap={props.priceServiceMap} priceNameMap={props.priceNameMap}></OrderServicesList>
 
         {/* Bill Details */}
         {showBillDetails && <BillDetailsWithValues orderItems={orderItemsBill} />}
@@ -148,15 +135,7 @@ export default function OrderDetailsView(props: OrderDetailsProps) {
       </div>
 
       <div className="sticky bottom-0 flex flex-col mt-4 w-full font-medium text-center bg-white p-4 border-t">
-        {message && (
-          <div
-            className={`mb-4 p-3 rounded-lg text-sm ${
-              message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
-          >
-            {message.text}
-          </div>
-        )}
+        {message && <div className={`mb-4 p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{message.text}</div>}
 
         {showAction && <SlidingButton onComplete={handleConfirm} isLoading={isSubmitting} />}
       </div>

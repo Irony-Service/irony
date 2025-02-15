@@ -1,91 +1,109 @@
-// pages/login.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
 import apiClient from "../../utils/axiosClient";
-import { LoginButton } from "./components/LoginButton";
 
 export default function Login() {
   const router = useRouter();
-  const [mobile, setMobile] = useState("");
-  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    mobile: "",
+    password: "",
+  });
   const [error, setError] = useState("");
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    setError(""); // Clear error when user types
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
     try {
-      const response = await apiClient.post<any>("/login", { mobile, password }, { cache: "no-store" });
-      console.log(response);
-      console.log(response.data);
-
-      // const { token } = response.data;
-
-      // Store token in localStorage
-      // localStorage.setItem("auth_token", token);
-
-      // Redirect to home page upon success
+      const response = await apiClient.post<any>("/login", formData, { cache: "no-store" });
       router.push("/home/agent");
-    } catch (err) {
-      console.log(err);
-      setError("Invalid credentials");
+    } catch (err: any) {
+      setError(err.message || "Invalid credentials");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex overflow-hidden flex-col px-3.5 pt-60 pb-96 mx-auto w-full bg-amber-100 max-w-[480px]">
-      <h1 className="self-start text-3xl font-bold text-sky-300 mb-5">Login</h1>
-      <form onSubmit={handleLogin}>
-        <div className="relative mb-8">
-          <label htmlFor="mobile" className="sr-only">
-            Mobile
-          </label>
-          <input
-            type="tel"
-            id="mobile"
-            placeholder="Mobile"
-            value={mobile}
-            onChange={(e) => setMobile(e.target.value)}
-            className="px-4 py-3  w-full max-w-full text-xs whitespace-nowrap bg-white rounded-3xl text-neutral-400"
-          />
-        </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center">
+      <div className="max-w-md w-full mx-auto p-6">
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          {/* Logo/Header */}
+          <div className="text-center mb-8">
+            <Image src="/logo.svg" alt="Logo" width={64} height={64} className="mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-800">Agent Login</h2>
+          </div>
 
-        <div className="relative mb-8">
-          <label htmlFor="password" className="sr-only">
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="px-4 py-3  w-full max-w-full text-xs whitespace-nowrap bg-white rounded-3xl text-neutral-400"
-          />
+          <form onSubmit={handleLogin} className="space-y-6">
+            {/* Mobile Input */}
+            <div>
+              <label htmlFor="mobile" className="block text-sm font-medium text-gray-700 mb-2">
+                Mobile Number
+              </label>
+              <input
+                type="tel"
+                id="mobile"
+                name="mobile"
+                value={formData.mobile}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:border-amber-300 transition-colors"
+                placeholder="Enter your mobile number"
+                required
+              />
+            </div>
+
+            {/* Password Input */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:border-amber-300 transition-colors"
+                placeholder="Enter your password"
+                required
+              />
+            </div>
+
+            {/* Error Message */}
+            {error && <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">{error}</div>}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-colors
+                ${isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-amber-400 hover:bg-amber-500"}`}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Logging in...</span>
+                </div>
+              ) : (
+                "Login"
+              )}
+            </button>
+          </form>
         </div>
-        {error && <p>{error}</p>}
-        <LoginButton />
-      </form>
+      </div>
     </div>
-
-    // <div>
-    //   <h1>Login</h1>
-    //   <form onSubmit={handleLogin}>
-    //     <input
-    //       type="text"
-    //       placeholder="Mobile"
-    //       value={mobile}
-    //       onChange={(e) => setMobile(e.target.value)}
-    //     />
-    //     <input
-    //       type="password"
-    //       placeholder="Password"
-    //       value={password}
-    //       onChange={(e) => setPassword(e.target.value)}
-    //     />
-    //     {error && <p>{error}</p>}
-    //     <button type="submit">Login</button>
-    //   </form>
-    // </div>
   );
 }

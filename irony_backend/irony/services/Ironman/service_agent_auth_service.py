@@ -87,8 +87,8 @@ async def login_service_agent(response: Response, user: UserLogin) -> LoginUserR
             key="auth_token",
             value=token,
             httponly=True,
-            secure=True,  # Use True in production with HTTPS
-            # secure=False,  # Use True in production with HTTPS
+            # secure=True,  # Use True in production with HTTPS
+            secure=False,  # Use True in production with HTTPS
             # samesite="lax",
             samesite="none",
             expires=datetime.now(timezone.utc)
