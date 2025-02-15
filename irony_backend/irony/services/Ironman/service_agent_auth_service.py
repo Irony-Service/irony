@@ -11,7 +11,7 @@ from irony.models.service_agent.vo.register_agent_response import (
 )
 from irony.models.service_agent.vo.user_login import UserLogin
 from irony.util import auth
-from irony_backend.irony import main
+from irony import main
 
 # Below is placeholder code
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
