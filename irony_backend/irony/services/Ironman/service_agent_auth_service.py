@@ -11,6 +11,7 @@ from irony.models.service_agent.vo.register_agent_response import (
 )
 from irony.models.service_agent.vo.user_login import UserLogin
 from irony.util import auth
+from irony_backend.irony import main
 
 # Below is placeholder code
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
@@ -87,8 +88,8 @@ async def login_service_agent(response: Response, user: UserLogin) -> LoginUserR
             key="auth_token",
             value=token,
             httponly=True,
-            # secure=True,  # Use True in production with HTTPS
-            secure=False,  # Use True in production with HTTPS
+            secure=main.cookie_secure,  # Use True in production with HTTPS
+            # secure=False,  # Use True in production with HTTPS
             # samesite="lax",
             samesite="none",
             expires=datetime.now(timezone.utc)
