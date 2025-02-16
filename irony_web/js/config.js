@@ -27,6 +27,24 @@ const config = {
     name: "Irony Laundromat",
     year: new Date().getFullYear(),
   },
+
+  // Operating Areas in Hyderabad
+  operatingAreas: {
+    areas: [
+      "Madhapur",
+      "Gachibowli",
+      "HITEC City",
+      "Kondapur",
+      "Jubilee Hills",
+      "Banjara Hills",
+      "Kukatpally",
+      "Miyapur",
+      "Manikonda",
+      "Financial District",
+    ],
+    city: "Hyderabad",
+    state: "Telangana",
+  },
 };
 
 export default config;

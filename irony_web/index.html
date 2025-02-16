@@ -9,7 +9,10 @@
   </head>
   <body>
     <nav class="navbar">
-      <div class="logo" id="companyName">Irony Laundromat</div>
+      <div class="logo" id="companyName">
+        <i class="fas fa-steam logo-icon"></i>
+        <span class="logo-text">Irony Laundromat</span>
+      </div>
       <div class="nav-buttons">
         <button id="whatsappBtn" class="contact-btn"><i class="fab fa-whatsapp"></i> Book Service</button>
         <button id="providerBtn" class="provider-btn">Service Provider Login</button>
@@ -77,6 +80,14 @@
           <p id="weekdayHours"></p>
           <p id="sundayHours"></p>
         </div>
+        <div class="footer-section">
+          <h3>Areas We Serve</h3>
+          <div id="operatingAreas" class="areas-grid"></div>
+          <p class="mt-2">
+            <span id="operatingCity"></span>,
+            <span id="operatingState"></span>
+          </p>
+        </div>
       </div>
       <div class="footer-bottom">
         <p>&copy; <span id="currentYear"></span> <span id="companyNameFooter"></span>. All rights reserved.</p>
@@ -97,6 +108,18 @@
           document.getElementById("currentYear").textContent = config.company.year;
           document.getElementById("companyName").textContent = config.company.name;
           document.getElementById("companyNameFooter").textContent = config.company.name;
+
+          // Add areas
+          const areasContainer = document.getElementById("operatingAreas");
+          config.operatingAreas.areas.forEach((area) => {
+            const areaElement = document.createElement("span");
+            areaElement.className = "area-tag";
+            areaElement.textContent = area;
+            areasContainer.appendChild(areaElement);
+          });
+
+          document.getElementById("operatingCity").textContent = config.operatingAreas.city;
+          document.getElementById("operatingState").textContent = config.operatingAreas.state;
         });
       });
     </script>

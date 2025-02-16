@@ -29,6 +29,16 @@ services:
     restart: unless-stopped
     # networks:
     #   - app_network
-# networks:
-#   app_network:
-#     driver: bridge
+    #   driver: bridge
+
+  web:
+    build:
+      context: ./irony_web
+      dockerfile: Dockerfile
+    container_name: irony_web
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
