@@ -45,10 +45,7 @@ export default function OrderDetails(props: OrderDetailsProps) {
           count: item.count,
           amount: item.count * location_service_prices[item.service].prices[item.dress].price,
         })),
-        total_price: orderItems.reduce(
-          (sum, item) => sum + item.count * location_service_prices[item.service].prices[item.dress].price,
-          0
-        ),
+        total_price: orderItems.reduce((sum, item) => sum + item.count * location_service_prices[item.service].prices[item.dress].price, 0),
         notes: notes.trim(), // Add notes to the request
         location_nickname: locationNickname != nickname ? nickname.trim() : null, // Add location nickname to the request
       };
@@ -93,23 +90,14 @@ export default function OrderDetails(props: OrderDetailsProps) {
           <div className="flex justify-between items-center w-full bg-gray-50 p-3 rounded-lg">
             <div className="text-sm font-semibold text-gray-700">Order #{simpleId}</div>
             <div className="flex gap-2">
-              <Link
-                href={`tel:+${phoneNumber}`}
-                className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
-              >
-                <Image width={16} height={16} loading="lazy" src="/vector_phone.svg" alt="Call" />
+              <Link href={`tel:+${phoneNumber}`} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
+                <Image width={16} height={16} loading="lazy" src="/service/vector_phone.svg" alt="Call" />
               </Link>
-              <Link
-                href={order.maps_link || ""}
-                className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
-              >
-                <Image width={16} height={16} loading="lazy" src="/maps_arrow.svg" alt="Maps" />
+              <Link href={order.maps_link || ""} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
+                <Image width={16} height={16} loading="lazy" src="/service/maps_arrow.svg" alt="Maps" />
               </Link>
-              <button
-                onClick={() => props.onClose(deleteOnClose)}
-                className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
-              >
-                <Image width={16} height={16} loading="lazy" src="/vector_close.svg" alt="Close" />
+              <button onClick={() => props.onClose(deleteOnClose)} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
+                <Image width={16} height={16} loading="lazy" src="/service/vector_close.svg" alt="Close" />
               </button>
             </div>
           </div>
@@ -155,10 +143,7 @@ export default function OrderDetails(props: OrderDetailsProps) {
           <div className="text-lg font-semibold text-gray-700">Services</div>
         </div>
 
-        <AddOrderServices
-          location_service_prices={location_service_prices}
-          onOrderItemsChange={handleOrderItemsChange}
-        />
+        <AddOrderServices location_service_prices={location_service_prices} onOrderItemsChange={handleOrderItemsChange} />
 
         <div className="flex flex-col">
           <div className="mt-4"></div>
@@ -180,9 +165,7 @@ export default function OrderDetails(props: OrderDetailsProps) {
       <div className="sticky bottom-0 flex flex-col mt-4 w-full font-medium text-center bg-white p-4 border-t">
         {message && (
           <div
-            className={`mb-4 p-3 rounded-lg text-sm ${
-              message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
+            className={`mb-4 p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
             dangerouslySetInnerHTML={{ __html: message.text }}
           ></div>
         )}
@@ -193,9 +176,7 @@ export default function OrderDetails(props: OrderDetailsProps) {
               onClick={handleConfirm}
               disabled={isSubmitting || orderItems.length === 0}
               className={`gap-2.5 self-stretch p-2.5 mt-1.5 w-full text-base text-gray-700 whitespace-nowrap rounded-full transition-colors ${
-                isSubmitting || orderItems.length === 0
-                  ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-amber-300 hover:bg-amber-400"
+                isSubmitting || orderItems.length === 0 ? "bg-gray-300 cursor-not-allowed" : "bg-amber-300 hover:bg-amber-400"
               }`}
             >
               {isSubmitting ? "Confirming..." : "Confirm"}

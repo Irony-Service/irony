@@ -52,7 +52,7 @@ export default function AddOrderServices({ location_service_prices, onOrderItems
       ))}
       <div className="flex justify-center items-center self-center p-[8px] bg-amber-300 rounded-full">
         <button onClick={addNewOrderItem}>
-          <Image width={16} height={16} loading="lazy" src="/vector_plus.svg" alt="" />
+          <Image width={16} height={16} loading="lazy" src="/service/vector_plus.svg" alt="" />
         </button>
       </div>
     </div>

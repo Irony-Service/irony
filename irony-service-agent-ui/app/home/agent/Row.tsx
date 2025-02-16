@@ -31,26 +31,20 @@ export default function Row(props: RowProps) {
       >
         <div className="w-[95%] flex justify-between">
           <div className="w-1/3 flex items-center gap-1">
-            <Image src="/fluent-mdl2_shirt.svg" alt="Login" width={18} height={18} />
+            <Image src="/service/fluent-mdl2_shirt.svg" alt="Login" width={18} height={18} />
             <span>{props.order?.count_range_description}</span>
           </div>
           <div className="w-1/3 flex items-center gap-1">
-            <Image src="/streamline_iron.svg" alt="Login" width={18} height={18} />
+            <Image src="/service/streamline_iron.svg" alt="Login" width={18} height={18} />
             <span>{props?.services}</span>
           </div>
           <div className="w-1/3 flex items-center gap-1">
-            <Image src="/material-symbols-light_distance-outline.svg" alt="Login" width={18} height={18} />
+            <Image src="/service/material-symbols-light_distance-outline.svg" alt="Login" width={18} height={18} />
             <span>{props.order?.distance}</span>
           </div>
         </div>
         <button onClick={showOrder}>
-          <Image
-            className="rounded-full bg-amber-300"
-            src="/mingcute_right-line_black.svg"
-            alt="Login"
-            width={28}
-            height={28}
-          />
+          <Image className="rounded-full bg-amber-300" src="/service/mingcute_right-line_black.svg" alt="Login" width={28} height={28} />
         </button>
       </div>
       {error && <p>{error}</p>}

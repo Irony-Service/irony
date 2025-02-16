@@ -77,23 +77,14 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
         <div className="flex justify-between items-center w-full bg-gray-50 p-3 rounded-lg">
           <div className="text-sm font-semibold text-gray-700">Order #{simpleId}</div>
           <div className="flex gap-2">
-            <Link
-              href={`tel:+${phoneNumber}`}
-              className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
-            >
-              <Image width={16} height={16} loading="lazy" src="/vector_phone.svg" alt="Call" />
+            <Link href={`tel:+${phoneNumber}`} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
+              <Image width={16} height={16} loading="lazy" src="/service/vector_phone.svg" alt="Call" />
             </Link>
-            <Link
-              href={order.maps_link || ""}
-              className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
-            >
-              <Image width={16} height={16} loading="lazy" src="/maps_arrow.svg" alt="Maps" />
+            <Link href={order.maps_link || ""} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
+              <Image width={16} height={16} loading="lazy" src="/service/maps_arrow.svg" alt="Maps" />
             </Link>
-            <button
-              onClick={props.onClose}
-              className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors"
-            >
-              <Image width={16} height={16} loading="lazy" src="/vector_close.svg" alt="Close" />
+            <button onClick={props.onClose} className="p-2 bg-amber-300 rounded-full hover:bg-amber-400 transition-colors">
+              <Image width={16} height={16} loading="lazy" src="/service/vector_close.svg" alt="Close" />
             </button>
           </div>
         </div>
@@ -117,11 +108,7 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
         </div>
 
         {/* Services List - Read Only */}
-        <OrderServicesList
-          orderItems={orderItems}
-          priceServiceMap={props.priceServiceMap}
-          priceNameMap={props.priceNameMap}
-        ></OrderServicesList>
+        <OrderServicesList orderItems={orderItems} priceServiceMap={props.priceServiceMap} priceNameMap={props.priceNameMap}></OrderServicesList>
 
         {/* Bill Details */}
         {/* <div className="mt-6">
@@ -157,15 +144,7 @@ export default function OrderDetailsAgent(props: OrderDetailsProps) {
       </div>
 
       <div className="sticky bottom-0 flex flex-col mt-4 w-full font-medium text-center bg-white p-4 border-t">
-        {message && (
-          <div
-            className={`mb-4 p-3 rounded-lg text-sm ${
-              message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
-          >
-            {message.text}
-          </div>
-        )}
+        {message && <div className={`mb-4 p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{message.text}</div>}
 
         {showAction && <SlidingButton onComplete={handleConfirm} isLoading={isSubmitting} />}
       </div>

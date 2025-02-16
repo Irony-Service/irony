@@ -75,8 +75,7 @@ export default function HomeClient(props: HomeProps) {
   const [priceServiceMap, setPriceServiceMap] = useState<Map<string, string>>(new Map());
   const [priceNameMap, setPriceNameMap] = useState<Map<string, string>>(new Map());
   useEffect(() => {
-    const { priceServiceMap: localPriceServiceMap, priceNameMap: localPriceNameMap } =
-      Util.getPriceServiceNameMaps(service_locations_prices);
+    const { priceServiceMap: localPriceServiceMap, priceNameMap: localPriceNameMap } = Util.getPriceServiceNameMaps(service_locations_prices);
     setPriceNameMap(localPriceNameMap);
     setPriceServiceMap(localPriceServiceMap);
   }, [service_locations_prices]);
@@ -93,30 +92,15 @@ export default function HomeClient(props: HomeProps) {
           >
             <div className="flex w-full justify-between content-center py-3 my-2">
               <button onClick={() => handleSwipe(-1)}>
-                <Image
-                  className="object-contain text-gray-700"
-                  src="/mingcute_left-line_black.svg"
-                  alt="Previous"
-                  width={28}
-                  height={28}
-                />
+                <Image className="object-contain text-gray-700" src="/service/mingcute_left-line_black.svg" alt="Previous" width={28} height={28} />
               </button>
               <h1 className="text-3xl font-bold text-amber-300">{section.label}</h1>
               <button onClick={() => handleSwipe(1)}>
-                <Image
-                  className="object-contain text-gray-700"
-                  src="/mingcute_right-line_black.svg"
-                  alt="Next"
-                  width={28}
-                  height={28}
-                />
+                <Image className="object-contain text-gray-700" src="/service/mingcute_right-line_black.svg" alt="Next" width={28} height={28} />
               </button>
             </div>
             {section.dates.map((dateItem, index) => (
-              <section
-                key={index}
-                className={`w-full bg-gray-100 ${index != section.dates.length - 1 ? "py-4 border-b" : ""}`}
-              >
+              <section key={index} className={`w-full bg-gray-100 ${index != section.dates.length - 1 ? "py-4 border-b" : ""}`}>
                 <div className="w-[96%]  mx-auto">
                   <h1 className="text-2xl  text-gray-700 font-semibold mb-5 px-2">
                     {Util.formatDate(dateItem.date)} ({Util.getOrdersInDate(dateItem.time_slots)} Orders)

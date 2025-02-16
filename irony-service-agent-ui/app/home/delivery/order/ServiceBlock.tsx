@@ -35,9 +35,7 @@ export default function ServiceBlock(props: ServiceBlockProps) {
     if (location_service_prices.length > 0) {
       const initialServiceId = location_service_prices[0].service._id;
 
-      const selectedServicePrice = location_service_prices.find(
-        (sp: ServicePrices) => sp.service._id === initialServiceId
-      );
+      const selectedServicePrice = location_service_prices.find((sp: ServicePrices) => sp.service._id === initialServiceId);
       if (selectedServicePrice && selectedServicePrice.prices) {
         setDressOptions(selectedServicePrice.prices);
       } else {
@@ -51,7 +49,7 @@ export default function ServiceBlock(props: ServiceBlockProps) {
       <div className="flex items-center justify-between bg-amber-300 px-3 sm:px-4 py-2 rounded-t-lg">
         <h3 className="font-medium text-gray-700 text-sm sm:text-base">Service Item</h3>
         <button onClick={handleClose} className="p-1 sm:p-1.5 hover:bg-amber-400 rounded-full transition-colors">
-          <Image src="/vector_close.svg" alt="Close" width={10} height={10} />
+          <Image src="/service/vector_close.svg" alt="Close" width={10} height={10} />
         </button>
       </div>
 

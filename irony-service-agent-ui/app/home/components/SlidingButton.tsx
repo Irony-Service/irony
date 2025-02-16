@@ -96,7 +96,7 @@ export default function SlidingButton({
         onTouchEnd={handleTouchEnd}
       >
         <div className="h-full w-full flex items-center justify-center">
-          <Image src={iconSrc} alt="Slide" width={24} height={24} />
+          <Image src={`/service/${iconSrc}`} alt="Slide" width={24} height={24} />
         </div>
       </div>
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
