@@ -19,7 +19,7 @@ const config = {
 
   // Service Provider Portal
   serviceProvider: {
-    loginUrl: "https://ironystore.in/agent/login",
+    loginUrl: "https://ironystore.in/service/login",
   },
 
   // Company Information
