@@ -3,13 +3,14 @@ from fastapi import HTTPException, Response
 from irony.config.logger import logger
 from irony.db import db
 from irony.models import service
-from irony.models.service_agent.service_agent import ServiceAgent, ServiceAgentRegister
+from irony.models.service_agent.service_agent import ServiceAgent
 from irony.models.service_agent.vo.login_user_vo import LoginUserData, LoginUserResponse
 from irony.models.service_agent.vo.register_agent_response import (
     RegisterAgentData,
     RegisterAgentResponse,
 )
-from irony.models.service_agent.vo.user_login import UserLogin
+from irony.models.service_agent.vo.agent_login_vo import AgentLoginRequest
+from irony.models.service_agent.vo.agent_register_vo import AgentRegisterRequest
 from irony.util import auth
 from irony import main
 
@@ -17,7 +18,7 @@ from irony import main
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
 
-async def register_service_agent(user: ServiceAgentRegister) -> RegisterAgentResponse:
+async def register_service_agent(user: AgentRegisterRequest) -> RegisterAgentResponse:
     try:
         if not user.mobile or not user.password or not user.confirm_password:
             raise HTTPException(
@@ -63,7 +64,9 @@ async def register_service_agent(user: ServiceAgentRegister) -> RegisterAgentRes
         )
 
 
-async def login_service_agent(response: Response, user: UserLogin) -> LoginUserResponse:
+async def login_service_agent(
+    response: Response, user: AgentLoginRequest
+) -> LoginUserResponse:
     try:
         if not user.mobile.strip() or not user.password.strip():
             raise HTTPException(

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Response
 from irony.config import config
 from irony.config.logger import logger
 from irony.db import db
+from irony.models.service_agent.vo.agent_register_vo import AgentRegisterRequest
 from irony.models.service_agent.vo.fetch_adaptive_route_vo import (
     FetchAdaptiveRouteRequest,
 )
@@ -13,7 +14,7 @@ from irony.models.service_agent.vo.fetch_order_details_vo import (
 )
 from irony.models.order_status import OrderStatusEnum
 from irony.models.service import Service
-from irony.models.service_agent.service_agent import ServiceAgent, ServiceAgentRegister
+from irony.models.service_agent.service_agent import ServiceAgent
 from irony.models.prices import Prices
 from irony.models.service_agent.vo.login_user_vo import LoginUserResponse
 from irony.models.service_agent.vo.prices_response_vo import (
@@ -23,7 +24,7 @@ from irony.models.service_agent.vo.prices_response_vo import (
 from irony.models.service_agent.vo.update_pickup_pending_vo import UpdateOrderRequest
 from fastapi import Depends
 
-from irony.models.service_agent.vo.user_login import UserLogin
+from irony.models.service_agent.vo.agent_login_vo import AgentLoginRequest
 from irony.services.Ironman import (
     fetch_order_deatils_service,
     fetch_orders_service,
@@ -42,7 +43,7 @@ router = APIRouter()
 
 
 @router.post("/login", response_model=LoginUserResponse)
-async def login(response: Response, user: UserLogin):
+async def login(response: Response, user: AgentLoginRequest):
 
     return await service_agent_auth_service.login_service_agent(response, user)
 
@@ -54,7 +55,7 @@ async def login(response: Response, user: UserLogin):
 
 
 @router.post("/register")
-async def register(user: ServiceAgentRegister):
+async def register(user: AgentRegisterRequest):
     service_agent = await service_agent_auth_service.register_service_agent(user)
 
     return {
