@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "prod": "NODE_ENV=production next start"
+    "prod": "NODE_ENV=production node .next/standalone/server.js"
   },
   "dependencies": {
     "axios": "^1.7.9",

@@ -10,12 +10,7 @@ RUN npm install
 # Copy app files and build
 COPY . .
 
-# Use ARG instead of ENV
-# ARG NEXT_PUBLIC_API_URL
-# ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-# ARG NEXT_PUBLIC_CLIENT_API_URL
-# ENV NEXT_PUBLIC_CLIENT_API_URL=${NEXT_PUBLIC_CLIENT_API_URL}
-
+# Enable standalone mode in Next.js
 RUN npm run build
 
 # 2nd Stage: Serve the built app using a minimal image
@@ -23,14 +18,14 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy only the built Next.js output from the builder stage
-COPY --from=builder /app/.next ./.next
+# Copy only the standalone output
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.env.production ./.env.production
 
 # Expose the Next.js port
 EXPOSE 3000
 
-# Start the Next.js app in production mode
-CMD ["npm", "run", "prod"]
+# Start the Next.js standalone server
+CMD ["node", "server.js"]
