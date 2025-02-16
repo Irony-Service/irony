@@ -49,6 +49,7 @@ class Order(BaseModel):
     picked_up_time: Optional[datetime] = None
     notes: Optional[str] = None
     distance_from_previous_stop: Optional[float] = None
+    child_order_ids: Optional[List[PyObjectId]] = None
 
     model_config = shared_config
     # class Config(ModelConfig):

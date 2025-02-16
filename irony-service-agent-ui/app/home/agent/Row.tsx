@@ -32,7 +32,7 @@ export default function Row(props: RowProps) {
         <div className="w-[95%] flex justify-between">
           <div className="w-1/3 flex items-center gap-1">
             <Image src="/service/fluent-mdl2_shirt.svg" alt="Login" width={18} height={18} />
-            <span>{props.order?.count_range_description}</span>
+            <span>{props.order?.total_count || props.order?.count_range_description}</span>
           </div>
           <div className="w-1/3 flex items-center gap-1">
             <Image src="/service/streamline_iron.svg" alt="Login" width={18} height={18} />

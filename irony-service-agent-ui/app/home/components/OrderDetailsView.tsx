@@ -25,7 +25,7 @@ export default function OrderDetailsView(props: OrderDetailsProps) {
   let simpleId = order?.simple_id || orderId;
   const customerName = order.user_id;
   const phoneNumber = order.user_wa_id;
-  const countRange = order.count_range_description + " clothes";
+  const countRange = (order.total_count ? order.total_count : order.count_range_description) + " clothes";
   const notes = order.notes || "";
   const currentOrderStatus = order.order_status[0]?.status;
   const showAction = props.actionStatusMap.has(currentOrderStatus);
@@ -114,7 +114,7 @@ export default function OrderDetailsView(props: OrderDetailsProps) {
             </Link>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-500">Count Range:</span>
+            <span className="text-gray-500">Count:</span>
             <span className="font-medium">{countRange}</span>
           </div>
         </div>

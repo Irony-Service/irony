@@ -5,9 +5,10 @@ from requests import options
 
 from irony.config import config
 from irony.exception.WhatsappException import WhatsappException
+from irony.models.order_status_enum import OrderStatusEnum
 from irony.models.whatsapp.contact_details import ContactDetails
 from irony.models.order import Order
-from irony.models.order_status import OrderStatus, OrderStatusEnum
+from irony.models.order_status import OrderStatus
 from irony.models.service import Service
 from irony.models.user import User
 from irony.config.logger import logger

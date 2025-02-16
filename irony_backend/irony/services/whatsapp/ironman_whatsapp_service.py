@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Any, Dict, List
+from irony.models.order_status_enum import OrderStatusEnum
 from irony.models.pyobjectid import PyObjectId
 
 from irony.config import config
@@ -7,7 +8,7 @@ from irony.exception.WhatsappException import WhatsappException
 from irony.models.whatsapp.contact_details import ContactDetails
 from irony.models.order import Order
 from irony.models.order_request import OrderRequest
-from irony.models.order_status import OrderStatus, OrderStatusEnum
+from irony.models.order_status import OrderStatus
 from irony.config.logger import logger
 from irony.util import background_process, utils
 from irony.util import whatsapp_utils

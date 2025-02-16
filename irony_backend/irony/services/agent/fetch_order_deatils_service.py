@@ -13,7 +13,7 @@ from irony.models.service_agent.vo.fetch_order_details_vo import (
     FetchOrderDetailsResponsebody,
 )
 from irony.models.order import Order
-from irony.models.order_status import OrderStatusEnum
+from irony.models.order_status_enum import OrderStatusEnum
 
 from irony.models.service_location import ServiceLocation
 from irony.models.user import User
@@ -38,13 +38,15 @@ async def fetch_order_details(request: FetchOrderDetailsRequest):
             response.success = True
         else:
             raise HTTPException(status_code=404, detail="Service Location not found")
-            
+
         return response.model_dump()
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error in fetch_order_details: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error while fetching order details")
+        raise HTTPException(
+            status_code=500, detail="Internal server error while fetching order details"
+        )
 
 
 def map_order_to_response(order: Order, user, service_location: ServiceLocation):

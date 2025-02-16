@@ -3,55 +3,62 @@ from fastapi import HTTPException, Response
 from irony.config.logger import logger
 from irony.db import db
 from irony.models import service
-from irony.models.service_agent.service_agent import ServiceAgent, ServiceAgentRegister
-from irony.models.service_agent.vo.login_user_vo import LoginUserData, LoginUserResponse
-from irony.models.service_agent.vo.register_agent_response import (
-    RegisterAgentData,
-    RegisterAgentResponse,
+from irony.models.service_agent.service_agent import ServiceAgent
+from irony.models.service_agent.vo.auth.login_response import (
+    AgentLoginData,
+    AgentLoginResponse,
 )
-from irony.models.service_agent.vo.user_login import UserLogin
+from irony.models.service_agent.vo.auth.register_response import (
+    AgentRegisterData,
+    AgentRegisterResponse,
+)
+from irony.models.service_agent.vo.auth.login_request import AgentLoginRequest
+from irony.models.service_agent.vo.auth.register_request import AgentRegisterRequest
 from irony.util import auth
+from irony import main
 
 # Below is placeholder code
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
 
-async def register_service_agent(user: ServiceAgentRegister) -> RegisterAgentResponse:
+async def register_service_agent(
+    request: AgentRegisterRequest,
+) -> AgentRegisterResponse:
     try:
-        if not user.mobile or not user.password or not user.confirm_password:
+        if not request.mobile or not request.password or not request.confirm_password:
             raise HTTPException(
                 status_code=400,
                 detail="Mobile, Password or confirm password not provided",
             )
 
-        if not user.name:
+        if not request.name:
             raise HTTPException(status_code=400, detail="Name not provided")
 
-        if not user.service_location_ids:
+        if not request.service_location_ids:
             raise HTTPException(status_code=400, detail="Service location not provided")
 
-        if user.password != user.confirm_password:
+        if request.password != request.confirm_password:
             raise HTTPException(status_code=400, detail="Passwords do not match")
 
         # Check if email is already registered
-        db_user = await db.service_agent.find_one({"mobile": user.mobile})
+        db_user = await db.service_agent.find_one({"mobile": request.mobile})
         if db_user:
             raise HTTPException(status_code=400, detail="Mobile already registered")
 
         # Hash the password
-        user.password = auth.hash_password(user.password)
+        request.password = auth.hash_password(request.password)
 
-        service_agent = ServiceAgent(**user.model_dump())
+        agent = ServiceAgent(**request.model_dump())
         # Save user to the database
-        result = await db.service_agent.insert_one(
-            service_agent.model_dump(exclude={"id"})
+        db_insert_result = await db.service_agent.insert_one(
+            agent.model_dump(exclude={"id"})
         )
+        agent.id = db_insert_result.inserted_id
+        agent.password = None
 
-        service_agent.id = result.inserted_id
-
-        return RegisterAgentResponse(
+        return AgentRegisterResponse(
             message="Service Agent crerated successfully.",
-            data=RegisterAgentData(user=service_agent),
+            data=AgentRegisterData(user=agent),
         )
     except HTTPException:
         raise
@@ -62,41 +69,50 @@ async def register_service_agent(user: ServiceAgentRegister) -> RegisterAgentRes
         )
 
 
-async def login_service_agent(response: Response, user: UserLogin) -> LoginUserResponse:
+async def login_service_agent(
+    response: Response, request: AgentLoginRequest
+) -> AgentLoginResponse:
     try:
-        if not user.mobile.strip() or not user.password.strip():
+        # Check if mobile and password are provided
+        if not request.mobile.strip() or not request.password.strip():
             raise HTTPException(
                 status_code=400, detail="Mobile or Password not provided"
             )
 
-        db_user = await db.service_agent.find_one({"mobile": user.mobile})
-        if not db_user:
+        # Check if the user exists
+        service_agent_record = await db.service_agent.find_one(
+            {"mobile": request.mobile}
+        )
+        if not service_agent_record:
             raise HTTPException(status_code=401, detail="Invalid mobile or password")
 
-        db_user = ServiceAgent(**db_user)
-        if not auth.verify_password(user.password, db_user.password):
+        agent = ServiceAgent(**service_agent_record)
+
+        # Verify the password
+        if not auth.verify_password(request.password, agent.password):
             raise HTTPException(status_code=401, detail="Invalid mobile or password")
 
         # Generate JWT token
         token = auth.create_access_token(
-            data={"sub": user.mobile},
+            data={"sub": request.mobile},
             expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
         )
 
+        # Set the token in the cookie
         response.set_cookie(
             key="auth_token",
             value=token,
             httponly=True,
-            secure=True,  # Use True in production with HTTPS
-            # secure=False,  # Use True in production with HTTPS
+            secure=main.cookie_secure,  # Use True in production with HTTPS
             # samesite="lax",
             samesite="none",
             expires=datetime.now(timezone.utc)
             + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
         )
-        return LoginUserResponse(
+
+        return AgentLoginResponse(
             message="Success!",
-            data=LoginUserData(access_token=token, token_type="bearer", user=db_user),
+            data=AgentLoginData(access_token=token, token_type="bearer", user=agent),
         )
     except HTTPException:
         raise

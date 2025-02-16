@@ -12,9 +12,9 @@ services:
   frontend:
     build:
       context: ./irony-service-agent-ui
-      args:
-        NEXT_PUBLIC_API_URL: "https://ironystore.in"
-        NEXT_PUBLIC_CLIENT_API_URL: "https://ironystore.in"
+      # args:
+      #   NEXT_PUBLIC_API_URL: "https://ironystore.in"
+      #   NEXT_PUBLIC_CLIENT_API_URL: "https://ironystore.in"
     container_name: irony_frontend
     ports:
       - "3000:3000"
@@ -23,8 +23,9 @@ services:
       - backend
 
     environment:
-      - NEXT_PUBLIC_API_URL=https://ironystore.in
-      - NEXT_PUBLIC_CLIENT_API_URL=https://ironystore.in
+      # - NEXT_PUBLIC_API_URL=https://ironystore.in
+      # - NEXT_PUBLIC_CLIENT_API_URL=https://ironystore.in
+      - NODE_ENV=production
 
     restart: unless-stopped
     # networks:
