@@ -25,7 +25,7 @@ from irony.models.service_agent.vo.update_pickup_pending_vo import UpdateOrderRe
 from fastapi import Depends
 
 from irony.models.service_agent.vo.agent_login_vo import AgentLoginRequest
-from irony.services.Ironman import (
+from irony.services.agent import (
     fetch_order_deatils_service,
     fetch_orders_service,
     service_agent_auth_service,
