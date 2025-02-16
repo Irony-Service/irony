@@ -14,12 +14,12 @@ const config = {
 
   // WhatsApp Configuration
   whatsapp: {
-    defaultMessage: "Hi, I would like to book a laundry service",
+    defaultMessage: "Hi Irony",
   },
 
   // Service Provider Portal
   serviceProvider: {
-    loginUrl: "https://ironystore.in/login",
+    loginUrl: "https://ironystore.in/agent/login",
   },
 
   // Company Information
