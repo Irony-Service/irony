@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Irony Laundromat</title>
+    <link rel="stylesheet" href="styles/main.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="logo" id="companyName">
+        <i class="fas fa-steam logo-icon"></i>
+        <span class="logo-text">Irony Laundromat</span>
+      </div>
+      <div class="nav-buttons">
+        <button id="whatsappBtn" class="contact-btn"><i class="fab fa-whatsapp"></i> Book Service</button>
+        <button id="providerBtn" class="provider-btn">Service Provider Login</button>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <h1>Professional Laundry & Dry Cleaning Services</h1>
+      <p>Quality care for your garments</p>
+      <button class="cta-btn">Book Now</button>
+    </header>
+
+    <section class="services">
+      <h2>Our Services</h2>
+      <div class="service-grid">
+        <div class="service-card">
+          <i class="fas fa-tshirt"></i>
+          <h3>Ironing</h3>
+          <p>Professional pressing for crisp, wrinkle-free garments</p>
+        </div>
+        <div class="service-card">
+          <i class="fas fa-water"></i>
+          <h3>Washing</h3>
+          <p>Advanced washing techniques for all types of fabrics</p>
+        </div>
+        <div class="service-card">
+          <i class="fas fa-spray-can"></i>
+          <h3>Dry Cleaning</h3>
+          <p>Specialized cleaning for delicate materials</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="categories">
+      <h2>What We Clean</h2>
+      <div class="category-grid">
+        <div class="category-card">
+          <img src="assets/men.webp" alt="Men's Clothing" />
+          <h3>Men</h3>
+        </div>
+        <div class="category-card">
+          <img src="assets/women.webp" alt="Women's Clothing" />
+          <h3>Women</h3>
+        </div>
+        <div class="category-card">
+          <img src="assets/kids.webp" alt="Kids' Clothing" />
+          <h3>Kids</h3>
+        </div>
+        <div class="category-card">
+          <img src="assets/bedding.webp" alt="Bedding" />
+          <h3>Bedding</h3>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>Contact Us</h3>
+          <p>Email: <span id="contactEmail"></span></p>
+          <p>Phone: <span id="contactPhone"></span></p>
+        </div>
+        <div class="footer-section">
+          <h3>Operating Hours</h3>
+          <p id="weekdayHours"></p>
+          <p id="sundayHours"></p>
+        </div>
+        <div class="footer-section">
+          <h3>Areas We Serve</h3>
+          <div id="operatingAreas" class="areas-grid"></div>
+          <p class="mt-2">
+            <span id="operatingCity"></span>,
+            <span id="operatingState"></span>
+          </p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; <span id="currentYear"></span> <span id="companyNameFooter"></span>. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="js/config.js" type="module"></script>
+    <script src="js/main.js" type="module"></script>
+    <script>
+      // Initialize dynamic content from config
+      document.addEventListener("DOMContentLoaded", () => {
+        import("./js/config.js").then((module) => {
+          const config = module.default;
+          document.getElementById("contactEmail").textContent = config.contact.email;
+          document.getElementById("contactPhone").textContent = config.contact.phone;
+          document.getElementById("weekdayHours").textContent = config.businessHours.weekdays;
+          document.getElementById("sundayHours").textContent = config.businessHours.sunday;
+          document.getElementById("currentYear").textContent = config.company.year;
+          document.getElementById("companyName").textContent = config.company.name;
+          document.getElementById("companyNameFooter").textContent = config.company.name;
+
+          // Add areas
+          const areasContainer = document.getElementById("operatingAreas");
+          config.operatingAreas.areas.forEach((area) => {
+            const areaElement = document.createElement("span");
+            areaElement.className = "area-tag";
+            areaElement.textContent = area;
+            areasContainer.appendChild(areaElement);
+          });
+
+          document.getElementById("operatingCity").textContent = config.operatingAreas.city;
+          document.getElementById("operatingState").textContent = config.operatingAreas.state;
+        });
+      });
+    </script>
+  </body>
+</html>
