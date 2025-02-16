@@ -38,7 +38,7 @@ export default function LayoutClient() {
   return (
     <>
       <div className="sticky bottom-0 left-0 w-full h-12 flex mt-2">
-        <div className={`w-1/2 h-full rounded-tl-2xl shadow-2xl shadow-gray-900  ${pathname === links[0].path ? "bg-gray-800" : "bg-white"}`}>
+        <div className={`w-[40%] h-full rounded-tl-2xl shadow-2xl shadow-gray-900  ${pathname === links[0].path ? "bg-gray-800" : "bg-white"}`}>
           <a key={links[0].name} href={links[0].href} className="h-full flex justify-center content-center">
             <Image
               src={`${pathname === links[0].path ? "/service/material-symbols_iron-outline-rounded.svg" : "/service/material-symbols_iron-outline-rounded_black.svg"}`}
@@ -48,13 +48,17 @@ export default function LayoutClient() {
             />
           </a>
         </div>
-        <div className={`w-1/2 h-full rounded-tr-2xl shadow-2xl shadow-gray-900 ${pathname === links[1].path ? "bg-gray-800" : "bg-white"}`}>
+        <div className="w-[20%] h-full flex justify-center items-center bg-amber-300 shadow-2xl shadow-gray-900">
+          <button onClick={handleOpenDialog} className="p-2 rounded-full hover:bg-amber-400 transition-colors">
+            <Image src="/service/vector_plus.svg" alt="Create Order" width={24} height={24} />
+          </button>
+        </div>
+        <div className={`w-[40%] h-full rounded-tr-2xl shadow-2xl shadow-gray-900 ${pathname === links[1].path ? "bg-gray-800" : "bg-white"}`}>
           <a key={links[1].name} href={links[1].href} className="h-full flex justify-center content-center">
             <Image src={`${pathname === links[1].path ? "/service/ic_outline-delivery-dining.svg" : "/service/ic_outline-delivery-dining_black.svg"}`} alt="Previous" width={28} height={28} />
           </a>
         </div>
       </div>
-
       {/* Dialog */}
       {locationServicePrices && <CreateOrderDialog isOpen={isDialogOpen} onClose={() => setIsDialogOpen(false)} service_locations_prices={locationServicePrices} />}
     </>

@@ -85,7 +85,7 @@ export default function CreateOrderDialog({ isOpen, onClose, service_locations_p
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Create New Order</h2>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-              <Image width={16} height={16} src="/vector_close.svg" alt="Close" />
+              <Image width={16} height={16} src="/service/vector_close.svg" alt="Close" />
             </button>
           </div>
 
