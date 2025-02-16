@@ -5,6 +5,7 @@ import copy
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from fastapi.background import P
+from irony.models.order_status_enum import OrderStatusEnum
 from irony.models.pickup_tIme import PickupDateTime
 from irony.models.pyobjectid import PyObjectId
 from fastapi import Response, HTTPException
@@ -26,10 +27,9 @@ from irony.models.service_agent.vo.fetch_order_details_vo import (
     FetchOrderDetailsResponse,
 )
 from irony.models.order import Order
-from irony.models.order_status import OrderStatus, OrderStatusEnum
-from irony.models.service_agent.vo.fetch_orders_vo import (
+from irony.models.order_status import OrderStatus
+from irony.models.service_agent.vo.fetch_orders_response import (
     FetchOrdersResponse,
-    OrderChunk,
 )
 from irony.models.service_agent.vo.update_pickup_pending_vo import UpdateOrderRequest
 from irony.models.service_agent.vo.update_pickup_pending_vo import (

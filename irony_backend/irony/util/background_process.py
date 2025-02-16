@@ -19,7 +19,7 @@ from irony.models.whatsapp.contact_details import ContactDetails
 from irony.models.location import Location, UserLocation
 from irony.models.order import Order
 from irony.models.order_request import OrderRequest
-from irony.models.order_status import OrderStatusEnum
+from irony.models.order_status_enum import OrderStatusEnum
 from irony.models.pickup_tIme import PickupDateTime
 from irony.services.whatsapp import user_whatsapp_service
 from irony.models.service_location import (
