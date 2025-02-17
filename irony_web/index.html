@@ -25,6 +25,11 @@
       <button class="cta-btn">Book Now</button>
     </header>
 
+    <button id="cartButton">
+      <i class="fas fa-shopping-cart"></i>
+      <span class="cart-count">0</span>
+    </button>
+
     <section class="services">
       <h2>Our Services</h2>
       <div class="service-grid">
@@ -47,23 +52,87 @@
     </section>
 
     <section class="categories">
-      <h2>What We Clean</h2>
+      <h2>Services For</h2>
       <div class="category-grid">
-        <div class="category-card">
+        <div class="category-card" data-category="men">
           <img src="assets/men.webp" alt="Men's Clothing" />
           <h3>Men</h3>
+          <div class="hover-menu">
+            <ul class="items-list">
+              <li>
+                <span>Shirt</span> <span>₹60</span>
+                <button class="add-btn" onclick="window.addToCart('Shirt (Men)', 60)">+</button>
+              </li>
+              <li>
+                <span>Pant</span> <span>₹80</span>
+                <button class="add-btn" onclick="window.addToCart('Pant (Men)', 80)">+</button>
+              </li>
+              <li>
+                <span>Suit</span> <span>₹300</span>
+                <button class="add-btn" onclick="window.addToCart('Suit (Men)', 300)">+</button>
+              </li>
+            </ul>
+          </div>
         </div>
-        <div class="category-card">
+        <div class="category-card" data-category="women">
           <img src="assets/women.webp" alt="Women's Clothing" />
           <h3>Women</h3>
+          <div class="hover-menu">
+            <ul class="items-list">
+              <li>
+                <span>Saree</span> <span>₹200</span>
+                <button class="add-btn" onclick="window.addToCart('Saree', 200)">+</button>
+              </li>
+              <li>
+                <span>Suit</span> <span>₹150</span>
+                <button class="add-btn" onclick="window.addToCart('Suit (Women)', 150)">+</button>
+              </li>
+              <li>
+                <span>Dress</span> <span>₹180</span>
+                <button class="add-btn" onclick="window.addToCart('Dress', 180)">+</button>
+              </li>
+            </ul>
+          </div>
         </div>
-        <div class="category-card">
+        <div class="category-card" data-category="kids">
           <img src="assets/kids.webp" alt="Kids' Clothing" />
           <h3>Kids</h3>
+          <div class="hover-menu">
+            <ul class="items-list">
+              <li>
+                <span>Shirt</span> <span>₹40</span>
+                <button class="add-btn" onclick="window.addToCart('Shirt (Kids)', 40)">+</button>
+              </li>
+              <li>
+                <span>Pant</span> <span>₹50</span>
+                <button class="add-btn" onclick="window.addToCart('Pant (Kids)', 50)">+</button>
+              </li>
+              <li>
+                <span>Uniform</span> <span>₹100</span>
+                <button class="add-btn" onclick="window.addToCart('Uniform', 100)">+</button>
+              </li>
+            </ul>
+          </div>
         </div>
-        <div class="category-card">
+        <div class="category-card" data-category="bedding">
           <img src="assets/bedding.webp" alt="Bedding" />
           <h3>Bedding</h3>
+          <div class="hover-menu">
+            <ul class="items-list">
+              <li>
+                <span>Bedsheet</span> <span>₹150</span>
+                <button class="add-btn" onclick="window.addToCart('Bedsheet', 150)">+</button>
+              </li>
+              <li>
+                <span>Blanket</span> <span>₹250</span>
+                <button class="add-btn" onclick="window.addToCart('Blanket', 250)">+</button>
+              </li>
+              <li>
+                <span>Pillow Cover</span> <span>₹40</span>
+                <button class="add-btn" onclick="window.addToCart('Pillow Cover', 40)">+</button>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
@@ -121,6 +190,26 @@
           document.getElementById("operatingCity").textContent = config.operatingAreas.city;
           document.getElementById("operatingState").textContent = config.operatingAreas.state;
         });
+      });
+
+      // Global cart functionality
+      window.cart = [];
+
+      window.addToCart = function (name, price) {
+        window.cart.push({ name, price });
+        document.querySelector(".cart-count").textContent = window.cart.length;
+      };
+
+      document.getElementById("cartButton").addEventListener("click", function () {
+        if (window.cart.length === 0) return;
+
+        const items = window.cart.map((item) => `${item.name} - ₹${item.price}`).join("\n");
+        const total = window.cart.reduce((sum, item) => sum + item.price, 0);
+        const message = `Order Summary:\n${items}\n\nTotal: ₹${total}`;
+
+        window.open(`https://wa.me/917416974358?text=${encodeURIComponent(message)}`, "_blank");
+        window.cart = [];
+        document.querySelector(".cart-count").textContent = "0";
       });
     </script>
   </body>
