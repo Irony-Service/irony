@@ -381,7 +381,7 @@ async def create_order(request: CreateOrderRequest) -> CommonOrderResponse:
         response = CommonOrderResponse()
 
         sevice_grouped_items: Dict[str, List[OrderItem]] = {}
-        validate_price(request, sevice_grouped_items)
+        await validate_price(request, sevice_grouped_items)
 
         now = datetime.now()
 

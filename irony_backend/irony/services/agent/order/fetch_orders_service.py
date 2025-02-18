@@ -278,7 +278,7 @@ async def _add_orders_to_grouped_dict_by_date_and_time_slot(
 async def get_orders_for_delivery_with_route(
     agent_mobile: str,
     ordered_statuses: List[OrderStatusEnum],
-):
+) -> FetchOrdersResponse:
     """Fetch orders for delivery and optimize route.
 
     Args:
@@ -514,7 +514,7 @@ def _populate_order_list(
         ):
             continue
 
-        status = order.order_status[0].status
+        status = order.order_status.__getitem__(0).status
         order.delivery_type = OrderStatusEnum.getDeliveryType(status)
         order.maps_link = utils.get_maps_link(order.location)  # type: ignore
 

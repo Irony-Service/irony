@@ -4,9 +4,15 @@ from fastapi import APIRouter, Depends
 
 from irony.models.order_status_enum import OrderStatusEnum
 from irony.models.service_agent.vo.create_order_vo import CreateOrderRequest
+from irony.models.service_agent.vo.fetch_order_details_vo import (
+    FetchOrderDetailsResponse,
+)
 from irony.models.service_agent.vo.fetch_orders_response import FetchOrdersResponse
 from irony.models.service_agent.vo.order_request_vo import CommonOrderResponse
-from irony.models.service_agent.vo.update_pickup_pending_vo import UpdateOrderRequest
+from irony.models.service_agent.vo.update_pickup_pending_vo import (
+    UpdateOrderRequest,
+    UpdateOrderResponse,
+)
 from irony.services.agent.order import (
     create_update_order_service,
     fetch_order_deatils_service,
@@ -51,11 +57,6 @@ async def get_by_status_and_date_and_time_slot(
         FetchOrdersResponse: Grouped orders matching the criteria
     """
     ordered_statuses = parse_order_statuses(order_status)
-
-    # return await fetch_orders_service.get_orders_group_by_date_and_time_slot_routable(
-    #     current_user,
-    #     ordered_statuses=ordered_statuses,
-    # )
     return await fetch_orders_service.get_orders_group_by_status_and_date_and_time_slot(
         current_user,
         ordered_statuses=ordered_statuses,
@@ -65,7 +66,7 @@ async def get_by_status_and_date_and_time_slot(
 @router.get("/delivery-schedule", response_model=FetchOrdersResponse)
 async def get_delivery_schedule(
     current_user: str = Depends(auth.get_current_user), order_status: str = ""
-):
+) -> FetchOrdersResponse:
     """
     Get delivery schedule grouped by date and time slot
 
@@ -77,17 +78,17 @@ async def get_delivery_schedule(
         FetchOrdersResponse: Orders grouped by date and time slot
     """
     ordered_statuses = parse_order_statuses(order_status, default_type="delivery")
-    return await fetch_orders_service.get_by_date_and_time_slot_routable(
+    return await fetch_orders_service.get_orders_group_by_date_and_time_slot_routable(
         current_user,
         ordered_statuses=ordered_statuses,
         route_required=True,
     )
 
 
-@router.get("/delivery-route")
+@router.get("/delivery-route", response_model=FetchOrdersResponse)
 async def get_delivery_route(
     current_user: str = Depends(auth.get_current_user),
-):
+) -> FetchOrdersResponse:
     """
     Fetch delivery orders with optimized route information.
 
@@ -104,8 +105,8 @@ async def get_delivery_route(
     )
 
 
-@router.get("/{order_id}", response_model=dict)
-async def get_order(order_id: str):
+@router.get("/{order_id}", response_model=FetchOrderDetailsResponse)
+async def get_order(order_id: str) -> FetchOrderDetailsResponse:
     """
     Fetch detailed information for a specific order.
 
@@ -119,7 +120,7 @@ async def get_order(order_id: str):
 
 
 @router.post("", response_model=CommonOrderResponse)
-async def create_order(request: CreateOrderRequest):
+async def create_order(request: CreateOrderRequest) -> CommonOrderResponse:
     """
     Create a new order in the system.
 
@@ -132,8 +133,8 @@ async def create_order(request: CreateOrderRequest):
     return await create_update_order_service.create_order(request)
 
 
-@router.put("")
-async def update_order(request: UpdateOrderRequest):
+@router.put("", response_model=UpdateOrderResponse)
+async def update_order(request: UpdateOrderRequest) -> UpdateOrderResponse:
     """
     Update an existing order's details.
 
