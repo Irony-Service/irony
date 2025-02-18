@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 from irony.models.common_model import shared_config
@@ -16,7 +16,7 @@ class CommonOrderRequest(BaseModel):
 
 
 class CommonOrderResponseBody(BaseModel):
-    sub_id_dict: Optional[dict] = None
+    sub_id_dict: Optional[Dict] = None
     order_ids: Optional[List[str]] = None
 
     model_config = shared_config
@@ -24,5 +24,4 @@ class CommonOrderResponseBody(BaseModel):
 
 class CommonOrderResponse(CommonReponse):
     data: Optional[CommonOrderResponseBody] = None
-
     model_config = shared_config

@@ -8,7 +8,7 @@ SERVICE_ID_KEY = "SERVICE_ID"
 MAKE_NEW_ORDER = "MAKE_NEW_ORDER"
 TIME_SLOT_ID_KEY = "TIME_SLOT_ID"
 
-# BUTTONS: dict = {
+# BUTTONS: Dict = {
 #     f"{CLOTHES_COUNT_KEY}_10_TO_15": {
 #         "id": f"{CLOTHES_COUNT_KEY}_10_TO_15",
 #         "title": "10-15",

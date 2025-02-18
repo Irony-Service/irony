@@ -8,7 +8,7 @@ from irony.models.service import Service
 
 
 # Example data-fetching function
-async def fetch_data_from_db(db_cache: dict):
+async def fetch_data_from_db(db_cache: Dict):
     # Simulate a database fetch operation
     call_to_action_docs = (
         await db.get_collection("call_to_action").find().sort("order", 1).to_list(None)

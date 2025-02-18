@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 HUMAN_READABLE_LABELS = {
     "SERVICE_PENDING": "Service Pending",
@@ -41,9 +42,13 @@ class OrderStatusEnum(str, Enum):
     CLOSED = "CLOSED"
 
     @staticmethod
-    def getHomeSectionLabel(status: "OrderStatusEnum") -> str:
+    def getHomeSectionLabel(status: "Optional[OrderStatusEnum]") -> str:
+        if status is None:
+            return "Unknown"
         return HUMAN_READABLE_LABELS.get(status, status)
 
     @staticmethod
-    def getDeliveryType(status: "OrderStatusEnum") -> str:
+    def getDeliveryType(status: "Optional[OrderStatusEnum]") -> str:
+        if status is None:
+            return "Unknown"
         return DELIVERY_LABELS.get(status, status)

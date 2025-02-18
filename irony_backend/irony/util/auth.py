@@ -1,3 +1,4 @@
+from typing import Dict
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.utils import get_authorization_scheme_param
@@ -23,7 +24,7 @@ SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
 
 
-def create_access_token(data: dict, expires_delta: timedelta):
+def create_access_token(data: Dict, expires_delta: timedelta):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire})

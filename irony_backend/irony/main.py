@@ -1,14 +1,15 @@
-from contextlib import asynccontextmanager
 import time
-from fastapi import FastAPI, Request
+from contextlib import asynccontextmanager
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from apscheduler.triggers.cron import CronTrigger  # type: ignore
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from irony import cache
 from irony.config import config
 from irony.config.logger import logger
-from irony.routers import users, whatsapp, ironman
+from irony.routers import agent, ironman, users, whatsapp
 from irony.util import background_process
 
 # Initialize the scheduler
@@ -73,9 +74,9 @@ app = FastAPI()
 
 app.router.lifespan_context = lifespan
 
-# origins = ["http://localhost:3000"]
-origins = ["*"]
-cookie_secure = True
+origins = ["http://localhost:3000"]
+# origins = ["*"]
+cookie_secure = False
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -132,4 +133,5 @@ async def root():
 
 app.include_router(whatsapp.router, prefix="/api/whatsapp")
 app.include_router(users.router, prefix="/api/users")
+app.include_router(agent.router, prefix="/api/agent")
 app.include_router(ironman.router, prefix="/api/ironman")

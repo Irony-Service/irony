@@ -1,3 +1,4 @@
+from ast import Dict
 from bson import ObjectId
 from typing import Any
 
@@ -14,6 +15,6 @@ class PyObjectIdOld(ObjectId):
         return ObjectId(v)
 
     @classmethod
-    def __get_pydantic_json_schema__(cls, schema: dict[str, Any]) -> dict[str, Any]:
+    def __get_pydantic_json_schema__(cls, schema: Dict[str, Any]) -> Dict[str, Any]:
         schema.update(type="string")
         return schema

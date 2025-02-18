@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
 from typing import List, Optional
-from irony.models.pyobjectid import PyObjectId
+
+from pydantic import BaseModel, Field
+
 from irony.models.common_model import shared_config
 from irony.models.pyobjectid import PyObjectId
 
@@ -12,6 +13,6 @@ class ServiceAgent(BaseModel):
     type: Optional[str] = None
     sub_type: Optional[str] = None
     service_location_ids: Optional[List[PyObjectId]] = None
-    password: Optional[str] = Field(None, exclude=True)
+    password: str = Field(exclude=True)
 
     model_config = shared_config

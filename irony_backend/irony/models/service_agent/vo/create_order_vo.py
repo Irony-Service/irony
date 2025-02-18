@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 from irony.models.common_model import shared_config
@@ -17,6 +17,6 @@ class CreateOrderRequest(CommonOrderRequest):
 
 
 class CreateOrderResponse(CommonReponse):
-    data: Optional[dict] = None
+    data: Optional[Dict] = None
 
     model_config = shared_config

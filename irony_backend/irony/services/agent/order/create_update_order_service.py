@@ -1,50 +1,48 @@
+import copy
+import pprint
 from ast import Set
 from datetime import datetime
-import pprint
-import copy
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from fastapi import HTTPException, Response
 from fastapi.background import P
-from irony.models.order_status_enum import OrderStatusEnum
-from irony.models.pickup_tIme import PickupDateTime
-from irony.models.pyobjectid import PyObjectId
-from fastapi import Response, HTTPException
 from pymongo import DeleteOne, InsertOne, ReplaceOne
 
+import irony.services.whatsapp.interactive_message_service as interactive_message_service
+import irony.services.whatsapp.text_message_service as text_message_service
+from irony.config import config
+from irony.config.logger import logger
 from irony.db import bulk_write_operations, db, replace_documents_in_transaction
 from irony.exception.WhatsappException import WhatsappException
-from irony.models.service import Service
+from irony.models.order import Order
 from irony.models.order_item import OrderItem
+from irony.models.order_status import OrderStatus
+from irony.models.order_status_enum import OrderStatusEnum
+from irony.models.pickup_tIme import PickupDateTime
 from irony.models.prices import Prices
+from irony.models.pyobjectid import PyObjectId
+from irony.models.service import Service
+from irony.models.service_agent.vo.create_order_vo import (
+    CreateOrderRequest,
+    CreateOrderResponse,
+)
+from irony.models.service_agent.vo.fetch_order_details_vo import (
+    FetchOrderDetailsResponse,
+)
+from irony.models.service_agent.vo.fetch_orders_response import FetchOrdersResponse
 from irony.models.service_agent.vo.order_request_vo import (
     CommonOrderRequest,
     CommonOrderResponse,
     CommonOrderResponseBody,
 )
-from irony.models.whatsapp.contact_details import ContactDetails
-from irony.config import config
-from irony.models.service_agent.vo.fetch_order_details_vo import (
-    FetchOrderDetailsResponse,
-)
-from irony.models.order import Order
-from irony.models.order_status import OrderStatus
-from irony.models.service_agent.vo.fetch_orders_response import (
-    FetchOrdersResponse,
-)
-from irony.models.service_agent.vo.update_pickup_pending_vo import UpdateOrderRequest
 from irony.models.service_agent.vo.update_pickup_pending_vo import (
+    UpdateOrderRequest,
     UpdateOrderResponse,
 )
 from irony.models.user import User
+from irony.models.whatsapp.contact_details import ContactDetails
 from irony.services.whatsapp import user_whatsapp_service
 from irony.util import whatsapp_utils
-import irony.services.whatsapp.interactive_message_service as interactive_message_service
-import irony.services.whatsapp.text_message_service as text_message_service
-from irony.config.logger import logger
-from irony.models.service_agent.vo.create_order_vo import (
-    CreateOrderRequest,
-    CreateOrderResponse,
-)
 
 
 async def update_order(request: UpdateOrderRequest):
@@ -184,9 +182,10 @@ async def process_pending_pickup_order_update(
         if request.items:
             order_list: List[Order] = []
             order_id_list = []
-            sub_id_dict = {}
+            sub_id_dict: Optional[Dict] = None
             # If more than 1 service chooosed.
-            if len(sevice_grouped_items.keys() > 1):
+            if len(sevice_grouped_items.keys()) > 1:
+                sub_id_dict = {}
                 # Create new order for each service
                 for index, service_grouped_item in enumerate(
                     sevice_grouped_items.items()
@@ -377,7 +376,7 @@ def set_timeslot_and_pickup() -> tuple[str, PickupDateTime]:
     return time_slot_id, pickup_date_time
 
 
-async def create_order(request: CreateOrderRequest):
+async def create_order(request: CreateOrderRequest) -> CommonOrderResponse:
     try:
         response = CommonOrderResponse()
 
@@ -429,8 +428,9 @@ async def create_order(request: CreateOrderRequest):
         if request.items:
             order_list: List[Order] = []
             order_id_list = []
-            sub_id_dict = {}
-            if len(sevice_grouped_items.keys() > 1):
+            sub_id_dict: Optional[Dict] = None
+            if len(sevice_grouped_items.keys()) > 1:
+                sub_id_dict = {}
                 for index, service_grouped_item in enumerate(
                     sevice_grouped_items.items()
                 ):
@@ -460,7 +460,7 @@ async def create_order(request: CreateOrderRequest):
                     new_order.model_dump(exclude_unset=True, by_alias=True)
                 )
             else:
-                result = db.order.insert_one(
+                result = await db.order.insert_one(
                     new_order.model_dump(exclude_unset=True, by_alias=True)
                 )
                 order_id_list.append(str(result.inserted_id))

@@ -1,28 +1,28 @@
 import pprint
 from typing import List
-from irony.models.pyobjectid import PyObjectId
+
 from fastapi import HTTPException
 
+from irony.config import config
+from irony.config.logger import logger
 from irony.db import db, replace_documents_in_transaction
 from irony.exception.WhatsappException import WhatsappException
-from irony.models.whatsapp.contact_details import ContactDetails
-from irony.config import config
+from irony.models.order import Order
+from irony.models.order_status_enum import OrderStatusEnum
+from irony.models.pyobjectid import PyObjectId
 from irony.models.service_agent.vo.fetch_order_details_vo import (
     FetchOrderDetailsRequest,
     FetchOrderDetailsResponse,
     FetchOrderDetailsResponsebody,
 )
-from irony.models.order import Order
-from irony.models.order_status_enum import OrderStatusEnum
-
 from irony.models.service_location import ServiceLocation
 from irony.models.user import User
-from irony.config.logger import logger
+from irony.models.whatsapp.contact_details import ContactDetails
 
 
-async def fetch_order_details(request: FetchOrderDetailsRequest):
+async def fetch_order_details(order_id: str):
     try:
-        order_data = await db.order.find_one({"_id": PyObjectId(request.order_id)})
+        order_data = await db.order.find_one({"_id": PyObjectId(order_id)})
         if order_data is None:
             raise HTTPException(status_code=404, detail="Order not found")
         order: Order = Order(**order_data)

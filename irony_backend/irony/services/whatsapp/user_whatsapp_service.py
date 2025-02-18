@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
+from typing import Dict
 
 from requests import options
 
@@ -78,7 +79,7 @@ async def create_user_if_not_exists(contact_details: ContactDetails):
 async def set_new_order_clothes_count(
     contact_details: ContactDetails, context, button_reply_obj
 ):
-    message_body: dict = {}
+    message_body: Dict = {}
     last_message_update = None
     # 1: verify context id
     await whatsapp_utils.verify_context_id(contact_details, context)
@@ -412,7 +413,7 @@ async def set_new_order_time_slot(
 
 async def update_order_timeslot_details(
     button_reply_id: str,
-    last_message: dict,
+    last_message: Dict,
     order_status: OrderStatus,
     pickup_datetime: datetime,
     extra_set={},

@@ -11,7 +11,7 @@ CLOTHES_COUNT_KEY = "CLOTHES_COUNT"
 SERVICE_ID_KEY = "SERVICE_ID"
 MAKE_NEW_ORDER = "MAKE_NEW_ORDER"
 
-# BUTTONS: dict = {
+# BUTTONS: Dict = {
 #     f"{CLOTHES_COUNT_KEY}_15_TO_25": {
 #         "id": f"{CLOTHES_COUNT_KEY}_15_TO_25",
 #         "title": "15-25",

@@ -1,14 +1,15 @@
-from typing import Any, List
-from irony.models.pyobjectid import PyObjectId
-from fastapi.encoders import jsonable_encoder
-from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo import ReplaceOne, InsertOne, UpdateOne, DeleteOne, UpdateMany, DeleteMany
+from typing import Any, Dict, List
+
 import certifi
-from pymongo.errors import PyMongoError
+from fastapi.encoders import jsonable_encoder
 from motor.core import AgnosticClient, AgnosticDatabase
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import ReplaceOne
+from pymongo.errors import PyMongoError
 
 from irony.config import config
 from irony.config.logger import logger
+from irony.models.pyobjectid import PyObjectId
 
 # Pydantic models
 from .models.user import User
@@ -86,7 +87,7 @@ async def bulk_insert_documents(
                 raise
 
 
-async def bulk_write_operations(collection_name: str, operations: List[Any]) -> dict:
+async def bulk_write_operations(collection_name: str, operations: List[Any]) -> Dict:
     """
     Perform bulk write operations (insert, update, delete) in a single transaction.
     operations: List of PyMongo operations (InsertOne, UpdateOne, DeleteOne, etc.)
