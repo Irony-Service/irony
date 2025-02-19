@@ -1,5 +1,9 @@
 from typing import List
+
+from fastapi.background import P
+
 from irony.models.order_status_enum import OrderStatusEnum
+from irony.models.pyobjectid import PyObjectId
 
 
 def get_pipeline(func_name: str, *args):
@@ -82,4 +86,26 @@ def get_pipeline_orders_by_status_for_service_location_ids(
             }
         },
         {"$sort": {"pickup_date_time.start": -1, "time_slot": 1}},
+    ]
+
+
+def get_pipeline_service_prices_for_locations(
+    service_location_ids: List[str | PyObjectId],
+):
+    return [
+        {
+            "$match": {
+                "service_location_id": {"$in": service_location_ids},
+            }
+        },
+        {"$sort": {"sort_order": 1}},
+        {
+            "$group": {
+                "_id": {
+                    "service_location_id": "$service_location_id",
+                    "service_id": "$service_id",
+                },
+                "prices": {"$push": "$$ROOT"},
+            }
+        },
     ]

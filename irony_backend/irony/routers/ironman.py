@@ -8,9 +8,6 @@ from irony.models.service_agent.vo.auth.login_response import AgentLoginResponse
 from irony.models.service_agent.vo.auth.register_request import AgentRegisterRequest
 from irony.models.service_agent.vo.auth.register_response import AgentRegisterResponse
 from irony.models.service_agent.vo.create_order_vo import CreateOrderRequest
-from irony.models.service_agent.vo.fetch_order_details_vo import (
-    FetchOrderDetailsRequest,
-)
 from irony.models.service_agent.vo.fetch_orders_response import FetchOrdersResponse
 from irony.models.service_agent.vo.order_request_vo import CommonOrderResponse
 from irony.models.service_agent.vo.update_pickup_pending_vo import UpdateOrderRequest
@@ -112,7 +109,7 @@ async def get_agent_orders_by_status_group_by_date_and_time_slot(
         FetchOrdersResponse: Orders grouped by date and time slot
     """
     ordered_statuses = parse_order_statuses(order_status, default_type="delivery")
-    return await fetch_orders_service.get_by_date_and_time_slot_routable(
+    return await fetch_orders_service.get_orders_group_by_date_and_time_slot_routable(
         current_user,
         ordered_statuses=ordered_statuses,
     )

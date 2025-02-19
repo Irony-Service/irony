@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
 import apiClient from "@/utils/axiosClient";
+import Image from "next/image";
+import { useState } from "react";
+import { OrderItemInput } from "../types/types";
 import AddOrderServices from "./AddOrderServices";
 import BillDetails from "./BillDetails";
-import { OrderItemInput } from "../types/types";
 
 interface CreateOrderDialogProps {
   isOpen: boolean;
