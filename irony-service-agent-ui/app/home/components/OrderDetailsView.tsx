@@ -56,7 +56,7 @@ export default function OrderDetailsView(props: OrderDetailsProps) {
         new_status: props.actionStatusMap.get(currentOrderStatus),
       };
 
-      const response = await apiClient.post<{ success: boolean; message: string }>("/updateOrder", newOrder);
+      const response = await apiClient.put<{ success: boolean; message: string }>("/agent/orders", newOrder);
 
       if (!response.success) {
         throw new Error(response.message || "Failed to confirm order");

@@ -1,40 +1,24 @@
-from datetime import datetime, timedelta
-from typing import Any, Dict, List
 import asyncio
 import copy
+from datetime import datetime, timedelta
+from typing import Any, Dict, List
 
-from bson import ObjectId
-
-from irony.models.pyobjectid import PyObjectId  # Add this import
-
-import pprint
+import irony.util.whatsapp_utils as whatsapp_utils
 from irony import cache
 from irony.config import config
 from irony.config.logger import logger
 from irony.db import db, replace_documents_in_transaction
 from irony.exception.WhatsappException import WhatsappException
-from irony.models import location
-from irony.models.timeslot_volume_plus import TimeslotVolumePlus
-from irony.models.whatsapp.contact_details import ContactDetails
-from irony.models.location import Location, UserLocation
 from irony.models.order import Order
 from irony.models.order_request import OrderRequest
 from irony.models.order_status_enum import OrderStatusEnum
 from irony.models.pickup_tIme import PickupDateTime
+from irony.models.pyobjectid import PyObjectId  # Add this import
+from irony.models.service_location import DeliveryTypeEnum, ServiceLocation
+from irony.models.timeslot_volume import TimeslotVolume
 from irony.services.whatsapp import user_whatsapp_service
-from irony.models.service_location import (
-    DeliveryTypeEnum,
-    ServiceLocation,
-    ServiceEntry,
-    get_delivery_enum_from_string,
-)
-from irony.models.whatsapp.contact_details import ContactDetails
-from irony.models.timeslot_volume import Quota, TimeslotVolume
-from irony.models.user import User
 from irony.util import utils
 from irony.util.message import Message
-import irony.util.whatsapp_utils as whatsapp_utils
-import asyncio
 
 
 async def create_ironman_order_requests(order: Order, wa_id: str):
@@ -229,7 +213,6 @@ async def create_ironman_order_requests(order: Order, wa_id: str):
         # logger.info(f"Order assigned to ServiceLocation {temp_name}.")
     except Exception as e:
         logger.error("Exception in find_ironman", exc_info=True)
-        pass
 
 
 async def check_limit_and_allot_order(

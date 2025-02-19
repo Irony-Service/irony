@@ -50,7 +50,7 @@ export default function OrderDetails(props: OrderDetailsProps) {
         location_nickname: locationNickname != nickname ? nickname.trim() : null, // Add location nickname to the request
       };
 
-      const response = await apiClient.post<{ success: boolean; message: string; data: any }>("/updateOrder", newOrder);
+      const response = await apiClient.put<{ success: boolean; message: string; data: any }>("/agent/orders", newOrder);
 
       console.log(response);
       if (!response.success) {

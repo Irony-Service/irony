@@ -53,7 +53,7 @@ export default function CreateOrderDialog({ isOpen, onClose, service_locations_p
         total_price: orderItems.reduce((sum, item) => sum + item.count * location_service_prices[item.service].prices[item.dress].price, 0),
       };
 
-      const response: any = await apiClient.post("/createOrder", newOrder);
+      const response: any = await apiClient.post("/agent/orders", newOrder);
 
       if (!response.success) {
         throw new Error(response.message || "Failed to create order");

@@ -133,5 +133,5 @@ async def root():
 
 app.include_router(whatsapp.router, prefix="/api/whatsapp")
 app.include_router(users.router, prefix="/api/users")
-app.include_router(agent.router, prefix="/api/agent")
 app.include_router(ironman.router, prefix="/api/ironman")
+app.include_router(agent.router, prefix="/api")

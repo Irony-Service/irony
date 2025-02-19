@@ -1,9 +1,9 @@
 "use client";
+import apiClient from "@/utils/axiosClient";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import CreateOrderDialog from "./components/CreateOrderDialog";
-import apiClient from "@/utils/axiosClient";
 
 const links = [
   { name: "Home Agent", href: "/service/home/agent", path: "/home/agent" },
@@ -23,7 +23,7 @@ export default function LayoutClient() {
     try {
       // Fetch location service prices if not already loaded
       if (!locationServicePrices) {
-        const response: any = await apiClient.get("/servicePricesForServiceLocations");
+        const response: any = await apiClient.get("/agent/services/prices");
         if (!response.data) {
           throw new Error("Failed to fetch base location service prices");
         }

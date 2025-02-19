@@ -13,8 +13,8 @@ async function fetchHomeData() {
   console.log("This is auth_token cookie: ", authToken);
 
   const [ordersResponse, pricesResponse] = await Promise.all([
-    axios.get("/agentOrdersForDeliveryWithRoute", undefined, { cache: "no-store" }),
-    axios.get("/servicePricesForServiceLocations", undefined, { cache: "no-store" }),
+    axios.get("/agent/orders/delivery-route", undefined, { cache: "no-store" }),
+    axios.get("/agent/services/prices", undefined, { cache: "no-store" }),
   ]);
 
   return {

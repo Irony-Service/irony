@@ -14,14 +14,14 @@ async function fetchHomeData() {
 
   const [ordersResponse, prices_response] = await Promise.all([
     axios.get(
-      "/agentOrdersByStatusGroupByStatusAndDateAndTimeSlot",
+      "/agent/orders/by-status-date-timeslot",
       {
         order_status: "PICKUP_PENDING,WORK_IN_PROGRESS,DELIVERY_PENDING",
       },
       { cache: "no-store" }
     ),
     axios.get(
-      "/servicePricesForServiceLocations",
+      "/agent/services/prices",
       undefined,
       { cache: "no-store" }
     ),
