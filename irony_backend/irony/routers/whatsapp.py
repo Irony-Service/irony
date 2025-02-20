@@ -36,9 +36,13 @@ async def whatsapp(request: Request):
                         logger.info(f"T1, {config.CALLS}")
                         if whatsapp_service.is_ongoing_or_status_request(message):
                             return Response(status_code=200)
-                        return await whatsapp_service.handle_entry(
-                            message, contacts_details_dict[message["from"]]
+                        logger.info(f"T4, {config.CALLS}")
+                        asyncio.create_task(
+                            whatsapp_service.handle_entry(
+                                message, contacts_details_dict[message["from"]]
+                            )
                         )
+                        return Response(status_code=200)
                     except Exception as e:
                         logger.error(f"Error occured in send whatsapp message : {e}")
                         traceback.print_exc()
