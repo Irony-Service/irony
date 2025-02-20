@@ -27,12 +27,13 @@ async def whatsapp(request: Request):
                 messages = value.get("messages", [])
                 for message in messages:
                     try:
-                        random_number = random.randint(1, 1000)
-                        logger.info(f"Calls {random_number}: {config.CALLS}")
-                        logger.info(f"Sleeping for 50 ms: {random_number}")
-                        await asyncio.sleep(0.05)
-                        logger.info(f"Completed 50 ms: {random_number}")
-                        logger.info(f"Calls After sleep{random_number}: {config.CALLS}")
+                        # random_number = random.randint(1, 1000)
+                        # logger.info(f"Calls {random_number}: {config.CALLS}")
+                        # logger.info(f"Sleeping for 50 ms: {random_number}")
+                        # await asyncio.sleep(0.05)
+                        # logger.info(f"Completed 50 ms: {random_number}")
+                        # logger.info(f"Calls After sleep{random_number}: {config.CALLS}")
+                        logger.info("T1")
                         if whatsapp_service.is_ongoing_or_status_request(message):
                             return Response(status_code=200)
                         return await whatsapp_service.handle_entry(
@@ -43,8 +44,7 @@ async def whatsapp(request: Request):
                         traceback.print_exc()
                     finally:
                         if message.get("id", None) != None:
-                            calls = config.CALLS
-                            calls[message.get("id")] = None
+                            config.CALLS.remove(message.get("id"))
 
         # old method.
         # if payload["entry"]:
