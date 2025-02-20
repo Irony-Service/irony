@@ -20,9 +20,9 @@ def is_ongoing_or_status_request(message):
     if unique_id in config.CALLS:
         return True
 
-    logger.info("T2")
+    logger.info(f"T2, {config.CALLS}")
     config.CALLS.add(unique_id)
-    logger.info("T3")
+    logger.info(f"T3, {config.CALLS}")
     return False
 
 

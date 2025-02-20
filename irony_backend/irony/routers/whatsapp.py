@@ -33,7 +33,7 @@ async def whatsapp(request: Request):
                         # await asyncio.sleep(0.05)
                         # logger.info(f"Completed 50 ms: {random_number}")
                         # logger.info(f"Calls After sleep{random_number}: {config.CALLS}")
-                        logger.info("T1")
+                        logger.info(f"T1, {config.CALLS}")
                         if whatsapp_service.is_ongoing_or_status_request(message):
                             return Response(status_code=200)
                         return await whatsapp_service.handle_entry(
