@@ -17,6 +17,9 @@ COPY . .
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app
 
+# Install make for github wehbook
+RUN apt-get update && apt-get install -y make
+
 # Switch to the new user
 USER appuser
 
