@@ -13,7 +13,8 @@ GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
 if not GITHUB_WEBHOOK_SECRET:
     raise ValueError("GITHUB_WEBHOOK_SECRET environment variable must be set")
 
-MAKEFILE_DIR = Path(__file__).resolve().parents[2]
+MAKEFILE_DIR = Path(__file__).resolve().parents[1]
+print(f"MAKEFILE_DIR: {MAKEFILE_DIR}")
 
 
 async def handle_github_webhook(request: Request):
