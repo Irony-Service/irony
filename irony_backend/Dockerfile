@@ -29,6 +29,8 @@ USER appuser
 # Expose the FastAPI port
 EXPOSE 8000
 
+RUN ln -sf /usr/share/zoneinfo/$(cat /etc/timezone) /etc/localtime && \
+    echo $(cat /etc/timezone) > /etc/timezone
 # # Command with conditional SSL configuration
 # CMD ["sh", "-c", "if [ \"$SSL_ENABLED\" = \"true\" ]; then uvicorn irony.main:app --host 0.0.0.0 --port 8000 --ssl-keyfile /app/ssl/key.pem --ssl-certfile /app/ssl/cert.pem; else uvicorn irony.main:app --host 0.0.0.0 --port 8000; fi"]
 
