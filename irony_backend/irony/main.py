@@ -8,15 +8,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-
-from irony import cache
 from irony.config import config
 from irony.config.logger import logger
 from irony.file_lock import FileLockError, file_lock
-from irony.github_webhook import handle_github_webhook
 from irony.routers import agent, ironman, users, whatsapp
 from irony.scheduler import create_scheduler
 from irony.util import background_process
+
+from irony import cache
 
 app = FastAPI()
 
@@ -89,11 +88,6 @@ async def log_request_time(request: Request, call_next):
 #     #     process_time
 #     # )  # Optional: Add timing info to the response
 #     return response
-
-
-@app.post("/api/webhook/github")
-async def github_webhook(request: Request):
-    return await handle_github_webhook(request)
 
 
 @app.get("/")

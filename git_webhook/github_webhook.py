@@ -6,11 +6,8 @@ from pathlib import Path
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from irony.config import config
-from irony.config.logger import logger
-
 # TODO: Move this to secure configuration
-GITHUB_WEBHOOK_SECRET = config.GITHUB_WEBHOOK_SECRET
+GITHUB_WEBHOOK_SECRET = "HomoSapiensValarMoghulis"
 
 MAKEFILE_DIR = Path(__file__).resolve().parents[2]
 
@@ -37,12 +34,12 @@ async def handle_github_webhook(request: Request):
                 text=True,
                 cwd=str(MAKEFILE_DIR),  # Run command in the correct directory
             )
-            logger.info(f"Update triggered: {result.stdout}")
+            print(f"Update triggered: {result.stdout}")
             return JSONResponse(
                 content={"message": "Update triggered successfully"}, status_code=200
             )
         except subprocess.CalledProcessError as e:
-            logger.error(f"Update failed: {e.stderr}")
+            print(f"Update failed: {e.stderr}")
             return JSONResponse(
                 content={"message": "Update failed", "error": e.stderr}, status_code=500
             )
