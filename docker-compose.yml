@@ -26,6 +26,7 @@ services:
       # - NEXT_PUBLIC_API_URL=https://ironystore.in
       # - NEXT_PUBLIC_CLIENT_API_URL=https://ironystore.in
       - NODE_ENV=production
+      - TZ=Asia/Kolkata
 
     restart: unless-stopped
     # networks:
