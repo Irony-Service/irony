@@ -3,56 +3,16 @@ import os
 import time
 from contextlib import asynccontextmanager
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
-from apscheduler.triggers.cron import CronTrigger  # type: ignore
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from irony import cache
 from irony.config import config
 from irony.config.logger import logger
+from irony.file_lock import FileLockError, file_lock
 from irony.routers import agent, ironman, users, whatsapp
+from irony.scheduler import create_scheduler
 from irony.util import background_process
-
-# Initialize the scheduler
-
-LOCK_FILE = os.path.join(os.path.dirname(__file__), "locks", "batch.lock")
-
-
-async def execute_all_background_tasks():
-    """Execute all background tasks in sequence"""
-    fd = None
-    try:
-        fd = os.open(LOCK_FILE, os.O_CREAT | os.O_RDWR)
-        try:
-            # Attempt non-blocking exclusive lock
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            # Run batch jobs
-            await background_process.reset_daily_config()
-            await background_process.send_pending_order_requests()
-            await background_process.send_ironman_delivery_schedule()
-            await background_process.send_ironman_work_schedule()
-            await background_process.send_ironman_pending_work_schedule()
-            await background_process.create_timeslot_volume_record()
-            await background_process.create_order_requests()
-            await background_process.reassign_missed_orders()
-        except BlockingIOError:
-            logger.warning("Another instance of the batch job is already running")
-            return
-    except OSError as e:
-        logger.error(f"Failed to open or process lock file: {e}")
-        return
-    except Exception as e:
-        logger.error(f"Error executing background tasks: {e}")
-        return
-    finally:
-        if fd is not None:
-            try:
-                fcntl.flock(fd, fcntl.LOCK_UN)
-                os.close(fd)
-            except Exception as e:
-                logger.error(f"Error closing lock file: {e}")
-
 
 app = FastAPI()
 
@@ -62,15 +22,15 @@ async def lifespan(app: FastAPI):
     config.DB_CACHE = await cache.fetch_data_from_db(config.DB_CACHE)
     logger.info("Data loaded into cache")
 
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(execute_all_background_tasks, CronTrigger(minute="*/1"))
+    scheduler = create_scheduler()
     scheduler.start()
-    logger.info("Scheduler started on 1 worker")
+    logger.info("All scheduler jobs started")
+
     try:
         yield
     finally:
-        pass
-    logger.info("Application shutdown, you can clean up resources here")
+        scheduler.shutdown()
+    logger.info("Application shutdown, scheduler stopped")
 
 
 app.router.lifespan_context = lifespan
