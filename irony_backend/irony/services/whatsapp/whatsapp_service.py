@@ -10,6 +10,7 @@ from irony.services.whatsapp import user_whatsapp_service
 from irony.util import whatsapp_utils
 
 
+# Below message is not used in the code.
 def is_ongoing_or_status_request(message):
     unique_id = None
     try:
@@ -20,9 +21,7 @@ def is_ongoing_or_status_request(message):
     if unique_id in config.CALLS:
         return True
 
-    logger.info(f"T2, {config.CALLS}")
     config.CALLS.add(unique_id)
-    logger.info(f"T3, {config.CALLS}")
     return False
 
 

@@ -33,20 +33,20 @@ async def whatsapp(request: Request):
                         # await asyncio.sleep(0.05)
                         # logger.info(f"Completed 50 ms: {random_number}")
                         # logger.info(f"Calls After sleep{random_number}: {config.CALLS}")
-                        logger.info(f"T1, {config.CALLS}")
                         if not redis_cache.add_message_id(message):
+                            logger.info(f"Message under processing: {message}")
                             return {"status": "processing"}, 409
 
-                        logger.info(f"T4, {config.CALLS}")
+                        logger.info(f"Message Received : {message}")
                         return await whatsapp_service.handle_entry(
                             message, contacts_details_dict[message["from"]]
                         )
                     except Exception as e:
                         logger.error(f"Error occured in send whatsapp message : {e}")
                         traceback.print_exc()
-                    finally:
-                        if message.get("id", None) != None:
-                            config.CALLS.remove(message.get("id"))
+                    # finally:
+                    #     if message.get("id", None) != None:
+                    #         config.CALLS.remove(message.get("id"))
 
         # old method.
         # if payload["entry"]:
