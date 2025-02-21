@@ -98,7 +98,7 @@ async def github_webhook(request: Request):
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Hey there!"}
 
 
 app.include_router(whatsapp.router, prefix="/api/whatsapp")
