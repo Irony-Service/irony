@@ -91,7 +91,7 @@ async def log_request_time(request: Request, call_next):
 #     return response
 
 
-@app.post("/webhook/github")
+@app.post("/api/webhook/github")
 async def github_webhook(request: Request):
     return await handle_github_webhook(request)
 
