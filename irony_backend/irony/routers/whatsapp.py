@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request, Response
 
 from irony.config.logger import logger
 from irony.services.whatsapp import whatsapp_service
-from irony.util import whatsapp_utils
+from irony.util import redis_cache, whatsapp_utils
 
 from ..config import config
 from ..models.user import User
@@ -34,15 +34,13 @@ async def whatsapp(request: Request):
                         # logger.info(f"Completed 50 ms: {random_number}")
                         # logger.info(f"Calls After sleep{random_number}: {config.CALLS}")
                         logger.info(f"T1, {config.CALLS}")
-                        if whatsapp_service.is_ongoing_or_status_request(message):
-                            return Response(status_code=200)
+                        if not redis_cache.add_message_id(message):
+                            return {"status": "processing"}, 409
+
                         logger.info(f"T4, {config.CALLS}")
-                        asyncio.create_task(
-                            whatsapp_service.handle_entry(
-                                message, contacts_details_dict[message["from"]]
-                            )
+                        return await whatsapp_service.handle_entry(
+                            message, contacts_details_dict[message["from"]]
                         )
-                        return Response(status_code=200)
                     except Exception as e:
                         logger.error(f"Error occured in send whatsapp message : {e}")
                         traceback.print_exc()
