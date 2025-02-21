@@ -1,3 +1,5 @@
+import fcntl
+import os
 import time
 from contextlib import asynccontextmanager
 
@@ -13,64 +15,45 @@ from irony.routers import agent, ironman, users, whatsapp
 from irony.util import background_process
 
 # Initialize the scheduler
-scheduler = AsyncIOScheduler()
-
-# Add the job to the scheduler
-# TODO add this back when you want to send ironman_request
-scheduler.add_job(background_process.reset_daily_config, CronTrigger(minute="*/1"))
-
-scheduler.add_job(
-    background_process.send_pending_order_requests, CronTrigger(minute="*/1")
-)
-
-scheduler.add_job(
-    background_process.send_ironman_delivery_schedule, CronTrigger(minute="*/1")
-)
-
-scheduler.add_job(
-    background_process.send_ironman_work_schedule, CronTrigger(minute="*/1")
-)
-
-scheduler.add_job(
-    background_process.send_ironman_pending_work_schedule, CronTrigger(minute="*/1")
-)
-
-scheduler.add_job(
-    background_process.create_timeslot_volume_record, CronTrigger(minute="*/1")
-)
-
-scheduler.add_job(background_process.create_order_requests, CronTrigger(minute="*/1"))
-
-scheduler.add_job(background_process.reassign_missed_orders, CronTrigger(minute="*/1"))
 
 
-# Runs every 1 minute
+async def execute_all_background_tasks():
+    """Execute all background tasks in sequence"""
+    await background_process.reset_daily_config()
+    await background_process.send_pending_order_requests()
+    await background_process.send_ironman_delivery_schedule()
+    await background_process.send_ironman_work_schedule()
+    await background_process.send_ironman_pending_work_schedule()
+    await background_process.create_timeslot_volume_record()
+    await background_process.create_order_requests()
+    await background_process.reassign_missed_orders()
 
-# scheduler.add_job(
-#     background_process.send_ironman_request, CronTrigger(minute="*/1")
-# )  # Runs every 1 minute
+
+LOCK_FILE = os.path.join(os.path.dirname(__file__), "locks", "batch.lock")
+
+app = FastAPI()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup event equivalent
     config.DB_CACHE = await cache.fetch_data_from_db(config.DB_CACHE)
     logger.info("Data loaded into cache")
-    # scheduler.start()
-    # await background_process.send_pending_order_requests()
-    logger.info("Scheduler started")
-    # Yield control to the app
+
+    fd = os.open(LOCK_FILE, os.O_CREAT | os.O_RDWR)
+    # Attempt non-blocking exclusive lock
+    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    # Run batch job if lock acquired
+
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(execute_all_background_tasks, CronTrigger(minute="*/1"))
+    scheduler.start()
+    logger.info("Scheduler started on 1 worker")
     try:
         yield
     finally:
-        # Shutdown the scheduler
-        # scheduler.shutdown()
         pass
-    # Shutdown event equivalent
     logger.info("Application shutdown, you can clean up resources here")
 
-
-app = FastAPI()
 
 app.router.lifespan_context = lifespan
 
