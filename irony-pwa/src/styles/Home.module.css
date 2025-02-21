@@ -1,0 +1,63 @@
+.categoryCard {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.categoryImage {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.hoverMenu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.categoryCard:hover .hoverMenu {
+  opacity: 1;
+}
+
+.itemsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  color: white;
+}
+
+.itemsList li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.addBtn {
+  background: #fcd34d;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+/* Add other styles from the web version as needed */

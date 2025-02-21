@@ -165,52 +165,5 @@
 
     <script src="js/config.js" type="module"></script>
     <script src="js/main.js" type="module"></script>
-    <script>
-      // Initialize dynamic content from config
-      document.addEventListener("DOMContentLoaded", () => {
-        import("./js/config.js").then((module) => {
-          const config = module.default;
-          document.getElementById("contactEmail").textContent = config.contact.email;
-          document.getElementById("contactPhone").textContent = config.contact.phone;
-          document.getElementById("weekdayHours").textContent = config.businessHours.weekdays;
-          document.getElementById("sundayHours").textContent = config.businessHours.sunday;
-          document.getElementById("currentYear").textContent = config.company.year;
-          document.getElementById("companyName").textContent = config.company.name;
-          document.getElementById("companyNameFooter").textContent = config.company.name;
-
-          // Add areas
-          const areasContainer = document.getElementById("operatingAreas");
-          config.operatingAreas.areas.forEach((area) => {
-            const areaElement = document.createElement("span");
-            areaElement.className = "area-tag";
-            areaElement.textContent = area;
-            areasContainer.appendChild(areaElement);
-          });
-
-          document.getElementById("operatingCity").textContent = config.operatingAreas.city;
-          document.getElementById("operatingState").textContent = config.operatingAreas.state;
-        });
-      });
-
-      // Global cart functionality
-      window.cart = [];
-
-      window.addToCart = function (name, price) {
-        window.cart.push({ name, price });
-        document.querySelector(".cart-count").textContent = window.cart.length;
-      };
-
-      document.getElementById("cartButton").addEventListener("click", function () {
-        if (window.cart.length === 0) return;
-
-        const items = window.cart.map((item) => `${item.name} - ₹${item.price}`).join("\n");
-        const total = window.cart.reduce((sum, item) => sum + item.price, 0);
-        const message = `Order Summary:\n${items}\n\nTotal: ₹${total}`;
-
-        window.open(`https://wa.me/917416974358?text=${encodeURIComponent(message)}`, "_blank");
-        window.cart = [];
-        document.querySelector(".cart-count").textContent = "0";
-      });
-    </script>
   </body>
 </html>
