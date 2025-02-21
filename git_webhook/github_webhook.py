@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import os
 import subprocess
 from pathlib import Path
 
@@ -7,7 +8,10 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
 # TODO: Move this to secure configuration
-GITHUB_WEBHOOK_SECRET = "HomoSapiensValarMoghulis"
+# Get webhook secret from environment variable, with a helpful error if not set
+GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
+if not GITHUB_WEBHOOK_SECRET:
+    raise ValueError("GITHUB_WEBHOOK_SECRET environment variable must be set")
 
 MAKEFILE_DIR = Path(__file__).resolve().parents[2]
 
