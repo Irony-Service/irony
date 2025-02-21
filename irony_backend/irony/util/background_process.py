@@ -1187,6 +1187,8 @@ async def reassign_missed_orders():
     else:
         logger.info("No missed orders found")
 
+    return
+
 
 async def reset_daily_config():
     logger.info("Started reset_daily_config")

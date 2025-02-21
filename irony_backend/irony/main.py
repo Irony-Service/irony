@@ -19,6 +19,20 @@ from irony.util import background_process
 
 async def execute_all_background_tasks():
     """Execute all background tasks in sequence"""
+    try:
+        fd = os.open(LOCK_FILE, os.O_CREAT | os.O_RDWR)
+        try:
+            # Attempt non-blocking exclusive lock
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            # Run batch job if lock acquired
+        except BlockingIOError:
+            logger.warning("Another instance of the batch job is already running")
+            os.close(fd)
+            return
+    except OSError as e:
+        logger.error(f"Failed to open lock file: {e}")
+        return
+
     await background_process.reset_daily_config()
     await background_process.send_pending_order_requests()
     await background_process.send_ironman_delivery_schedule()
@@ -38,11 +52,6 @@ app = FastAPI()
 async def lifespan(app: FastAPI):
     config.DB_CACHE = await cache.fetch_data_from_db(config.DB_CACHE)
     logger.info("Data loaded into cache")
-
-    fd = os.open(LOCK_FILE, os.O_CREAT | os.O_RDWR)
-    # Attempt non-blocking exclusive lock
-    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    # Run batch job if lock acquired
 
     scheduler = AsyncIOScheduler()
     scheduler.add_job(execute_all_background_tasks, CronTrigger(minute="*/1"))
