@@ -16,34 +16,43 @@ from irony.util import background_process
 
 # Initialize the scheduler
 
+LOCK_FILE = os.path.join(os.path.dirname(__file__), "locks", "batch.lock")
+
 
 async def execute_all_background_tasks():
     """Execute all background tasks in sequence"""
+    fd = None
     try:
         fd = os.open(LOCK_FILE, os.O_CREAT | os.O_RDWR)
         try:
             # Attempt non-blocking exclusive lock
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            # Run batch job if lock acquired
+            # Run batch jobs
+            await background_process.reset_daily_config()
+            await background_process.send_pending_order_requests()
+            await background_process.send_ironman_delivery_schedule()
+            await background_process.send_ironman_work_schedule()
+            await background_process.send_ironman_pending_work_schedule()
+            await background_process.create_timeslot_volume_record()
+            await background_process.create_order_requests()
+            await background_process.reassign_missed_orders()
         except BlockingIOError:
             logger.warning("Another instance of the batch job is already running")
-            os.close(fd)
             return
     except OSError as e:
-        logger.error(f"Failed to open lock file: {e}")
+        logger.error(f"Failed to open or process lock file: {e}")
         return
+    except Exception as e:
+        logger.error(f"Error executing background tasks: {e}")
+        return
+    finally:
+        if fd is not None:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+                os.close(fd)
+            except Exception as e:
+                logger.error(f"Error closing lock file: {e}")
 
-    await background_process.reset_daily_config()
-    await background_process.send_pending_order_requests()
-    await background_process.send_ironman_delivery_schedule()
-    await background_process.send_ironman_work_schedule()
-    await background_process.send_ironman_pending_work_schedule()
-    await background_process.create_timeslot_volume_record()
-    await background_process.create_order_requests()
-    await background_process.reassign_missed_orders()
-
-
-LOCK_FILE = os.path.join(os.path.dirname(__file__), "locks", "batch.lock")
 
 app = FastAPI()
 
