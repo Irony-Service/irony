@@ -1,54 +1,18 @@
 import time
 from contextlib import asynccontextmanager
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
-from apscheduler.triggers.cron import CronTrigger  # type: ignore
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from irony import cache
 from irony.config import config
 from irony.config.logger import logger
+from irony.file_lock import FileLockError, file_lock
 from irony.routers import agent, ironman, users, whatsapp
+from irony.scheduler import create_scheduler
 from irony.util import background_process
 
-# Initialize the scheduler
-scheduler = AsyncIOScheduler()
-
-# Add the job to the scheduler
-# TODO add this back when you want to send ironman_request
-scheduler.add_job(background_process.reset_daily_config, CronTrigger(minute="*/1"))
-
-scheduler.add_job(
-    background_process.send_pending_order_requests, CronTrigger(minute="*/1")
-)
-
-scheduler.add_job(
-    background_process.send_ironman_delivery_schedule, CronTrigger(minute="*/1")
-)
-
-scheduler.add_job(
-    background_process.send_ironman_work_schedule, CronTrigger(minute="*/1")
-)
-
-scheduler.add_job(
-    background_process.send_ironman_pending_work_schedule, CronTrigger(minute="*/1")
-)
-
-scheduler.add_job(
-    background_process.create_timeslot_volume_record, CronTrigger(minute="*/1")
-)
-
-scheduler.add_job(background_process.create_order_requests, CronTrigger(minute="*/1"))
-
-scheduler.add_job(background_process.reassign_missed_orders, CronTrigger(minute="*/1"))
-
-
-# Runs every 1 minute
-
-# scheduler.add_job(
-#     background_process.send_ironman_request, CronTrigger(minute="*/1")
-# )  # Runs every 1 minute
+app = FastAPI()
 
 
 @asynccontextmanager
@@ -56,18 +20,16 @@ async def lifespan(app: FastAPI):
     # Startup event equivalent
     config.DB_CACHE = await cache.fetch_data_from_db(config.DB_CACHE)
     logger.info("Data loaded into cache")
+
+    scheduler = create_scheduler()
     scheduler.start()
-    # await background_process.send_pending_order_requests()
-    logger.info("Scheduler started")
-    # Yield control to the app
+    logger.info("All scheduler jobs started")
+
     try:
         yield
     finally:
-        # Shutdown the scheduler
-        # scheduler.shutdown()
-        pass
-    # Shutdown event equivalent
-    logger.info("Application shutdown, you can clean up resources here")
+        scheduler.shutdown()
+    logger.info("Application shutdown, scheduler stopped")
 
 
 app = FastAPI()
