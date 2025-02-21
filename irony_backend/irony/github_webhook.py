@@ -31,7 +31,7 @@ async def handle_github_webhook(request: Request):
     if payload.get("ref") == "refs/heads/dev":
         try:
             result = subprocess.run(
-                ["make", "update"],
+                ["sh", "-c", "cd {} && make update".format(MAKEFILE_DIR)],
                 check=True,
                 capture_output=True,
                 text=True,
