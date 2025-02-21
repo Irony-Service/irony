@@ -12,7 +12,7 @@ from irony.config.logger import logger
 # TODO: Move this to secure configuration
 GITHUB_WEBHOOK_SECRET = config.GITHUB_WEBHOOK_SECRET
 
-MAKEFILE_DIR = Path(__file__).resolve().parents[3]
+MAKEFILE_DIR = Path(__file__).resolve().parents[2]
 
 
 async def handle_github_webhook(request: Request):
