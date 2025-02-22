@@ -46,7 +46,7 @@ async def get_orders_group_by_status_and_date_and_time_slot(
 
         pipeline: List[Dict[str, Any]] = (
             pipelines.get_pipeline_orders_group_by_status_and_date_and_time_slot_for_service_location_ids(
-                [str(location_id) for location_id in agent.service_location_ids],  # type: ignore
+                agent.service_location_ids,  # type: ignore
                 ordered_statuses,
             )
         )
