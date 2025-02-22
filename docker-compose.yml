@@ -1,15 +1,14 @@
 services:
   redis:
     image: redis
-    container_name: irony_redis_dev  # Changed
+    container_name: irony_redis_prod
     ports:
       - "6380:6379"
     restart: unless-stopped
 
   backend:
     build: ./irony_backend
-    image: irony_backend_dev  # Changed
-    container_name: irony_backend_dev  # Changed
+    container_name: irony_backend_prod
     ports:
       - "8001:8000"
     environment:
@@ -19,8 +18,10 @@ services:
   frontend:
     build:
       context: ./irony-service-agent-ui
-    image: irony_frontend_dev  # Changed
-    container_name: irony_frontend_dev  # Changed
+      # args:
+      #   NEXT_PUBLIC_API_URL: "https://ironystore.in"
+      #   NEXT_PUBLIC_CLIENT_API_URL: "https://ironystore.in"
+    container_name: irony_frontend_prod
     ports:
       - "3001:3000"
 
