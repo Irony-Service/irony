@@ -3,7 +3,7 @@ services:
     image: redis
     container_name: irony_redis_dev  # Changed
     ports:
-      - "6379:6379"
+      - "6380:6379"
     restart: unless-stopped
 
   backend:
@@ -11,7 +11,7 @@ services:
     image: irony_backend_dev  # Changed
     container_name: irony_backend_dev  # Changed
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
@@ -22,7 +22,8 @@ services:
     image: irony_frontend_dev  # Changed
     container_name: irony_frontend_dev  # Changed
     ports:
-      - "3000:3000"
+      - "3001:3000"
+
     depends_on:
       - backend
     environment:
