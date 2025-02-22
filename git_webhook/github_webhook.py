@@ -4,12 +4,15 @@ import os
 import subprocess
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
 # TODO: Move this to secure configuration
 # Get webhook secret from environment variable, with a helpful error if not set
-GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET")
+load_dotenv()  # Load environment variables from .env
+
+GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
 if not GITHUB_WEBHOOK_SECRET:
     raise ValueError("GITHUB_WEBHOOK_SECRET environment variable must be set")
 
