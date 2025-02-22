@@ -1,17 +1,19 @@
 services:
   redis:
     image: redis
-    container_name: irony_redis_dev  # Changed
+    container_name: irony_redis_prod
     ports:
-      - "6379:6379"
+      - "6380:6379"
     restart: unless-stopped
+    
 
   backend:
     build: ./irony_backend
-    image: irony_backend_dev  # Changed
-    container_name: irony_backend_dev  # Changed
+    image: irony_backend_prod
+    container_name: irony_backend_prod
+    cgroup_parent: prod.slice
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
@@ -19,13 +21,14 @@ services:
   frontend:
     build:
       context: ./irony-service-agent-ui
-    image: irony_frontend_dev  # Changed
-    container_name: irony_frontend_dev  # Changed
+    image: irony_frontend_prod
+    container_name: irony_frontend_prod
+    cgroup_parent: prod.slice
     ports:
-      - "3000:3000"
+      - "3001:3000"
     depends_on:
       - backend
     environment:
-      - NODE_ENV=development  # Changed to development
+      - NODE_ENV=production
       - TZ=Asia/Kolkata
     restart: unless-stopped
