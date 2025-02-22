@@ -1,7 +1,7 @@
 import redis
 
 # Initialize your Redis client
-r = redis.Redis(host="localhost", port=6379, db=0)
+r = redis.Redis(host="redis", port=6379, db=0)
 
 
 def add_message_id(message):
