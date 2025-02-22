@@ -8,6 +8,7 @@ services:
 
   backend:
     build: ./irony_backend
+    image: irony_backend_prod  # <--- Add this line
     container_name: irony_backend_prod
     ports:
       - "8001:8000"
@@ -18,16 +19,13 @@ services:
   frontend:
     build:
       context: ./irony-service-agent-ui
-      # args:
-      #   NEXT_PUBLIC_API_URL: "https://ironystore.in"
-      #   NEXT_PUBLIC_CLIENT_API_URL: "https://ironystore.in"
+    image: irony_frontend_prod  # <--- Add this line
     container_name: irony_frontend_prod
     ports:
       - "3001:3000"
-
     depends_on:
       - backend
     environment:
-      - NODE_ENV=development  # Changed to development
+      - NODE_ENV=production
       - TZ=Asia/Kolkata
     restart: unless-stopped
