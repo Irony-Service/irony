@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Image from "next/image";
 import apiClient from "../../utils/axiosClient";
 
 export default function Login() {
@@ -28,7 +28,7 @@ export default function Login() {
     setError("");
 
     try {
-      const response = await apiClient.post<any>("/login", formData, { cache: "no-store" });
+      const response = await apiClient.post<any>("/agent/auth/login", formData, { cache: "no-store" });
       router.push("/home/agent");
     } catch (err: any) {
       setError(err.message || "Invalid credentials");

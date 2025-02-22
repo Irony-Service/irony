@@ -8,14 +8,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+
+from irony import cache
 from irony.config import config
 from irony.config.logger import logger
 from irony.file_lock import FileLockError, file_lock
 from irony.routers import agent, ironman, users, whatsapp
 from irony.scheduler import create_scheduler
 from irony.util import background_process
-
-from irony import cache
 
 app = FastAPI()
 
@@ -38,12 +38,9 @@ async def lifespan(app: FastAPI):
 
 app.router.lifespan_context = lifespan
 
-origins = ["http://localhost:3000"]
-# origins = ["*"]
-cookie_secure = False
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=config.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
