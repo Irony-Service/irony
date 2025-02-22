@@ -1,0 +1,11 @@
+fastapi[all]
+uvicorn
+motor
+requests
+joblib
+apscheduler
+passlib
+bcrypt
+pyjwt
+pymongo>=4.0.0
+redis
