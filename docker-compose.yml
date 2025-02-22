@@ -2,14 +2,17 @@ services:
   redis:
     image: redis
     container_name: irony_redis_prod
+    cgroup_parent: prod.slice
     ports:
       - "6380:6379"
     restart: unless-stopped
+    
 
   backend:
     build: ./irony_backend
     image: irony_backend_prod
     container_name: irony_backend_prod
+    cgroup_parent: prod.slice
     ports:
       - "8001:8000"
     environment:
@@ -21,6 +24,7 @@ services:
       context: ./irony-service-agent-ui
     image: irony_frontend_prod
     container_name: irony_frontend_prod
+    cgroup_parent: prod.slice
     ports:
       - "3001:3000"
     depends_on:
