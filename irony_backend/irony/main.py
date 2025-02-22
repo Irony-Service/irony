@@ -92,7 +92,7 @@ async def log_request_time(request: Request, call_next):
 
 @app.get("/")
 async def root():
-    return {"message": "Hey there!"}
+    return {"message": "Hi Irony"}
 
 
 app.include_router(whatsapp.router, prefix="/api/whatsapp")
