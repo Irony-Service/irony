@@ -2,6 +2,7 @@ services:
   redis:
     image: redis
     container_name: irony_redis_prod
+    cgroup_parent: prod.slice
     ports:
       - "6380:6379"
     restart: unless-stopped
