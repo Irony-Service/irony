@@ -1,6 +1,7 @@
 from typing import Dict, List
 
-from irony.config import config, logger
+from irony.config import config
+from irony.config.logger import logger
 from irony.db import db
 from irony.exception.WhatsappException import WhatsappException
 from irony.models.message import MessageConfig

@@ -31,8 +31,8 @@ def is_time_slot_expired(time_slot):
     return True
 
 
-def get_maps_link(location: UserLocation):
+def get_maps_link(location: UserLocation | None) -> str | None:
     maps_link = config.DB_CACHE["google_maps_link"]
     if location and location.location and location.location.coordinates:
         return f"{maps_link}{location.location.coordinates[0]},{location.location.coordinates[1]}"
-    return ""
+    return None

@@ -1,16 +1,16 @@
-from datetime import datetime
 import random
-from typing import Dict
+from datetime import datetime
+from typing import Any, Dict
 
-from irony.db import db
 from irony.config import config
 from irony.config.logger import logger
+from irony.db import db
 from irony.exception.WhatsappException import WhatsappException
-from irony.models.order_status_enum import OrderStatusEnum
-from irony.models.whatsapp.contact_details import ContactDetails
 from irony.models.location import Location, UserLocation
 from irony.models.message import MessageConfig, MessageType
 from irony.models.order_status import OrderStatus
+from irony.models.order_status_enum import OrderStatusEnum
+from irony.models.whatsapp.contact_details import ContactDetails
 from irony.util.message import Message
 
 sample_interactive = {
@@ -95,7 +95,7 @@ async def update_order_status(order_id, status: OrderStatusEnum):
     )
 
 
-async def get_new_order_status(order_id, status: OrderStatusEnum):
+def get_new_order_status(order_id, status: OrderStatusEnum):
     return OrderStatus(
         order_id=order_id,
         status=status,
@@ -103,7 +103,9 @@ async def get_new_order_status(order_id, status: OrderStatusEnum):
     )
 
 
-def get_reply_message(message_key, message_type="interactive", message_sub_type=""):
+def get_reply_message(
+    message_key, message_type="interactive", message_sub_type=""
+) -> Any:
     message_doc: MessageConfig = config.DB_CACHE["message_config"][message_key]
     message_body = message_doc.message
     message_text: str = get_random_one_from_messages(message_doc)

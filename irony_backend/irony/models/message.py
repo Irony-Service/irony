@@ -1,9 +1,10 @@
 from enum import Enum
 from typing import Any, List, Optional
-from irony.models.pyobjectid import PyObjectId
+
 from pydantic import BaseModel, Field
 
 from irony.models.common_model import shared_config
+from irony.models.pyobjectid import PyObjectId
 
 
 class MessageType(str, Enum):
@@ -24,6 +25,6 @@ class MessageConfig(BaseModel):
     type: Optional[str] = None
     message_options: Optional[List[str]] = None
     call_to_action: Optional[List[str]] = None
-    message: Optional[Any] = None
+    message: Any = None
 
     model_config = shared_config
