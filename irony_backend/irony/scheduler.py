@@ -5,7 +5,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 from irony.config.logger import logger
 from irony.file_lock import FileLockError, file_lock
-from irony.util import background_process
+from irony.util.background_process import background_process
 
 # Define lock files for each process
 LOCK_FILES = {

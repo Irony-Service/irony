@@ -1,19 +1,19 @@
 from datetime import datetime
 from typing import Any, Dict, List
-from irony.models.order_status_enum import OrderStatusEnum
-from irony.models.pyobjectid import PyObjectId
 
 from irony.config import config
+from irony.config.logger import logger
+from irony.db import db
 from irony.exception.WhatsappException import WhatsappException
-from irony.models.whatsapp.contact_details import ContactDetails
 from irony.models.order import Order
 from irony.models.order_request import OrderRequest
 from irony.models.order_status import OrderStatus
-from irony.config.logger import logger
-from irony.util import background_process, utils
-from irony.util import whatsapp_utils
+from irony.models.order_status_enum import OrderStatusEnum
+from irony.models.pyobjectid import PyObjectId
+from irony.models.whatsapp.contact_details import ContactDetails
+from irony.util import utils, whatsapp_utils
+from irony.util.background_process import background_process
 from irony.util.message import Message
-from irony.db import db
 
 
 async def update_order_status(reply, status: OrderStatusEnum):
@@ -144,11 +144,6 @@ async def handle_ironman_accept(contact_details: ContactDetails, reply_id):
                 order, order_request.service_location
             )
         ):
-            await db.order.replace_one(
-                {"_id": order.id},
-                order.model_dump(exclude_unset=True, by_alias=True),
-            )
-
             logger.info(
                 f"Order:{order.id} accepted by service_location: {order_request.service_location_id} ,ironman:{contact_details.wa_id}"
             )
