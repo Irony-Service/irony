@@ -1,15 +1,16 @@
 from fastapi import Response
 
-from irony.exception.WhatsappException import WhatsappException
-from irony.models.whatsapp.contact_details import ContactDetails
-from irony.config import config
-from irony.services.whatsapp import user_whatsapp_service
-from irony.util import whatsapp_utils
 import irony.services.whatsapp.interactive_message_service as interactive_message_service
 import irony.services.whatsapp.text_message_service as text_message_service
+from irony.config import config
 from irony.config.logger import logger
+from irony.exception.WhatsappException import WhatsappException
+from irony.models.whatsapp.contact_details import ContactDetails
+from irony.services.whatsapp import user_whatsapp_service
+from irony.util import whatsapp_utils
 
 
+# Below message is not used in the code.
 def is_ongoing_or_status_request(message):
     unique_id = None
     try:
@@ -17,11 +18,10 @@ def is_ongoing_or_status_request(message):
     except Exception:
         raise Exception("Unable to read message id from message object.")
 
-    calls = config.CALLS
-    if unique_id in calls and bool(calls[unique_id]):
+    if unique_id in config.CALLS:
         return True
 
-    calls[unique_id] = True
+    config.CALLS.add(unique_id)
     return False
 
 

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, Response
 
-from irony import main
+from irony.config import config
 from irony.config.agent.auth_config import AuthConfig
 from irony.config.logger import logger
 from irony.db import db
@@ -110,9 +110,8 @@ async def login_service_agent(
             key="auth_token",
             value=token,
             httponly=True,
-            secure=main.cookie_secure,  # Use True in production with HTTPS
-            # samesite="lax",
-            samesite="none",
+            secure=config.COOKIE_SECURE,  # Use True in production with HTTPS
+            samesite="none" if config.COOKIE_SECURE else "lax",
             expires=datetime.now(timezone.utc)
             + timedelta(minutes=AuthConfig.ACCESS_TOKEN_EXPIRE_MINUTES),
         )

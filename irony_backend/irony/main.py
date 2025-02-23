@@ -1,7 +1,12 @@
+import fcntl
+import hashlib
+import hmac
+import os
+import subprocess
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from irony import cache
@@ -17,7 +22,6 @@ app = FastAPI()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup event equivalent
     config.DB_CACHE = await cache.fetch_data_from_db(config.DB_CACHE)
     logger.info("Data loaded into cache")
 
@@ -32,16 +36,11 @@ async def lifespan(app: FastAPI):
     logger.info("Application shutdown, scheduler stopped")
 
 
-app = FastAPI()
-
 app.router.lifespan_context = lifespan
 
-origins = ["http://localhost:3000"]
-# origins = ["*"]
-cookie_secure = False
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=config.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -90,7 +89,7 @@ async def log_request_time(request: Request, call_next):
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Hi Irony"}
 
 
 app.include_router(whatsapp.router, prefix="/api/whatsapp")

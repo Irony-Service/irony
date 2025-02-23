@@ -1,33 +1,31 @@
 services:
+  redis:
+    image: redis
+    container_name: irony_redis_dev  # Changed
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
   backend:
     build: ./irony_backend
-    container_name: irony_backend
+    image: irony_backend_dev  # Changed
+    container_name: irony_backend_dev  # Changed
     ports:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
-    # networks:
-    #   - app_network
+
   frontend:
     build:
       context: ./irony-service-agent-ui
-      # args:
-      #   NEXT_PUBLIC_API_URL: "https://ironystore.in"
-      #   NEXT_PUBLIC_CLIENT_API_URL: "https://ironystore.in"
-    container_name: irony_frontend
+    image: irony_frontend_dev  # Changed
+    container_name: irony_frontend_dev  # Changed
     ports:
       - "3000:3000"
-
     depends_on:
       - backend
-
     environment:
-      # - NEXT_PUBLIC_API_URL=https://ironystore.in
-      # - NEXT_PUBLIC_CLIENT_API_URL=https://ironystore.in
-      - NODE_ENV=production
-
+      - NODE_ENV=development  # Changed to development
+      - TZ=Asia/Kolkata
     restart: unless-stopped
-    # networks:
-    #   - app_network
-    #   driver: bridge
