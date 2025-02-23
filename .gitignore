@@ -48,3 +48,11 @@ yarn-error.log*
 next-env.d.ts
 .next
 package-lock.json
+
+locks
+django_app
+
+# Krishna : remove below 2 files from .gitignore only if you have docker-compose.yml changes and 
+# remember docker-compose.yml in "MASTER" branch is different from "DEV" branch
+docker-compose.yml
+Makefile
